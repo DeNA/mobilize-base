@@ -1,13 +1,12 @@
 class Requestor
-  include MongoMapper::Document
-  safe
-  key  :email, String
-  key  :oauth, String
-  key  :name, String
-  key  :first_name, String
-  key  :last_name, String
-  key  :admin_role, String
-  timestamps!
+  include Mongoid::Document
+  include Mongoid::Timestamps
+  field  :email, type: String
+  field  :oauth, type: String
+  field  :name, type: String
+  field  :first_name, type: String
+  field  :last_name, type: String
+  field  :admin_role, type: String
 
   validates_presence_of :name, :message => ' cannot be blank.'
   validates_uniqueness_of :name, :message => ' has already been used.'
@@ -15,6 +14,16 @@ class Requestor
   after_create :add_defaults
 
   before_destroy :destroy_jobs
+
+  def Requestor.find_or_create_by_name(name)
+    r=Requestor.where(:name=>name).first
+    r=Requestor.create(:name=>name) unless r
+    return r
+  end
+
+  def Requestor.find_by_name(name)
+    return Requestor.where(:name=>name).first
+  end
 
   def add_defaults
     r = self
@@ -89,7 +98,7 @@ class Requestor
     rem_jobs.each_with_index do |rj,rj_i|
       #skip bad rows
       next if (rj['name'].to_s.first=="#" or ['name','schedule','from_handler','to_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
-      j=Job.find_or_create_by_name_and_requestor_id(rj['name'],r.id.to_s)
+      j=Job.find_or_create_by_requestor_id_and_name(rj['name'],r.id.to_s)
       #update top line params
       j.update_attributes(:active=>rj['active'],
                           :schedule=>rj['schedule'],
@@ -173,7 +182,7 @@ class Requestor
     book = Gbooker.find_or_create_by_dst_id(book_dst.id.to_s)
     #get mobilize user jobspec master sheets
     mr = Requestor.find_or_create_by_name('mobilize')
-    mbook_dst = Dataset.find_or_create_by_handler_and_name_and_requestor_id('gbooker',mr.jobspec_title,mr.id.to_s)
+    mbook_dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(mr.id.to_s,'gbooker',mr.jobspec_title)
     mbook = Gbooker.find_or_create_by_dst_id(mbook_dst.id.to_s)
     msheets = mbook.worksheets.select{|s| s.title.ends_with?('Master')}
     #compare with current jobspec sheets

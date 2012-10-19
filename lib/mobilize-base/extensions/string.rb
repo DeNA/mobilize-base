@@ -2,17 +2,11 @@ class String
   def to_a
     return [self]
   end
-  def s
-    Spec.find(self)
-  end
   def r
     Requestor.find(self)
   end
   def j
     Job.find(self)
-  end
-  def tm
-    TaskMaster.find(self)
   end
   def dst
     Dataset.find(self)
@@ -20,8 +14,8 @@ class String
   def rname
     Requestor.find_by_name(self)
   end
-  def sname
-    Spec.find_by_name(self)
+  def jname
+    Job.find_by_name(self)
   end
   def to_md5
     Digest::MD5.hexdigest(self)

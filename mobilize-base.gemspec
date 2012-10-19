@@ -27,4 +27,5 @@ Gem::Specification.new do |s|
   #
   #
   s.add_runtime_dependency "mongoid", "~>3.0.0"
+  s.add_runtime_dependency 'redis','2.2.2'
 end

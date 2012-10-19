@@ -1,34 +1,44 @@
 class Job
-  include MongoMapper::Document
-  safe
-  key :requestor_id, String
-  key :name, String
-  key :active, Boolean #active, inactive
-  key :schedule, String
-  key :active_task, String
-  key :tasks, Hash
-  key :status, String
-  key :last_error, String
-  key :last_trace, String
-  key :last_completed_at, Time
-  key :read_handler, String
-  key :write_handler, String
-  key :param_source, String #name of sheet on doc
-  key :param_hash, String #JSON
-  key :destination, String #output destination - could be file, could be sheet
-  timestamps!
+  include Mongoid::Document
+  include Mongoid::Timestamps
+  field :requestor_id, type: String
+  field :name, type: String
+  field :active, type: Boolean #active, inactive
+  field :schedule, type: String
+  field :active_task, type: String
+  field :tasks, type: Hash
+  field :status, type: String
+  field :last_error, type: String
+  field :last_trace, type: String
+  field :last_completed_at, type: Time
+  field :read_handler, type: String
+  field :write_handler, type: String
+  field :param_source, type: String #name of sheet on doc
+  field :param_hash, type: String #JSON
+  field :destination, type: String #output destination - could be file, could be sheet
+
+  index({ requestor_id: 1})
+  index({ name: 1})
 
   before_destroy :destroy_output_dst_ids
-
-  def Job.add_indexes
-    Job.ensure_index(:requestor_id)
-    Job.ensure_index(:active)
-    Job.ensure_index(:name)
-  end
 
   def worker
     j = self
     Jobtracker.worker_by_job_id(j.id.to_s)
+  end
+
+  def Job.find_by_name(name)
+    Job.where(:name=>name).first
+  end
+
+  def Job.find_all_by_requestor_id(requestor_id)
+    Job.where(:requestor_id=>requestor_id).all
+  end
+
+  def Job.find_or_create_by_requestor_id_and_name(requestor_id,name)
+    j = Job.where(:requestor_id=>requestor_id, :name=>name).first
+    j = Job.create(:requestor_id=>requestor_id, :name=>name) unless j
+    return j
   end
 
   #called by Resque
@@ -120,12 +130,12 @@ class Job
     destination = j.destination
     dst = if j.to_handler == 'gsheet'
             destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
-            Dataset.find_by_mover_and_path('gsheeter',destination)
+            Dataset.find_by_handler_and_name('gsheeter',destination)
           elsif j.to_handler == 'gtxt'
             #all gtxt files must end in gz
             destination += ".gz" unless destination.ends_with?(".gz")
             destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
-            Dataset.find_by_mover_and_path('gtxter',destination)
+            Dataset.find_by_handler_and_name('gtxter',destination)
           end
     return dst.url if dst
   end

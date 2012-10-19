@@ -2,5 +2,6 @@ gem:
   sessions:
     default:
       database: mobilize
+      persist_in_safe_mode: true
       hosts:
         - localhost:27017

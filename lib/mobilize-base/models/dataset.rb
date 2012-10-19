@@ -1,23 +1,20 @@
 class Dataset
-  include MongoMapper::Document
-  safe
-  key :requestor_id, String, :required => true
-  key :handler, String, :required => true
-  key :name, String, :required => true #path or _id to data
-  key :url, String #url to retrieve data thru browser/scraper
-  key :size, Fixnum
-  key :last_cached_at, Time
-  key :last_read_at, Time
-  key :cache_expire_at, Time
-  timestamps!
+  include Mongoid::Document
+  include Mongoid::Timestamps
+  field :requestor_id, type: String
+  field :handler, type: String
+  field :name, type: String
+  field :url, type: String
+  field :size, type: Fixnum
+  field :last_cached_at, type: Time
+  field :last_read_at, type: Time
+  field :cache_expire_at, type: Time
+
+  index({ requestor_id: 1})
+  index({ handler: 1})
+  index({ name: 1})
 
   before_destroy :destroy_cache
-
-  def Dataset.add_indexes
-    Dataset.ensure_index(:requestor_id)
-    Dataset.ensure_index(:handler)
-    Dataset.ensure_index(:name)
-  end
 
   def read
     dst = self
@@ -26,6 +23,22 @@ class Dataset
     else
       return dst.handler.humanize.constantize.read_by_dst_id(dst.id.to_s)
     end
+  end
+
+  def Dataset.find_by_handler_and_name(handler,name)
+    Dataset.where(handler: handler, name: name).first
+  end
+
+  def Dataset.find_or_create_by_handler_and_name(handler,name)
+    dst = Dataset.where(handler: handler, name: name).first
+    dst = Dataset.create(handler: handler, name: name) unless dst
+    return dst
+  end
+
+  def Dataset.find_or_create_by_requestor_id_and_handler_and_name(requestor_id,handler,name)
+    dst = Dataset.where(requestor_id: requestor_id, handler: handler, name: name).first
+    dst = Dataset.create(requestor_id: requestor_id, handler: handler, name: name) unless dst
+    return dst
   end
 
   def write(data)

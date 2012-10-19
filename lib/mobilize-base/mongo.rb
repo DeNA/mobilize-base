@@ -1,2 +1,2 @@
 require 'mongoid'
-Mongoid.load!("#{Mobilize::Base.root_dir}mongoid.yml", :gem)
+Mongoid.load!("#{Mobilize::Base.root}/mongoid.yml", :gem)
