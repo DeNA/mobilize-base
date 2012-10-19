@@ -1,0 +1,6 @@
+gem:
+  sessions:
+    default:
+      database: mobilize
+      hosts:
+        - localhost:27017
