@@ -8,8 +8,11 @@ Gem::Specification.new do |s|
   s.authors     = ["Cassio Paes-Leme"]
   s.email       = ["cpaesleme@ngmoco.com"]
   s.homepage    = ""
-  s.summary     = %q{TODO: Write a gem summary}
-  s.description = %q{TODO: Write a gem description}
+  s.summary     = %q{Moves datasets and schedules data transfers using MongoDB, Resque and Google Docs}
+  s.description = %q{Manage your organization's workflows entirely through Google Docs and irb.
+                     Mobilize schedules jobs, queues workers, sends failure notifications, and 
+                     integrates mobilize-hadoop, -http, -mysql, and -mongodb packages
+                     to allow seamless transport of TSV and JSON data between any two endpoints. }
 
   s.rubyforge_project = "mobilize-base"
 
