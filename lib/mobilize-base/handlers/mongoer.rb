@@ -1,7 +1,7 @@
 class Mongoer
 
   def Mongoer.grid
-    return Mongo::GridFileSystem.new(MongoMapper.database)
+    return Mongo::GridFileSystem.new(Mongoid.configure.sessions['default']['database'])
   end
 
   def Mongoer.read_by_filename(filename)

@@ -150,11 +150,11 @@ class Requestor
     r = self
     prefix = "Jobspec_"
     suffix = ""
-    if Rails.env == 'staging'
+    if Mobilize::Base.env == 'staging'
       suffix = "_stg"
-    elsif Rails.env == 'development' or Rails.env == 'pry_dev'
+    elsif Mobilize::Base.env == 'development' or Mobilize::Base.env == 'pry_dev'
       suffix = "_dev"
-    elsif Rails.env == 'production' or Rails.env == 'integration'
+    elsif Mobilize::Base.env == 'production' or Mobilize::Base.env == 'integration'
       suffix = ""
     else
       raise "Invalid environment"

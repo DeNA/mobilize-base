@@ -1,7 +1,21 @@
-gem:
+development:
   sessions:
     default:
-      database: mobilize
+      database: mobilize-development
+      persist_in_safe_mode: true
+      hosts:
+        - localhost:27017
+test:
+  sessions:
+    default:
+      database: mobilize-test
+      persist_in_safe_mode: true
+      hosts:
+        - localhost:27017
+production:
+  sessions:
+    default:
+      database: mobilize-production
       persist_in_safe_mode: true
       hosts:
         - localhost:27017

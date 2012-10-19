@@ -64,7 +64,7 @@ class Basher
 
   def Basher.tmpfile(data,binary=false)
     #creates a file under tmp/files with an md5 from the data
-    tmpfile_folder = "#{Rails.root}/tmp/files/"
+    tmpfile_folder = "#{Mobilize::Base.root}/tmp/files/"
     tmpfile_path = "#{tmpfile_folder}#{(data.to_s + Time.now.utc.to_f.to_s).to_md5}"
     FileUtils.mkpath(tmpfile_folder)
     write_mode = binary ? "wb" : "w"
@@ -78,7 +78,7 @@ class Basher
     if hostid=='local'
       command = commands.to_a.join(";")
       #put command in file
-      comm_folder = "#{Rails.root}/tmp/commands/#{command.to_md5}/"
+      comm_folder = "#{Mobilize::Base.root}/tmp/commands/#{command.to_md5}/"
       FileUtils.mkpath(comm_folder)
       FileUtils.mkpath(errlog[0..errlog.rindex("/")]) if (errlog and errlog.index("/") and !errlog.ends_with?("/"))
       comm_path = %{#{comm_folder}command.sh}
@@ -188,7 +188,7 @@ class Net::SSH::Gateway
       end
     else
       #download file to tmp path
-      tmppath = %{#{Rails.root}/tmp/#{[fromhost,fromuser,frompath.gsub("/","_")].join("_")}}
+      tmppath = %{#{Mobilize::Base.root}/tmp/#{[fromhost,fromuser,frompath.gsub("/","_")].join("_")}}
       gateway.scp(fromhost,fromuser,fromopts) do |scp|
         scp.download!(frompath,tmppath,:recursive=>true)
       end

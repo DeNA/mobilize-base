@@ -26,6 +26,11 @@ Gem::Specification.new do |s|
   # s.add_runtime_dependency "rest-client"
   #
   #
+  s.add_runtime_dependency 'bson','1.6.1'
+  s.add_runtime_dependency 'bson_ext','1.6.1'
+  s.add_runtime_dependency 'mongo', '1.6.1'
   s.add_runtime_dependency "mongoid", "~>3.0.0"
   s.add_runtime_dependency 'redis','2.2.2'
+  s.add_runtime_dependency 'net-ssh'
+  s.add_runtime_dependency 'net-ssh-gateway'
 end

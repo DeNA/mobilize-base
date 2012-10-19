@@ -32,7 +32,7 @@ class Job
   end
 
   def Job.find_all_by_requestor_id(requestor_id)
-    Job.where(:requestor_id=>requestor_id).all
+    Job.where(:requestor_id=>requestor_id).to_a
   end
 
   def Job.find_or_create_by_requestor_id_and_name(requestor_id,name)
@@ -65,6 +65,7 @@ class Job
       if j.active_task == j.tasks.keys.last
         j.active_task = nil
         j.last_error = ""
+        j.last_trace = ""
         j.last_completed_at = Time.now.utc
         j.status = %{Completed all tasks at #{Time.now.utc}}
         j.save!
