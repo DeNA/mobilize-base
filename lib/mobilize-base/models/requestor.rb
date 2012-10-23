@@ -97,13 +97,13 @@ class Requestor
     loc_jobs = []
     rem_jobs.each_with_index do |rj,rj_i|
       #skip bad rows
-      next if (rj['name'].to_s.first=="#" or ['name','schedule','from_handler','to_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
-      j=Job.find_or_create_by_requestor_id_and_name(rj['name'],r.id.to_s)
+      next if (rj['name'].to_s.first=="#" or ['name','schedule','read_handler','write_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
+      j=Job.find_or_create_by_requestor_id_and_name(r.id.to_s,rj['name'])
       #update top line params
       j.update_attributes(:active=>rj['active'],
                           :schedule=>rj['schedule'],
-                          :from_handler=>rj['from_handler'],
-                          :to_handler=>rj['to_handler'],
+                          :read_handler=>rj['read_handler'],
+                          :write_handler=>rj['write_handler'],
                           :param_source=>rj['param_source'],
                           :params=>rj['params'],
                           :destination=>rj['destination'])
@@ -127,7 +127,7 @@ class Requestor
     job_upload_tsv = rem_jobs.hash_array_to_tsv
     #make sure headers are set correctly
     job_upload_rows = job_upload_tsv.split("\n")
-    job_upload_rows[0] = %w{name active schedule last_status last_error destination_url from_handler to_handler param_source params destination}.join("\t")
+    job_upload_rows[0] = %w{name active schedule last_status last_error destination_url read_handler write_handler param_source params destination}.join("\t")
     #don't allow line breaks within row
     job_upload_tsv = job_upload_rows.map{|r| r.gsub("\n",";")}.join("\n")
     #upload tsv back up directly, no temp file

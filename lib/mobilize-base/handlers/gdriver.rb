@@ -1,19 +1,23 @@
 class Gdriver
 
+  def Gdriver.config_file
+    YAML.load_file("#{Mobilize::Base.root}/mobilize.yml")
+  end
+
   def Gdriver.owner_account
-    YAML.load_file('config/mobilize/gdriver.yml')['owner_account']
+    Gdriver.config_file['owner_account']
   end
 
   def Gdriver.password
-    YAML.load_file('config/mobilize/gdriver.yml')['password']
+    Gdriver.config_file['owner_password']
   end
 
   def Gdriver.admin_accounts
-    YAML.load_file('config/mobilize/gdriver.yml')['admin_accounts']
+    Gdriver.config_file['admin_accounts']
   end
 
   def Gdriver.worker_accounts
-    YAML.load_file('config/mobilize/gdriver.yml')['worker_accounts']
+    Gdriver.config_file['worker_accounts']
   end
 
   #account management - used to make sure not too many accounts get used at the same time

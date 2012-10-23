@@ -7,7 +7,11 @@ require "mobilize-base/extensions/string"
 module Mobilize
   module Base
     def self.env
-      "development"
+      begin
+        Rails.env
+      rescue
+        ENV['GEM_ENV'] || "development"
+      end
     end
     def self.root
       File.expand_path('../..', __FILE__)+"/lib/mobilize-base"

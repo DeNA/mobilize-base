@@ -129,10 +129,10 @@ class Job
     j = self
     return nil if j.destination.nil?
     destination = j.destination
-    dst = if j.to_handler == 'gsheet'
+    dst = if j.write_handler == 'gsheet'
             destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
             Dataset.find_by_handler_and_name('gsheeter',destination)
-          elsif j.to_handler == 'gtxt'
+          elsif j.write_handler == 'gtxt'
             #all gtxt files must end in gz
             destination += ".gz" unless destination.ends_with?(".gz")
             destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
