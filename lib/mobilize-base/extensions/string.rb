@@ -34,8 +34,9 @@ class String
     pp self
   end
   def bash(except=true,errlog=nil)
-    #execute sh with localhost,localuser as host and user
-    Basher.sh('local',self,except,errlog)
+    pid,stdin,stdout,stderr = Open4.popen4(self)
+    raise stderr.read if stderr.read.length>0
+    return stdout.read
   end
   def googlesafe
     v=self

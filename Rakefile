@@ -18,7 +18,3 @@ require "bundler/gem_tasks"
 #
 $LOAD_PATH.unshift 'lib'
 require 'mobilize-base/tasks'
-
-def command?(command)
-  system("type #{command} > /dev/null 2>&1")
-end
