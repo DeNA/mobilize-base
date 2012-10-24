@@ -24,14 +24,11 @@ require 'mongoid'
 Mongoid.load!("#{Mobilize::Base.root}/mongoid.yml", Mobilize::Base.env)
 
 require 'google_drive'
-require 'net/ssh'
-require 'net/ssh/gateway'
 
 require "mobilize-base/jobtracker"
 require "mobilize-base/models/dataset"
 require "mobilize-base/models/requestor"
 require "mobilize-base/models/job"
-require "mobilize-base/handlers/basher"
 require "mobilize-base/handlers/gdriver"
 require "mobilize-base/handlers/mongoer"
 
