@@ -14,17 +14,18 @@ module Mobilize
       end
     end
     def self.root
-      File.expand_path('../..', __FILE__)+"/lib/mobilize-base"
+      File.expand_path('../..', __FILE__)
     end
     # Your code goes here...
   end
 end
 require 'mongo'
 require 'mongoid'
-Mongoid.load!("#{Mobilize::Base.root}/mongoid.yml", Mobilize::Base.env)
+Mongoid.load!("#{Mobilize::Base.root}/lib/mobilize-base/mongoid.yml", Mobilize::Base.env)
 
 require 'google_drive'
-
+require 'resque'
+require 'popen4'
 require "mobilize-base/jobtracker"
 require "mobilize-base/models/dataset"
 require "mobilize-base/models/requestor"

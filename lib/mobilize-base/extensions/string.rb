@@ -20,10 +20,6 @@ class String
   def to_md5
     Digest::MD5.hexdigest(self)
   end
-  def to_file(filename='temp.txt', path="#{Mobilize::Base.root}/tmp/")
-    File.open(path+filename, 'w') {|f| f.write(self) }
-    return path+filename
-  end
   def oputs
     STDOUT.puts self
   end
