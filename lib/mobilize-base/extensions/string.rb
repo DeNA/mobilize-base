@@ -33,9 +33,9 @@ class String
   def opp
     pp self
   end
-  def bash(except=true,errlog=nil)
+  def bash(except=true)
     pid,stdin,stdout,stderr = Open4.popen4(self)
-    raise stderr.read if stderr.read.length>0
+    raise stderr.read if (stderr.read.length>0 and except==true)
     return stdout.read
   end
   def googlesafe
