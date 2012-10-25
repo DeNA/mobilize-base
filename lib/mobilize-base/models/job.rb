@@ -24,7 +24,7 @@ class Job
 
   def worker
     j = self
-    Jobtracker.worker_by_job_id(j.id.to_s)
+    Resque::Mobilize.worker_by_id(j.id)
   end
 
   def Job.find_by_name(name)
@@ -57,9 +57,9 @@ class Job
                             task_output
                           else
                             #store the output in a cache
-                            dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(j.requestor.id,'mongoer',"#{j.id.to_s}/#{task}")
+                            dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(j.requestor.id,'mongoer',"#{j.id}/#{task}")
                             dst.write_cache(task_output.to_s)
-                            dst.id.to_s
+                            dst.id
                           end
       j.tasks[j.active_task]['output_dst_id'] = task_output_dst_id
       if j.active_task == j.tasks.keys.last
@@ -100,7 +100,7 @@ class Job
                                    "write_by_job_id"=>{'handler'=>j.write_handler}})
     end
     j.update_attributes(:active_task=>"read_by_job_id") if j.active_task.blank?
-    Jobtracker.queue("mobilize_worker",Job,j.id.to_s,%{#{j.requestor.name}=>#{j.name}})
+    Jobtracker.queue("mobilize_worker",Job,j.id,%{#{j.requestor.name}=>#{j.name}})
     "Enqueued job #{j.requestor.name}/#{j.name} for #{j.active_task}".oputs
     return true
   end
@@ -163,7 +163,7 @@ class Job
     param_tsv = param_sheet.to_tsv
     param_dst = j.requestor.gsheets.select{|s| s.path == param_sheet.path}
     param_dst.cache.write(param_tsv)
-    s.update_attributes(:param_dst_id=>paramdst.id.to_s)
+    s.update_attributes(:param_dst_id=>paramdst.id)
     (s.requestor.name + "'s #{s.name} params cached").oputs
     return true
   end
@@ -175,7 +175,7 @@ class Job
 
   def is_working?
     j = self
-    Jobtracker.resqueued_job_ids.include?(j.id.to_s)
+    Jobtracker.resqueued_job_ids.include?(j.id)
   end
 
   def is_due?

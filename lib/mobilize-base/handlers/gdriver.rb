@@ -1,23 +1,23 @@
 class Gdriver
 
-  def Gdriver.conf
-    Mobilize::Base.conf('gdrive')
+  def Gdriver.config
+    Mobilize::Base.config('gdrive')[Mobilize::Base.env]
   end
 
   def Gdriver.owner_account
-    Gdriver.conf[Mobilize::Base.env]['owner_account']
+    Gdriver.config['owner_account']
   end
 
   def Gdriver.password
-    Gdriver.conf[Mobilize::Base.env]['owner_password']
+    Gdriver.config['owner_password']
   end
 
   def Gdriver.admin_accounts
-    Gdriver.conf[Mobilize::Base.env]['admin_accounts']
+    Gdriver.config['admin_accounts']
   end
 
   def Gdriver.worker_accounts
-    Gdriver.conf[Mobilize::Base.env]['worker_accounts']
+    Gdriver.config['worker_accounts']
   end
 
   #account management - used to make sure not too many accounts get used at the same time
@@ -188,10 +188,9 @@ class Gbooker
         if bkey == dkey
           book = b
         else
-          ititle = (b.title + "_invalid_" + Time.now.utc.to_s)
-          #http
-          b.title=ititle
-          ("Renamed duplicate book to #{ititle}").oputs
+          #delete the invalid book
+          b.delete
+          ("Deleted duplicate book #{title}").oputs
         end
       end
     else

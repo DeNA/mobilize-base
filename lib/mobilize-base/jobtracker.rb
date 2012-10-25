@@ -1,115 +1,57 @@
 class Jobtracker
+  def Jobtracker.config
+    YAML.load_file('config/mobilize/jobtracker.yml')[Mobilize::Base.env]
+  end
+
   #modify this to increase the frequency of request cycles
   def Jobtracker.cycle_freq
-    10
+    Jobtracker.config['cycle_freq']
   end
 
   #frequency of notifications
   def Jobtracker.notification_freq
-    3600
+    Jobtracker.config['notification_freq']
   end
 
   #long running tolerance
-  def Jobtracker.longrun_tolerance
-    21600
+  def Jobtracker.max_run_time
+    Jobtracker.config['max_run_time']
   end
 
   def Jobtracker.admins
-    YAML.load_file('config/mobilize/jobtracker.yml')['admins']
-  end
-
-  def Jobtracker.resqueued_job_ids
-    return (Resque.queues.map{|q| Resque.peek(q,0,0).to_a}.compact + Resque.workers.map{|w| w.job['payload']}.compact).flatten.map{|j| j['args'].first}
-  end
-
-  def Jobtracker.working_jobs
-    return Job.where(:status=>'working',:id=>{:$nin=>Jobtracker.resqueued_job_ids},:stages=>{:$ne=>[]}).to_a.select{|j| j.spec if j.spec_id}.compact
-  end
-
-  def Jobtracker.longrun_jobs
-    return Jobtracker.working_jobs.select{|j| j.updated_at < Time.now.utc - Jobtracker.longrun_tolerance}
+    Jobtracker.config['admins']
   end
 
   def Jobtracker.worker
-    Jobtracker.worker_by_job_id("jobtracker")
+    Resque::Mobilize.worker_by_job_id("jobtracker")
   end
-
-  #Resque workers and methods to find 
-  def Jobtracker.worker_by_job_id(job_id)
-    resque_job = Jobtracker.active_jobs.select{|job| job['payload']['args'][0] == job_id}.first
-    if resque_job
-      rhash = Resque.redis.get("worker:#{resque_job['worker']}").json_to_hash
-      rhash['key'] = resque_job['worker']
-      return rhash
-    end
-  end
-
-  def Jobtracker.worker_args
-    Resque.workers.map{|w| Resque.redis.get("worker:#{w.to_s}")}.compact.map{|s| s.json_to_hash['payload']['args']}
-  end
-
-  def Jobtracker.get_worker_args(worker)
-    key = "worker:#{worker}"
-    json = Resque.redis.get(key)
-    if json
-      hash = JSON.parse(json)
-      payload_args = hash['payload']['args'].last
-    end
-  end
-  
-  #takes a worker and invokes redis to set the last value in its second arg array element
-  #by our convention this is a Hash
-  def Jobtracker.set_worker_args(worker,args)
-    key = "worker:#{worker}"
-    json = Resque.redis.get(key)
-    if json
-      hash = JSON.parse(json)
-      payload_args = hash['payload']['args']
-      #jobmaster only gets one arg
-      if payload_args[1].nil?
-        payload_args[1] = args
-      else
-        payload_args[1] = {} unless payload_args[1].class==Hash
-        args.keys.each{|k,v| payload_args[1][k] = args[k]}
-      end
-      Resque.redis.set(key,hash.to_json)
-      return true
-    else
-      return false
-    end
-  end
-
 
   def Jobtracker.status
-    if Jobtracker.worker_by_job_id("jobtracker")
-      return 'working'
-    elsif Resque.peek("jobtracker",0,0).length>0
-      return 'queued'
-    else
-      return 'stopped'
-    end
+    args = Jobtracker.get_args(Jobtracker.worker)
+    return args['status'] if args
+    return 'stopped'
   end
 
   def Jobtracker.restart
     Jobtracker.stop!
-    Jobtracker.kill_idle_workers
     Jobtracker.start
   end
 
-  def Jobtracker.send_message(message)
-    Resque.redis.set(%{jobtracker_message},message)
+  def Jobtracker.set_args(args)
+    Resque::Mobilize.set_args_by_worker(Jobtracker.worker,args)
     return true
   end
 
-  def Jobtracker.check_message
-    return Resque.redis.get(%{jobtracker_message})
+  def Jobtracker.get_args(args)
+    Resque::Mobilize.get_args_by_worker(Jobtracker.worker)
+    return true
   end
 
   def Jobtracker.start
     if Jobtracker.status!='stopped'
       raise "#{Jobtracker.to_s} still #{Jobtracker.status}"
     else
-      Jobtracker.send_message('work')
+      Jobtracker.set_args({'status'=>'working'})
       Jobtracker.queue
     end
     return true
@@ -203,9 +145,9 @@ class Jobtracker
     end
   end
 
-  def Jobtracker.longrun_workers
+  def Jobtracker.max_timeout_workers
     #return workers who have been cranking away for 6+ hours
-    return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.longrun_tolerance}
+    return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.max_run_time}
   end
 
   def Jobtracker.start_worker
@@ -236,10 +178,10 @@ class Jobtracker
         n['body'] = jfcs.map{|k,v| v.map{|v,n| [k," : ",v,", ",n," times"].join}}.flatten.join("\n\n")
         notifs << n
       end
-      lws = Jobtracker.longrun_workers
+      lws = Jobtracker.max_timeout_workers
       if lws.length>0
         n = {}
-        n['subj'] = "#{lws.length.to_s} longrun jobs"
+        n['subj'] = "#{lws.length.to_s} max timeout jobs"
         n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} runat:#{w['runat'].to_s}}}.join("\n\n")
         notifs << n
       end

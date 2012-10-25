@@ -15,13 +15,18 @@ module Mobilize
         File.expand_path('../..', __FILE__)
       end
     end
-    def Base.conf(conf_name)
-      conf_dir = begin
-                   "#{Rails.root}/config/"
-                 rescue
-                   "#{Base.root}/conf/"
-                 end
-      YAML.load_file("#{conf_dir}#{conf_name}.yml")
+    def Base.config(config_name)
+      config_dir = begin
+                     "#{Rails.root}/config/"
+                   rescue
+                     "#{Base.root}/config/"
+                   end
+      yaml_path = "#{config_dir}#{config_name}.yml"
+      if File.exists?(yaml_path)
+        return YAML.load_file(yaml_path)
+      else
+        raise "Could not find #{config_name}.yml in #{config.dir}"
+      end
     end
     def Base.env
       begin
@@ -30,12 +35,25 @@ module Mobilize
         ENV['MOBILIZE_ENV'] || "development"
       end
     end
+    def Base.log_path(log_name)
+      log_dir = begin
+                  "#{Rails.root}/log/"
+                rescue
+                  "#{Base.root}/log/"
+                end
+      log_path = "#{log_dir}#{log_name}.log"
+      if File.exists?(log_dir)
+        return log_path
+      else
+        raise "Could not find #{log_dir} folder for logs"
+      end
+    end
   end
 end
 require 'mongo'
 require 'mongoid'
-mongoid_conf_path = "#{Mobilize::Base.root}/conf/mongoid.yml"
-Mongoid.load!(mongoid_conf_path, Mobilize::Base.env)
+mongoid_config_path = "#{Mobilize::Base.root}/config/mongoid.yml"
+Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
 require 'google_drive'
 require 'resque'
 require 'popen4'
