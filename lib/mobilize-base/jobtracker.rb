@@ -208,6 +208,23 @@ class Jobtracker
     return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.longrun_tolerance}
   end
 
+  def Jobtracker.start_worker
+    "/usr/bin/rake mobilize:work >> #{log_file}"
+  end
+
+  def Jobtracker.monitor_worker_memory
+    Jobtracker.worker_pids.each do |wp|
+      #go through workers on our queues and kill them if they get too big
+      pid, size = `ps ax -o pid,rss | grep -E "^[[:space:]]*#{wp}"`.chomp.split(/\s+/).map {|s| s.strip.to_i}
+      #if process is bigger than 550MB, kill
+      if size>550000
+        "kill -9 #{pid}".bash
+        #fire up another worker
+        Jobtracker.start_worker
+      end
+    end
+  end
+
   def Jobtracker.run_notifications
     if Jobtracker.notif_due?
       notifs = []
