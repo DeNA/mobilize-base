@@ -95,8 +95,8 @@ class Jobtracker
     return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.max_run_time}
   end
 
-  def Jobtracker.start_workers
-    "/usr/bin/rake mobilize:work &"
+  def Jobtracker.start_worker
+    "nohup /usr/bin/rake mobilize:work > #{Resque::Mobilize.log_path} 2>&1".bash
   end
 
   def Jobtracker.run_notifications

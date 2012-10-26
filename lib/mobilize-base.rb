@@ -15,6 +15,9 @@ module Mobilize
         File.expand_path('../..', __FILE__)
       end
     end
+    def Base.queues
+      ['mobilize_jobtracker','mobilize_worker','mobilize_requestor']
+    end
     def Base.config(config_name)
       config_dir = begin
                      "#{Rails.root}/config/"
@@ -25,7 +28,7 @@ module Mobilize
       if File.exists?(yaml_path)
         return YAML.load_file(yaml_path)
       else
-        raise "Could not find #{config_name}.yml in #{config.dir}"
+        raise "Could not find #{config_name}.yml in #{config_dir}"
       end
     end
     def Base.env

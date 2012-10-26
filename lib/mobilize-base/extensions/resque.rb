@@ -1,11 +1,11 @@
 module Resque
   module Mobilize
     def Mobilize.config
-      Mobilize::Base.config('resque')
+      ::Mobilize::Base.config('resque')
     end
 
     def Mobilize.queues
-      ['mobilize_worker','mobilize_jobtracker','mobilize_requestor']
+      ::Mobilize::Base.queues
     end
 
     def Mobilize.all_model_ids
@@ -30,10 +30,14 @@ module Resque
       end
     end
 
+    def Mobilize.log_path
+      ::Mobilize::Base.log_path("mobilize-resque-#{::Mobilize::Base.env}")
+    end
+
     def Mobilize.update_worker_status(worker,msg)
       Mobilize.set_worker_args(worker,{"status"=>msg})
       #also fire a log, cap logfiles at 10 MB
-      Logger.new(Mobilize::Base.log_path("mobilize-resque-#{Mobilize::Base.env}"), 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] #{msg}")
+      Logger.new(Mobilize.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] #{msg}")
     end
 
     def Mobilize.get_worker_args(worker)

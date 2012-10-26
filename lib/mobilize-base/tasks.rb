@@ -7,8 +7,8 @@ namespace :mobilize do
   desc "Start a Resque worker"
   task :work => :setup do
     require 'resque'
-
-    queues = ['MOBILIZE_JOBTRACKER','MOBILIZE_WORKER'] 
+    require 'mobilize-base'
+    queues = Mobilize::Base.queues
 
     begin
       worker = Resque::Worker.new(*queues)
