@@ -96,7 +96,7 @@ class Jobtracker
   end
 
   def Jobtracker.start_worker
-    "nohup /usr/bin/rake mobilize:work > #{Resque::Mobilize.log_path} 2>&1".bash
+    "/usr/bin/rake mobilize:work > #{Resque::Mobilize.log_path} 2>&1 &".bash
   end
 
   def Jobtracker.run_notifications
