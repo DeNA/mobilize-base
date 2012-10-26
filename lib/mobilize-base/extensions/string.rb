@@ -91,6 +91,20 @@ class String
       return {}
     end
   end
+    def encrypt
+    require 'gibberish'
+    #uses included encryption files to encrypt string
+    passwd = Mobilize::Base.config('crypto')['key']
+    cipher = Gibberish::AES.new(passwd)
+    cipher.enc(self)
+  end
+  def decrypt
+    require 'gibberish'
+    #uses included encryption files to encrypt string
+    passwd = Mobilize::Base.config('crypto')['key']
+    cipher = Gibberish::AES.new(passwd)
+    cipher.dec(self)
+  end
   def tsv_to_hash_array
     rows = self.split("\n")
     return [] if rows.first.nil?

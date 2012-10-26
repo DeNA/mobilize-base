@@ -9,7 +9,7 @@ class Gdriver
   end
 
   def Gdriver.password
-    Gdriver.config['owner_password']
+    Gdriver.config['password'].decrypt
   end
 
   def Gdriver.admin_accounts

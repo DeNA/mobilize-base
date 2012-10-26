@@ -124,20 +124,7 @@ class Jobtracker
     return true
   end
 
-  def Jobtracker.requestors_sheet
-    r = Requestor.find_or_create_by_email(Mobilize::Base.owner_email)
-    if Mobilize::Base.env == 'development'
-      r.find_or_create_gsheet_by_title("MobilizeMaster_dev/requestors")
-    elsif Mobilize::Base.env == 'test'
-      r.find_or_create_gsheet_by_title("MobilizeMaster_test/requestors")
-    elsif Mobilize::Base.env == 'production'
-      r.find_or_create_gsheet_by_title("MobilizeMaster/requestors")
-    end
-  end
-
-  def Jobtracker.pull_requestors
-    requestors = Jobtracker.requestors_sheet.to_tsv
-    return requestors.uniq.sort
+  def Jobtracker.get_requestors
   end
 
   def Jobtracker.update_worker_status
@@ -154,6 +141,7 @@ class Jobtracker
   def Jobtracker.perform(id,*args)
     rlastrun={}
     while Jobtracker.status == 'working'
+      requestors = Jobtracker.get_requestors
       ["Processing requestors ",requestors.join(", ")].join.oputs
       Jobtracker.run_notifications
       requestors.each do |rname|
