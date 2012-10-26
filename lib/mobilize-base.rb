@@ -35,6 +35,7 @@ module Mobilize
       begin
         Rails.env
       rescue
+        #use MOBILIZE_ENV to manually set your environment when you start your app
         ENV['MOBILIZE_ENV'] || "development"
       end
     end

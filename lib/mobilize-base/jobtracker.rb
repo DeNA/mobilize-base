@@ -1,6 +1,6 @@
 class Jobtracker
   def Jobtracker.config
-    Mobilize::Base.config('jobtracker')
+    Mobilize::Base.config('jobtracker')[Mobilize::Base.env]
   end
 
   #modify this to increase the frequency of request cycles
@@ -24,6 +24,10 @@ class Jobtracker
 
   def Jobtracker.worker
     Resque::Mobilize.worker_by_model_id("jobtracker")
+  end
+
+  def Jobtracker.workers
+    Resque::Mobilize.workers
   end
 
   def Jobtracker.status

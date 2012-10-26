@@ -8,8 +8,15 @@ module Resque
       ::Mobilize::Base.queues
     end
 
+    def Mobilize.workers
+      
+    end
+
     def Mobilize.all_model_ids
-      return (Mobilize.queues.map{|q| Resque.peek(q,0,0).to_a}.compact + Resque.workers.map{|w| w.job['payload']}.compact).flatten.map{|j| j['args'].first}
+      return (
+        Mobilize.queues.map{|q| Resque.peek(q,0,0).to_a}.compact +
+              Resque.workers.map{|w| w.job['payload']}.compact
+              ).flatten.map{|j| j['args'].first}
     end
 
     def Mobilize.active_workers
