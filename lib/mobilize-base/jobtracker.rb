@@ -51,6 +51,8 @@ class Jobtracker
     if Jobtracker.status!='stopped'
       raise "#{Jobtracker.to_s} still #{Jobtracker.status}"
     else
+      #make sure that workers are running
+      #make sure user has entered password
       Jobtracker.set_args({'status'=>'working'})
       Resque::Job.create('mobilize_jobtracker', Jobtracker, 'jobtracker',{})
     end
