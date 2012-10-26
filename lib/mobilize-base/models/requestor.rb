@@ -21,6 +21,13 @@ class Requestor
     return r
   end
 
+  def Requestor.find_or_create_by_email(email)
+    r = Requestor.where(:email => email).first
+    r = Requestor.create(:email => email) unless r
+    r.update_attributes(:name => email.split("@").first) unless r.name.length>0
+    return r
+  end
+
   def Requestor.jobs_sheet_headers
     %w{name active schedule status last_error destination_url read_handler write_handler param_source params destination}
   end
@@ -117,10 +124,10 @@ class Requestor
     r = self
     prefix = "Jobspec_"
     suffix = ""
-    if Mobilize::Base.env == 'staging'
-      suffix = "_stg"
-    elsif Mobilize::Base.env == 'development' or Mobilize::Base.env == 'pry_dev'
+    if Mobilize::Base.env == 'development'
       suffix = "_dev"
+    elsif Mobilize::Base.env == 'test' or Mobilize::Base.env == 'pry_dev'
+      suffix = "_test"
     elsif Mobilize::Base.env == 'production' or Mobilize::Base.env == 'integration'
       suffix = ""
     else
@@ -173,13 +180,24 @@ class Requestor
 
   def worker
     r = self
-    Resque::Mobilize.worker_by_id(r.id)
+    Resque::Mobilize.worker_by_model_id(r.id)
   end
 
   def update_status(msg)
     r = self
     r.update_attributes(:status=>msg)
     Resque::Mobilize.update_worker_status(r.worker,msg)
+    return true
+  end
+
+  def is_working?
+    r = self
+    Resque::Mobilize.model_ids.include?(r.id)
+  end
+
+  def enqueue!
+    r = self
+    Resque::Job.create("mobilize_requestor",Requestor,r.id,r.name)
     return true
   end
 

@@ -92,7 +92,6 @@ class Job
 
   def enqueue!
     j = self
-    j.update_status("Enqueued at #{Time.now.utc.to_s}")
     #assign first task if none assigned
     if j.tasks.blank?
       #make a hash with the read/write tasks
@@ -100,8 +99,7 @@ class Job
                                    "write_by_job_id"=>{'handler'=>j.write_handler}})
     end
     j.update_attributes(:active_task=>"read_by_job_id") if j.active_task.blank?
-    Jobtracker.queue("mobilize_worker",Job,j.id,%{#{j.requestor.name}=>#{j.name}})
-    "Enqueued job #{j.requestor.name}/#{j.name} for #{j.active_task}".oputs
+    Resque::Job.create("mobilize_worker",Job,j.id,%{#{j.requestor.name}=>#{j.name}})
     return true
   end
 
@@ -171,11 +169,13 @@ class Job
   def update_status(msg)
     j = self
     j.update_attributes(:status=>msg)
+    Resque::Mobilize.update_worker_status(j.worker,msg)
+    return true
   end
 
   def is_working?
     j = self
-    Jobtracker.resqueued_job_ids.include?(j.id)
+    Resque::Mobilize.model_ids.include?(j.id)
   end
 
   def is_due?
