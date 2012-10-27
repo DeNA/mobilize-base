@@ -1,50 +1,70 @@
 module Resque
   module Mobilize
     def Mobilize.config
-      ::Mobilize::Base.config('resque')
+      ::Mobilize::Base.config('resque')[::Mobilize::Base.env]
+    end
+
+    def Mobilize.queue_name
+      Mobilize.config['queue_name']
     end
 
     def Mobilize.queues
       ::Mobilize::Base.queues
     end
 
-    def Mobilize.workers
-      
-    end
-
-    def Mobilize.all_model_ids
-      return (
-        Mobilize.queues.map{|q| Resque.peek(q,0,0).to_a}.compact +
-              Resque.workers.map{|w| w.job['payload']}.compact
-              ).flatten.map{|j| j['args'].first}
-    end
-
-    def Mobilize.active_workers
-      Resque.workers.map{|w| w.job.merge('worker'=>w.to_s)}.reject{|j| j.keys.length==1 or j['payload']['class'].downcase=='jobtracker'}
-    end
-
-    def Mobilize.max_timeout_jobs
-      return Mobilize.active_workers.select{|w| w['runat'] < Time.now.utc - Jobtracker.max_run_time}
-    end
-
-    #Resque workers and methods to find 
-    def Mobilize.worker_by_model_id(id)
-      resque_job = Mobilize.active_workers.select{|w| w['payload']['args'][0] == id}.first
-      if resque_job
-        rhash = Resque.redis.get("worker:#{resque_job['worker']}").json_to_hash
-        rhash['key'] = resque_job['worker']
-        return rhash
-      end
-    end
-
     def Mobilize.log_path
       ::Mobilize::Base.log_path("mobilize-resque-#{::Mobilize::Base.env}")
     end
 
-    def Mobilize.update_worker_status(worker,msg)
+    def Mobilize.workers(state="all")
+      raise "invalid state #{state}" unless ['all','idle','working','timeout'].include?(state)
+      workers = Resque.workers.select{|w| w.queues.first == Mobilize.queue_name}
+      return workers if state == 'all'
+      working_workers = workers.select{|w| w.job['queue']== Mobilize.queue_name}
+      return working_workers if state == 'working'
+      idle_workers = workers.select{|w| w.job['queue'].nil?}
+      return idle_workers if state == 'idle'
+      timeout_workers = workers.select{|w| w.job['payload'] and w.job['payload']['class']!='Jobtracker' and w.job['runat'] < (Time.now.utc - Jobtracker.max_run_time)}
+      return timeout_workers if state == 'timeout'
+    end
+
+    def Mobilize.failures
+      Resque::Failure.all(0,0).select{|f| f['queue'] == Mobilize.queue_name}
+    end
+
+    #active state refers to jobs that are either queued or working
+    def Mobilize.jobs(state="active")
+      raise "invalid state #{state}" unless ['all','queued','working','active','timeout','failed'].include?(state)
+      working_jobs =  Mobilize.workers('working').map{|w| w.job['payload']}
+      return working_jobs if state == 'working'
+      queued_jobs = Resque.peek(Mobilize.queue_name,0,0).to_a
+      return queued_jobs if state == 'queued'
+      return working_jobs + queued_jobs if state == 'active'
+      failed_jobs = Mobilize.failures.map{|f| f['payload']}
+      return failed_jobs if state == 'failed'
+      timeout_jobs = Mobilize.workers("timeout").map{|w| w.job['payload']}
+      return tiomeout_jobs if state == 'timeout'
+      return working_jobs + queued_jobs + failed_jobs if state == 'all'
+    end
+
+    def Mobilize.active_mongo_ids
+      #first argument of the payload is the model id in Mongo unless the worker is Jobtracker
+      Mobilize.jobs('active').map{|j| j['args'].first unless j['class']=='Jobtracker'}.compact
+    end
+
+    #Resque workers and methods to find
+    def Mobilize.find_worker_by_mongo_id(mongo_id)
+      Mobilize.workers('working').select{|w| w.job['payload']['args'][0] == mongo_id}.first
+    end
+
+    def Mobilize.update_job_status(mongo_id,msg)
+      #this only works on working workers
+      worker = Mobilize.find_worker_by_mongo_id(mongo_id)
+      return false unless worker
       Mobilize.set_worker_args(worker,{"status"=>msg})
       #also fire a log, cap logfiles at 10 MB
       Logger.new(Mobilize.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] #{msg}")
+      return true
     end
 
     def Mobilize.get_worker_args(worker)
@@ -78,32 +98,11 @@ module Resque
       end
     end
 
-    def Mobilize.working_queues
-      return Resque.workers.map{|w| w.job['queue']}.compact
-    end
-
-    def Mobilize.clear_queues
-      Resque.queues.each{|q| Resque.remove_queue(q)}
-      return true
-    end
-
-    def Mobilize.failures
-      if Resque::Failure.all(0,-1).length>0
-        Resque::Failure.all(0,-1)
-      else
-        Resque::Failure.all(0,0)
-      end
-    end
-
-    def Mobilize.job_fail_counts
+    def Mobilize.failure_report
       fjobs = {}
       excs = Hash.new(0)
       Mobilize.failures.each do |f|
-        sname = if f['payload']['args'].second
-                  f['payload']['args'].second['name']
-                else
-                  f['payload']['args'].first
-                end
+        sname = f['payload']['class'] + ("=>" + f['payload']['args'].second['name'].to_s if f['payload']['args'].second).to_s
         excs = f['error']
         if fjobs[sname].nil?
           fjobs[sname] = {excs => 1} 
@@ -116,17 +115,12 @@ module Resque
       return fjobs
     end
 
-    def Mobilize.worker_runtimes
-      Mobilize.active_workers.map do |j|
-        spec = j['payload']['args'].second['name']
-        stg = j['queue']
-        runat = j['run_at']
-        {'spec'=>spec,'stg'=>stg,'runat'=>runat.gsub("/","-")}
-      end
+    def Mobilize.start_worker
+      "(cd #{::Mobilize::Base.root};/usr/bin/rake mobilize:work) >> #{Resque::Mobilize.log_path} 2>&1 &".bash
     end
 
     def Mobilize.kill_idle_workers
-      idle_pids = Resque.workers.select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}.join(" ")
+      idle_pids = Resque.workers('idle').select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}.join(" ")
       begin
         "kill #{idle_pids}".bash
       rescue
@@ -136,11 +130,11 @@ module Resque
 
     def Mobilize.kill_workers(delay=0.minute)
       starttime=Time.now.utc
-      while Resque.workers.select{|w| w.job['payload']}.length>0 and Time.now.utc<starttime+delay
+      while Mobilize.workers.select{|w| w.job['payload']}.length>0 and Time.now.utc<starttime+delay
         sleep 10.second
         "waited #{Time.now.utc-starttime} for workers to finish before kill".oputs
       end
-      pids = Resque.workers.map{|w| w.worker_pids}.flatten.uniq.join(" ")
+      pids = Mobilize.workers.map{|w| w.worker_pids}.flatten.uniq.join(" ")
       begin
         "kill #{pids}".bash
       rescue

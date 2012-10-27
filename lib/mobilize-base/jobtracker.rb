@@ -51,16 +51,34 @@ class Jobtracker
     return true
   end
 
+  def Jobtracker.kill_workers
+    Resque::Mobilize.kill_workers
+  end
+
+  def Jobtracker.kill_idle_workers
+    Resque::Mobilize.kill_idle_workers
+  end
+
+  def Jobtracker.balance_workers
+    Resque::Mobilize.balance_workers
+  end
+
   def Jobtracker.start
     if Jobtracker.status!='stopped'
-      raise "#{Jobtracker.to_s} still #{Jobtracker.status}"
+      raise "Jobtracker still #{Jobtracker.status}"
     else
       #make sure that workers are running
+      Resque::Mobilize.balance_workers
       #make sure user has entered password
-      Jobtracker.set_args({'status'=>'working'})
-      Resque::Job.create('mobilize_jobtracker', Jobtracker, 'jobtracker',{})
+      
+      #queue up the jobtracker (starts the perform method)
+      Jobtracker.enqueue!
     end
     return true
+  end
+
+  def Jobtracker.enqueue!
+    Resque::Job.create(Resque::Mobilize.config('queue_name'), Jobtracker, 'jobtracker',{'status'=>'working'})
   end
 
   def Jobtracker.restart!
@@ -100,7 +118,7 @@ class Jobtracker
   end
 
   def Jobtracker.start_worker
-    "/usr/bin/rake mobilize:work > #{Resque::Mobilize.log_path} 2>&1 &".bash
+    Resque::Mobilize.start_worker
   end
 
   def Jobtracker.run_notifications

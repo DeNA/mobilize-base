@@ -8,10 +8,9 @@ namespace :mobilize do
   task :work => :setup do
     require 'resque'
     require 'mobilize-base'
-    queues = Mobilize::Base.queues
 
     begin
-      worker = Resque::Worker.new(*queues)
+      worker = Resque::Worker.new(Resque::Mobilize.config['queue_name'])
 #      worker.verbose = ENV['LOGGING'] || ENV['VERBOSE']
 #      worker.very_verbose = ENV['VVERBOSE']
     rescue Resque::NoQueueError
