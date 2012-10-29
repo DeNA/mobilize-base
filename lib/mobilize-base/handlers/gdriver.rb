@@ -4,58 +4,77 @@ class Gdriver
     Mobilize::Base.config('gdrive')[Mobilize::Base.env]
   end
 
-  def Gdriver.owner_account
-    Gdriver.config['owner_account']
+  def Gdriver.owner_email
+    Gdriver.config['owner']['email']
   end
 
-  def Gdriver.password
-    Gdriver.config['password'].decrypt
+  def Gdriver.password(email)
+    if email == Gdriver.owner_email
+      Gdriver.config['owner']['pw']
+    else
+      worker = Gdriver.workers(email)
+      return worker['pw'] if worker
+    end
   end
 
-  def Gdriver.admin_accounts
-    Gdriver.config['admin_accounts']
+  def Gdriver.admins
+    Gdriver.config['admins']
   end
 
-  def Gdriver.worker_accounts
-    Gdriver.config['worker_accounts']
+  def Gdriver.workers(email=nil)
+    if email.nil?
+      Gdriver.config['workers']
+    else
+      Gdriver.workers.select{|w| w['email'] == email}.first
+    end
   end
 
-  #account management - used to make sure not too many accounts get used at the same time
-  def Gdriver.get_worker_account
-    active_accts = Jobtracker.worker_args.map{|a| a[1]['account'] if a[1]}.compact
-    Gdriver.worker_accounts.sort_by{rand}.each do |ga|
-      return ga unless active_accts.include?(ga)
+  def Gdriver.worker_emails
+    Gdriver.workers.map{|w| w['email']}
+  end
+
+  def Gdriver.admin_emails
+    Gdriver.admins.map{|w| w['email']}
+  end
+
+  #email management - used to make sure not too many emails get used at the same time
+  def Gdriver.get_worker_email_by_job_id(job_id)
+    active_emails = Resque::Mobilize.jobs('working').map{|j| j['email'] if j['email']}.compact
+    Gdriver.workers.sort_by{rand}.each do |w|
+      if !(active_emails.include?(w['email']))
+        Resque::Mobilize.update_job_email(job_id,w['email'])
+        return w
+      end
     end
     #return false if none are available
     return false
   end
 
-  def Gdriver.root(account=nil)
-    account ||= Gdriver.owner_account
-    #http
-    GoogleDrive.login(account,Gdriver.password)
+  def Gdriver.root(email=nil)
+    email ||= Gdriver.owner_email
+    pw = Gdriver.password(email)
+    GoogleDrive.login(email,pw)
   end
 
-  def Gdriver.files(account=nil)
-    root = Gdriver.root(account)
-    #http
+  def Gdriver.files(email=nil)
+    root = Gdriver.root(email)
     root.files
   end
 
-  def Gdriver.books(account=nil)
-    Gdriver.files(account).select{|f| f.class==GoogleDrive::Spreadsheet}
+  def Gdriver.books(email=nil)
+    Gdriver.files(email).select{|f| f.class==GoogleDrive::Spreadsheet}
   end
 
 end
 
 class Gfiler
-  def Gfiler.find_by_title(title,account=nil)
-    Gdriver.files(account).select{|f| f.title==title}.first
+  def Gfiler.find_by_title(title,email=nil)
+    Gdriver.files(email).select{|f| f.title==title}.first
   end
 
-  def Gfiler.find_by_dst_id(dst_id,account=nil)
+  def Gfiler.find_by_dst_id(dst_id,email=nil)
     dst = dst_id.dst
-    Gfiler.find_by_title(dst.path,account)
+    Gfiler.find_by_title(dst.path,email)
   end
 
   def Gfiler.add_admin_acl_by_dst_id(dst_id)
@@ -77,15 +96,15 @@ class Gfiler
     return true
   end
 
-  def Gfiler.update_acl_by_dst_id(dst_id,account,role="writer",edit_account=nil)
+  def Gfiler.update_acl_by_dst_id(dst_id,email,role="writer",edit_email=nil)
     dst = dst_id.dst
-    Gfiler.update_acl_by_title(dst.path,account,role,edit_account)
+    Gfiler.update_acl_by_title(dst.path,email,role,edit_email)
   end
 
-  def Gfiler.update_acl_by_title(title,account,role="writer",edit_account=nil)
-    file = Gfiler.find_by_title(title,edit_account)
+  def Gfiler.update_acl_by_title(title,email,role="writer",edit_email=nil)
+    file = Gfiler.find_by_title(title,edit_email)
     raise "File #{title} not found" unless file
-    file.update_acl(account,role)
+    file.update_acl(email,role)
   end
 end
 
@@ -94,7 +113,7 @@ class GoogleDrive::File
   def add_worker_acl
     f = self
     return true if f.has_worker_acl?
-    (Gdriver.worker_accounts).each do |a| 
+    Gdriver.worker_emails.each do |a| 
       f.update_acl(a)
     end
   end
@@ -103,16 +122,16 @@ class GoogleDrive::File
     f = self
     #admin includes workers
     return true if f.has_admin_acl?
-    (Gdriver.admin_accounts + Gdriver.worker_accounts).each do |a| 
+    (Gdriver.admin_emails + Gdriver.worker_emails).each do |a| 
       f.update_acl(a)
     end
   end
 
   def has_admin_acl?
     f = self
-    curr_accounts = f.acls.map{|a| a.scope}.sort
-    admin_accounts = Gdriver.admin_accounts.sort
-    if (curr_accounts & admin_accounts) == admin_accounts
+    curr_emails = f.acls.map{|a| a.scope}.sort
+    admin_emails = Gdriver.admin_emails.sort
+    if (curr_emails & admin_emails) == admin_emails
       return true
     else
       return false
@@ -121,22 +140,22 @@ class GoogleDrive::File
 
   def has_worker_acl?
     f = self
-    curr_accounts = f.acls.map{|a| a.scope}.sort
-    worker_accounts = Gdriver.worker_accounts.sort
-    if (curr_accounts & worker_accounts) == worker_accounts
+    curr_emails = f.acls.map{|a| a.scope}.sort
+    worker_emails = Gdriver.worker_emails.sort
+    if (curr_emails & worker_emails) == worker_emails
       return true
     else
       return false
     end
   end
 
-  def update_acl(account,role="writer")
+  def update_acl(email,role="writer")
     f = self
     #need these flags for HTTP retries
     update_complete = false
     retries = 0
     #create req_acl hash to add to current acl
-    if entry = f.acl_entry(account)
+    if entry = f.acl_entry(email)
       if [nil,"none","delete"].include?(role)
         f.acl.delete(entry)
       elsif entry.role != role and ['reader','writer','owner'].include?(role)
@@ -146,7 +165,7 @@ class GoogleDrive::File
         raise "Invalid role #{role}"
       end
     else
-      f.acl.push({:scope_type=>"user",:scope=>account,:role=>role},notify=false)
+      f.acl.push({:scope_type=>"user",:scope=>email,:role=>role},notify=false)
     end
     return true
   end
@@ -154,11 +173,11 @@ class GoogleDrive::File
     f = self
     f.acl.to_enum.to_a
   end
-  def acl_entry(account)
+  def acl_entry(email)
     f = self
     curr_acls = f.acls
-    curr_accounts = curr_acls.map{|a| a.scope}
-    f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope == account}.first
+    curr_emails = curr_acls.map{|a| a.scope}
+    f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope == email}.first
   end
 
   def entry_hash
@@ -174,8 +193,8 @@ end
 
 class Gbooker
 
-  def Gbooker.find_or_create_by_title(title,account)
-    books = Gdriver.books(account).select{|b| b.title==title}
+  def Gbooker.find_or_create_by_title(title,email)
+    books = Gdriver.books(email).select{|b| b.title==title}
     #there should only be one book with each title, otherwise we have fail
     book = nil
     if books.length>1
@@ -197,7 +216,7 @@ class Gbooker
       book = books.first
     end
     if book.nil?
-      #add book using owner account
+      #add book using owner email
       #http
       book = Gdriver.root.create_spreadsheet(title)
       ("Created book #{title} at #{Time.now.utc.to_s}").oputs
@@ -214,7 +233,7 @@ class Gbooker
     return book
   end
 
-  def Gbooker.find_or_create_by_dst_id(dst_id,account=nil)
+  def Gbooker.find_or_create_by_dst_id(dst_id,email=nil)
     #creates by title, updates acl, updates dataset with url
     dst = dst_id.dst
     r = dst.requestor_id.r
@@ -229,7 +248,7 @@ class Gbooker
         break
       rescue=>exc
         if book.nil? or exc.to_s.index('Invalid document id')
-          book = Gbooker.find_or_create_by_title(dst.name,account)
+          book = Gbooker.find_or_create_by_title(dst.name,email)
           #if invalid doc then update url w new book and break loop
           dst.update_attributes(:url=>book.human_url)
           break
@@ -248,19 +267,19 @@ class Gsheeter
     400000
   end
 
-  def Gsheeter.read(name,account=nil)
-    sheet = Gsheeter.find_or_create_by_name(name,account)
+  def Gsheeter.read(name,email=nil)
+    sheet = Gsheeter.find_or_create_by_name(name,email)
     sheet.to_tsv
   end
 
-  def Gsheeter.write(name,tsv,account=nil)
-    sheet = Gsheeter.find_or_create_by_name(name,account)
+  def Gsheeter.write(name,tsv,email=nil)
+    sheet = Gsheeter.find_or_create_by_name(name,email)
     sheet.write(tsv)
   end
 
-  def Gsheeter.find_or_create_by_name(name,account=nil,rows=100,cols=20)
+  def Gsheeter.find_or_create_by_name(name,email=nil,rows=100,cols=20)
     book_title,sheet_title = name.split("/")
-    book = Gbooker.find_or_create_by_title(book_title,account)
+    book = Gbooker.find_or_create_by_title(book_title,email)
     #http
     sheet = book.worksheets.select{|w| w.title==sheet_title}.first
     if sheet.nil?
@@ -271,7 +290,7 @@ class Gsheeter
     return sheet
   end
 
-  def Gsheeter.find_or_create_by_dst_id(dst_id,account=nil)
+  def Gsheeter.find_or_create_by_dst_id(dst_id,email=nil)
     #creates by title, updates acl, updates dataset with url
     dst = dst_id.dst
     r = dst.requestor_id.r
@@ -285,30 +304,32 @@ class Gsheeter
   end
 
   def Gsheeter.read_by_job_id(job_id)
-    #reading from job requires a "source" in the param_hash
-    j = job_id.j
+    j = Job.find(job_id)
     r = j.requestor
+    #reserve email account for read
+    email = Gdriver.get_worker_email_by_job_id(job_id)
+    return false unless email
     source = j.param_source
     book,sheet = source.split("/")
     #assume jobspec source if none given
     source = [r.jobspec_title,source].join("/") if sheet.nil?
-    tsv = Gsheeter.find_or_create_by_name(source).to_tsv
+    tsv = Gsheeter.find_or_create_by_name(source,email).to_tsv
     return tsv
   end
 
-  def Gsheeter.read_by_dst_id(dst_id,account=nil)
+  def Gsheeter.read_by_dst_id(dst_id,email=nil)
     dst = dst_id.dst
     name = dst.name
-    sheet = Gsheeter.find_or_create_by_name(name,account)
+    sheet = Gsheeter.find_or_create_by_name(name,email)
     output = sheet.to_tsv
     return output
   end
 
-  def Gsheeter.write_by_dst_id(dst_id,tsv,account=nil)
+  def Gsheeter.write_by_dst_id(dst_id,tsv,email=nil)
     dst=dst_id.dst
     #see if this is a specific cell
     name = dst.name
-    return false unless account
+    return false unless email
     #create temp tab, write data to it, checksum it against the source
     tempsheet = Gsheeter.find_or_create_by_name("#{name}_temp")
     tempsheet.write(tsv)
@@ -336,10 +357,9 @@ class Gsheeter
                 end
     sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',dest_name)
     sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?
-    account = Gdriver.get_worker_account
-    #return false if there are no accounts available
-    return false unless account
-    Jobtracker.set_worker_args(j.worker['key'],{"account"=>account})
+    email = Gdriver.get_worker_email_by_job_id(job_id)
+    #return false if there are no emails available
+    return false unless email
     #create temp tab, write data to it, checksum it against the source
     tempsheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',"#{dest_name}_temp")
     tempsheet_dst.update_attributes(:requestor_id=>r.id.to_s) if tempsheet_dst.requestor_id.nil?
@@ -348,7 +368,7 @@ class Gsheeter
     tsv = j.tasks[j.prior_task]['output_dst_id'].dst.read
     tempsheet.write(tsv,true,job_id)
     #delete current sheet, replace it with temp one
-    sheet = Gsheeter.find_or_create_by_name(dest_name,account)
+    sheet = Gsheeter.find_or_create_by_name(dest_name,email)
     title = sheet.title
     #http
     sheet.delete

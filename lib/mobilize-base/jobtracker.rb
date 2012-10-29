@@ -23,7 +23,7 @@ class Jobtracker
   end
 
   def Jobtracker.worker
-    Resque::Mobilize.worker_by_model_id("jobtracker")
+    Resque::Mobilize.find_worker_by_mongo_id("jobtracker")
   end
 
   def Jobtracker.workers
@@ -31,9 +31,15 @@ class Jobtracker
   end
 
   def Jobtracker.status
-    args = Jobtracker.get_args(Jobtracker.worker)
+    args = Jobtracker.get_args
     return args['status'] if args
     return 'stopped'
+  end
+
+  def update_status(msg)
+    #Jobtracker has no persistent database state
+    Resque::Mobilize.update_worker_status(Jobtracker.worker,msg)
+    return true
   end
 
   def Jobtracker.restart
@@ -42,13 +48,12 @@ class Jobtracker
   end
 
   def Jobtracker.set_args(args)
-    Resque::Mobilize.set_args_by_worker(Jobtracker.worker,args)
+    Resque::Mobilize.set_worker_args(Jobtracker.worker,args)
     return true
   end
 
-  def Jobtracker.get_args(args)
-    Resque::Mobilize.get_args_by_worker(Jobtracker.worker)
-    return true
+  def Jobtracker.get_args
+    Resque::Mobilize.get_worker_args(Jobtracker.worker)
   end
 
   def Jobtracker.kill_workers
@@ -59,18 +64,20 @@ class Jobtracker
     Resque::Mobilize.kill_idle_workers
   end
 
-  def Jobtracker.balance_workers
-    Resque::Mobilize.balance_workers
+  def Jobtracker.prep_workers
+    Resque::Mobilize.prep_workers
+  end
+
+  def Jobtracker.failures
+    Resque::Mobilize.failures
   end
 
   def Jobtracker.start
     if Jobtracker.status!='stopped'
       raise "Jobtracker still #{Jobtracker.status}"
     else
-      #make sure that workers are running
-      Resque::Mobilize.balance_workers
-      #make sure user has entered password
-      
+      #make sure that workers are running and at the right number
+      Resque::Mobilize.prep_workers
       #queue up the jobtracker (starts the perform method)
       Jobtracker.enqueue!
     end
@@ -78,7 +85,7 @@ class Jobtracker
   end
 
   def Jobtracker.enqueue!
-    Resque::Job.create(Resque::Mobilize.config('queue_name'), Jobtracker, 'jobtracker',{'status'=>'working'})
+    Resque::Job.create(Resque::Mobilize.queue_name, Jobtracker, 'jobtracker',{'status'=>'working'})
   end
 
   def Jobtracker.restart!
@@ -101,11 +108,11 @@ class Jobtracker
   end
 
   def Jobtracker.last_notification
-    return Jobtracker.get_args("last_notification")
+    return Jobtracker.get_args["last_notification"] if Jobtracker.get_args
   end
 
   def Jobtracker.last_notification=(time)
-    Jobtracker.set_args("last_notification",time)
+    Jobtracker.set_args({"last_notification"=>time})
   end
 
   def Jobtracker.notif_due?
@@ -117,15 +124,18 @@ class Jobtracker
     return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.max_run_time}
   end
 
-  def Jobtracker.start_worker
-    Resque::Mobilize.start_worker
+  def Jobtracker.start_worker(count=nil)
+    Resque::Mobilize.start_workers(count)
+  end
+
+  def Jobtracker.kill_workers(count=nil)
+    Resque::Mobilize.kill_workers(count)
   end
 
   def Jobtracker.run_notifications
     if Jobtracker.notif_due?
       notifs = []
-      jfcs = Jobtracker.job_fail_counts
-      if jfcs.keys.length>0
+      if Jobtracker.failures.length>0
         n = {}
         n['subj'] = "#{jfcs.keys.length.to_s} failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
         #one row per exception type, with the job name
@@ -148,34 +158,14 @@ class Jobtracker
     return true
   end
 
-  def Jobtracker.get_requestors
-  end
-
-  def Jobtracker.update_worker_status
-    Jobtracker.active_jobs.each do |aj|
-      j = aj['payload']['args'][0].j
-      #set status and name
-      Jobtracker.set_worker_args(aj['worker'],
-                                 {"status"=>j.status,
-                                  "task"=>j.active_task,
-                                  "name"=>"#{j.requestor.name}/#{j.name}"})
-    end
-  end
-
   def Jobtracker.perform(id,*args)
-    rlastrun={}
     while Jobtracker.status == 'working'
-      requestors = Jobtracker.get_requestors
+      requestors = Requestor.all
       ["Processing requestors ",requestors.join(", ")].join.oputs
       Jobtracker.run_notifications
       requestors.each do |rname|
-        #run requestor jobs
-        r = Requestor.find_or_create_by_name(rname)
-        rlastrun[rname] = Time.now.utc
-        #set status
-        Jobtracker.set_worker_args(Jobtracker.worker.to_s,{"status"=>status_msg})
-        r.run_jobs
-        sleep Jobtracker.cycle_freq
+        last_due_time = Time.now.utc - Jobtracker.requestor_refresh_freq
+        r.enqueue! if r.last_run < last_due_time
       end
     end
     "#{Jobtracker.to_s} told to stop".oputs

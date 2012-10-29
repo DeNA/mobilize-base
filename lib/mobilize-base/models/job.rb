@@ -24,7 +24,7 @@ class Job
 
   def worker
     j = self
-    Resque::Mobilize.worker_by_id(j.id)
+    Resque::Mobilize.find_worker_by_mongo_id(j.id)
   end
 
   def Job.find_by_name(name)
@@ -43,7 +43,7 @@ class Job
 
   #called by Resque
   def Job.perform(id,*args)
-    j = id.j
+    j = Job.find(id)
     task_params = j.tasks[j.active_task]
     raise "No active task!" unless task
     begin
@@ -52,7 +52,7 @@ class Job
       #this allows user to return false if the stage didn't go as expected and needs to retry
       #e.g. tried to write to Google but all the accounts were in use
       return false if task_output == false
-      task_output_dst_id = if task_output.to_s.length==24 and task_output.to_s.dst
+      task_output_dst_id = if task_output.to_s.length==24 and Dataset.find(task_output.to_s)
                             #user has returned dst as output from task
                             task_output
                           else
