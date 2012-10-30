@@ -12,7 +12,7 @@ module Mobilize
       begin
         Rails.root
       rescue
-        File.expand_path('../..', __FILE__)
+        File.expand_path("..",__FILE__)
       end
     end
     def Base.queues
