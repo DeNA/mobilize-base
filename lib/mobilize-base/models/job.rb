@@ -24,7 +24,7 @@ class Job
 
   def worker
     j = self
-    Resque::Mobilize.find_worker_by_mongo_id(j.id)
+    Resque::Mobilize.find_worker_by_mongo_id(j.id.to_s)
   end
 
   def Job.find_by_name(name)
@@ -45,7 +45,6 @@ class Job
   def Job.perform(id,*args)
     j = Job.find(id)
     task_params = j.tasks[j.active_task]
-    raise "No active task!" unless task
     begin
       j.update_status(%{Starting #{j.active_task} task at #{Time.now.utc}})
       task_output = task_params['handler'].humanize.constantize.send(j.active_task,id)
@@ -57,9 +56,9 @@ class Job
                             task_output
                           else
                             #store the output in a cache
-                            dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(j.requestor.id,'mongoer',"#{j.id}/#{task}")
+                            dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(j.requestor.id.to_s,'mongoer',"#{j.id.to_s}/#{j.active_task}")
                             dst.write_cache(task_output.to_s)
-                            dst.id
+                            dst.id.to_s
                           end
       j.tasks[j.active_task]['output_dst_id'] = task_output_dst_id
       if j.active_task == j.tasks.keys.last
@@ -99,14 +98,14 @@ class Job
                                    "write_by_job_id"=>{'handler'=>j.write_handler}})
     end
     j.update_attributes(:active_task=>"read_by_job_id") if j.active_task.blank?
-    Resque::Job.create("mobilize_worker",Job,j.id,%{#{j.requestor.name}=>#{j.name}})
+    Resque::Job.create("mobilize",Job,j.id.to_s,%{#{j.requestor.name}=>#{j.name}})
     return true
   end
 
   #convenience methods
   def requestor
     j = self
-    return j.requestor_id.r
+    return Requestor.find(j.requestor_id)
   end
 
   def restart
@@ -161,7 +160,7 @@ class Job
     param_tsv = param_sheet.to_tsv
     param_dst = j.requestor.gsheets.select{|s| s.path == param_sheet.path}
     param_dst.cache.write(param_tsv)
-    s.update_attributes(:param_dst_id=>paramdst.id)
+    s.update_attributes(:param_dst_id=>paramdst.id.to_s)
     (s.requestor.name + "'s #{s.name} params cached").oputs
     return true
   end
@@ -169,13 +168,13 @@ class Job
   def update_status(msg)
     j = self
     j.update_attributes(:status=>msg)
-    Resque::Mobilize.update_worker_status(j.worker,msg)
+    Resque::Mobilize.update_job_status(j.id.to_s,msg)
     return true
   end
 
   def is_working?
     j = self
-    Resque::Mobilize.model_ids.include?(j.id)
+    Resque::Mobilize.active_mongo_ids.include?(j.id.to_s)
   end
 
   def is_due?

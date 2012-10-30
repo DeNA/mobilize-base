@@ -38,12 +38,12 @@ class Gdriver
   end
 
   #email management - used to make sure not too many emails get used at the same time
-  def Gdriver.get_worker_email_by_job_id(job_id)
+  def Gdriver.get_worker_email_by_mongo_id(mongo_id)
     active_emails = Resque::Mobilize.jobs('working').map{|j| j['email'] if j['email']}.compact
     Gdriver.workers.sort_by{rand}.each do |w|
       if !(active_emails.include?(w['email']))
-        Resque::Mobilize.update_job_email(job_id,w['email'])
-        return w
+        Resque::Mobilize.update_job_email(mongo_id,w['email'])
+        return w['email']
       end
     end
     #return false if none are available
@@ -56,13 +56,13 @@ class Gdriver
     GoogleDrive.login(email,pw)
   end
 
-  def Gdriver.files(email=nil)
+  def Gdriver.files(email=nil,params={})
     root = Gdriver.root(email)
-    root.files
+    root.files(params)
   end
 
-  def Gdriver.books(email=nil)
-    Gdriver.files(email).select{|f| f.class==GoogleDrive::Spreadsheet}
+  def Gdriver.books(email=nil,params={})
+    Gdriver.files(email,params).select{|f| f.class==GoogleDrive::Spreadsheet}
   end
 
 end
@@ -73,7 +73,7 @@ class Gfiler
   end
 
   def Gfiler.find_by_dst_id(dst_id,email=nil)
-    dst = dst_id.dst
+    dst = Dataset.find(dst_id)
     Gfiler.find_by_title(dst.path,email)
   end
 
@@ -97,7 +97,7 @@ class Gfiler
   end
 
   def Gfiler.update_acl_by_dst_id(dst_id,email,role="writer",edit_email=nil)
-    dst = dst_id.dst
+    dst = Dataset.find(dst_id)
     Gfiler.update_acl_by_title(dst.path,email,role,edit_email)
   end
 
@@ -165,7 +165,7 @@ class GoogleDrive::File
         raise "Invalid role #{role}"
       end
     else
-      f.acl.push({:scope_type=>"user",:scope=>email,:role=>role},notify=false)
+      f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})#,notify=false)
     end
     return true
   end
@@ -194,7 +194,7 @@ end
 class Gbooker
 
   def Gbooker.find_or_create_by_title(title,email)
-    books = Gdriver.books(email).select{|b| b.title==title}
+    books = Gdriver.books(email,{"title"=>title,"title-exact"=>"true"})
     #there should only be one book with each title, otherwise we have fail
     book = nil
     if books.length>1
@@ -235,8 +235,8 @@ class Gbooker
 
   def Gbooker.find_or_create_by_dst_id(dst_id,email=nil)
     #creates by title, updates acl, updates dataset with url
-    dst = dst_id.dst
-    r = dst.requestor_id.r
+    dst = Dataset.find(dst_id)
+    r = Requestor.find(dst.requestor_id)
     book = nil
     #http
     book = Gdriver.root.spreadsheet_by_url(dst.url) if dst.url
@@ -292,12 +292,12 @@ class Gsheeter
 
   def Gsheeter.find_or_create_by_dst_id(dst_id,email=nil)
     #creates by title, updates acl, updates dataset with url
-    dst = dst_id.dst
-    r = dst.requestor_id.r
+    dst = Dataset.find(dst_id)
+    r = Requestor.find(dst.requestor_id)
     name = dst.name
     book_title,sheet_title = name.split("/")
     #make sure book exists and is assigned to this user
-    book = r.find_or_create_gbook_by_title(book_title)
+    book = r.find_or_create_gbook_by_title(book_title,email)
     #add admin write access
     sheet = Gsheeter.find_or_create_by_name(name)
     return sheet
@@ -307,7 +307,7 @@ class Gsheeter
     j = Job.find(job_id)
     r = j.requestor
     #reserve email account for read
-    email = Gdriver.get_worker_email_by_job_id(job_id)
+    email = Gdriver.get_worker_email_by_mongo_id(job_id)
     return false unless email
     source = j.param_source
     book,sheet = source.split("/")
@@ -318,7 +318,7 @@ class Gsheeter
   end
 
   def Gsheeter.read_by_dst_id(dst_id,email=nil)
-    dst = dst_id.dst
+    dst = Dataset.find(dst_id)
     name = dst.name
     sheet = Gsheeter.find_or_create_by_name(name,email)
     output = sheet.to_tsv
@@ -326,7 +326,7 @@ class Gsheeter
   end
 
   def Gsheeter.write_by_dst_id(dst_id,tsv,email=nil)
-    dst=dst_id.dst
+    dst = Dataset.find(dst_id)
     #see if this is a specific cell
     name = dst.name
     return false unless email
@@ -348,7 +348,7 @@ class Gsheeter
   end
 
   def Gsheeter.write_by_job_id(job_id)
-    j = job_id.j
+    j = Job.find(job_id)
     r = j.requestor
     dest_name = if j.destination.split("/").length==1
                   "#{r.jobspec_title}#{"/"}#{j.destination}"
@@ -357,7 +357,7 @@ class Gsheeter
                 end
     sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',dest_name)
     sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?
-    email = Gdriver.get_worker_email_by_job_id(job_id)
+    email = Gdriver.get_worker_email_by_mongo_id(job_id)
     #return false if there are no emails available
     return false unless email
     #create temp tab, write data to it, checksum it against the source
@@ -365,7 +365,7 @@ class Gsheeter
     tempsheet_dst.update_attributes(:requestor_id=>r.id.to_s) if tempsheet_dst.requestor_id.nil?
     tempsheet = Gsheeter.find_or_create_by_dst_id(tempsheet_dst.id.to_s)
     #tsv is the second to last stage's output (the last is the write)
-    tsv = j.tasks[j.prior_task]['output_dst_id'].dst.read
+    tsv = Dataset.find(j.tasks[j.prior_task]['output_dst_id']).read
     tempsheet.write(tsv,true,job_id)
     #delete current sheet, replace it with temp one
     sheet = Gsheeter.find_or_create_by_name(dest_name,email)
@@ -428,7 +428,7 @@ class GoogleDrive::Worksheet
       if batch_start>tsvrows.length+1
         if job_id
           newstatus = "100 pct written at #{Time.now.utc}"
-          job_id.j.update_status(newstatus)
+          Job.find(job_id).update_status(newstatus)
           newstatus.oputs
         end
         break
@@ -438,7 +438,7 @@ class GoogleDrive::Worksheet
         if !pct_tens_complete.include?(curr_pct_complete.first)
           if job_id
             newstatus = "#{curr_pct_complete} pct written at #{Time.now.utc}"
-            job_id.j.update_status(newstatus)
+            Job.find(job_id).update_status(newstatus)
             newstatus.oputs
             pct_tens_complete << curr_pct_complete.first
           end

@@ -13,13 +13,17 @@ class Jobtracker
     Jobtracker.config['notification_freq']
   end
 
+  def Jobtracker.requestor_refresh_freq
+    Jobtracker.config['requestor_refresh_freq']
+  end
+
   #long running tolerance
   def Jobtracker.max_run_time
     Jobtracker.config['max_run_time']
   end
 
   def Jobtracker.admins
-    Jobtracker.config['admins']
+    Resque::Mobilize.admins
   end
 
   def Jobtracker.admin_emails
@@ -40,9 +44,9 @@ class Jobtracker
     return 'stopped'
   end
 
-  def update_status(msg)
+  def Jobtracker.update_status(msg)
     #Jobtracker has no persistent database state
-    Resque::Mobilize.update_worker_status(Jobtracker.worker,msg)
+    Resque::Mobilize.update_job_status("jobtracker",msg)
     return true
   end
 
@@ -174,16 +178,18 @@ class Jobtracker
   end
 
   def Jobtracker.perform(id,*args)
-    while Jobtracker.status == 'working'
+    while Jobtracker.status != 'stopping'
       requestors = Requestor.all
-      ["Processing requestors ",requestors.join(", ")].join.oputs
       Jobtracker.run_notifications
-      requestors.each do |rname|
-        last_due_time = Time.now.utc - Jobtracker.requestor_refresh_freq
-        r.enqueue! if r.last_run < last_due_time
+      requestors.each do |r|
+        if r.is_due?
+          r.enqueue!
+          Jobtracker.update_status("Enqueued requestor #{r.name}")
+        end
       end
+      sleep 5
     end
-    "#{Jobtracker.to_s} told to stop".oputs
+    Jobtracker.update_status("told to stop")
     return true
   end
 end

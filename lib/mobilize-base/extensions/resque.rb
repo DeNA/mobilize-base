@@ -16,6 +16,10 @@ module Resque
       ::Mobilize::Base.log_path("mobilize-resque-#{::Mobilize::Base.env}")
     end
 
+    def Mobilize.admins
+      Resque::Mobilize.config['admins']
+    end
+
     def Mobilize.workers(state="all")
       raise "invalid state #{state}" unless ['all','idle','working','timeout'].include?(state)
       workers = Resque.workers.select{|w| w.queues.first == Resque::Mobilize.queue_name}
@@ -48,7 +52,7 @@ module Resque
     end
 
     def Mobilize.active_mongo_ids
-      #first argument of the payload is the model id in Mongo unless the worker is Jobtracker
+      #first argument of the payload is the mongo id in Mongo unless the worker is Jobtracker
       Resque::Mobilize.jobs('active').map{|j| j['args'].first unless j['class']=='Jobtracker'}.compact
     end
 
@@ -73,7 +77,7 @@ module Resque
       return false unless worker
       Resque::Mobilize.set_worker_args(worker,{"email"=>email})
       #also fire a log, cap logfiles at 10 MB
-      Logger.new(Resque::Mobilize.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] email: #{msg}")
+      Logger.new(Resque::Mobilize.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] email: #{email}")
     end
 
     def Mobilize.get_worker_args(worker)

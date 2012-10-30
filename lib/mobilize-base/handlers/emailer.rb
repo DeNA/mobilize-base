@@ -1,10 +1,20 @@
-require 'actionmailer'
-ActionMailer::Base.delivery_method = :sendmail
+require 'action_mailer'
 class Emailer < ActionMailer::Base
-  def Emailer.write(subj, 
+  ActionMailer::Base.delivery_method = :smtp
+  
+  ActionMailer::Base.smtp_settings = {
+  :address              => "smtp.gmail.com",
+  :port                 => 587,
+  :domain               => 'ngmoco.com',
+  :user_name            => Gdriver.owner_email,
+  :password             => Gdriver.password(Gdriver.owner_email),
+  :authentication       => 'plain',
+  :enable_starttls_auto => true  }
+
+  def write(subj, 
                     bod="", 
                     recipient=Jobtracker.admin_emails.join(","))
-    mail(:from=>Mobilize::Base.owner_email,
+    mail(:from=>Gdriver.owner_email,
          :to=>recipient, 
          :subject=>subj, 
          :body=>bod)

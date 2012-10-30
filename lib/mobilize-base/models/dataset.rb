@@ -21,7 +21,7 @@ class Dataset
     if dst.last_cached_at and (dst.cache_expire_at.nil? or dst.cache_expire_at > Time.now.utc)
       return dst.read_cache
     else
-      return dst.handler.humanize.constantize.read_by_dst_id(dst.id)
+      return dst.handler.humanize.constantize.read_by_dst_id(dst.id.to_s)
     end
   end
 
@@ -43,7 +43,7 @@ class Dataset
 
   def write(data)
     dst = self
-    dst.handler.humanize.constantize.write_by_dst_id(dst.id,data)
+    dst.handler.humanize.constantize.write_by_dst_id(dst.id.to_s,data)
     dst.save!
     return true
   end
@@ -51,18 +51,18 @@ class Dataset
   def read_cache
     dst = self
     dst.update_attributes(:last_read_at=>Time.now.utc)
-    return Mongoer.read_by_filename(self.id)
+    return Mongoer.read_by_filename(dst.id.to_s)
   end
 
   def write_cache(string,expire_at=nil)
     dst = self
-    Mongoer.write_by_filename(dst.id,string)
+    Mongoer.write_by_filename(dst.id.to_s,string)
     dst.update_attributes(:last_cached_at=>Time.now.utc,:cache_expire_at=>expire_at,:size=>string.length)
     return true
   end
 
   def delete_cache
-    return Mongoer.delete_by_filename(dst.id)
+    return Mongoer.delete_by_filename(dst.id.to_s)
   end
 
 end

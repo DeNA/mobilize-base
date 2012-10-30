@@ -108,8 +108,12 @@ class String
   def tsv_to_hash_array
     rows = self.split("\n")
     return [] if rows.first.nil?
-    return [{rows.first=>nil}] if (rows.length==2 and rows.second==nil) or rows.length==1
+    return [{rows.first=>nil}] if (rows.length==2 and rows.second==nil)
     headers = rows.first.split("\t")
+    if rows.length==1
+      #return single member hash with all nil values
+      return headers.map{|k| {k=>nil}}.inject{|k,h| h.merge(k)}
+    end
     row_hash_arr =[]
     rows[1..-1].each do |row|
       cols = row.split("\t")
