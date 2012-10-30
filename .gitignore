@@ -5,3 +5,4 @@ pkg/*
 lib/mobilize-base/tmp/*
 config/*
 log/*
+.idea/
