@@ -1,0 +1,27 @@
+development:
+  owner:
+    email: 'owner@host.com'
+    pw: "google_drive_password"
+  admins:
+    - {email: 'admin@host.com'}
+  workers:
+    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}
+test:
+  owner:
+    email: 'owner@host.com'
+    pw: "google_drive_password"
+  admins:
+    - {email: 'admin@host.com'}
+  workers:
+    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}
+production:
+  owner:
+    email: 'owner@host.com'
+    pw: "google_drive_password"
+  admins:
+    - {email: 'admin@host.com'}
+  workers:
+    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}

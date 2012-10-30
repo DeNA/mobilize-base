@@ -1,0 +1,6 @@
+development:
+  #time between Jobtracker sweeps
+  cycle_freq: 10
+  notification_freq: 3600 #1 hour between failure/timeout notifications
+  requestor_refresh_freq: 600 #10 min between requestor checks
+  max_run_time: 14400 # if a job runs for 4h+, notification will be sent

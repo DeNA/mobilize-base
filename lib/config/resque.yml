@@ -1,0 +1,10 @@
+development:
+  queue_name: 'mobilize'
+  max_workers: 4
+  admins:
+  - {'email': 'admin@host.com'} #change this to your resque admin
+production:
+  queue_name: 'mobilize'
+  max_workers: 36
+  admins:
+  - {'email': 'admin@host.com'} #change this to your resque admin
