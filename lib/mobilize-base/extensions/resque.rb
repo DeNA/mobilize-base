@@ -148,8 +148,10 @@ module Resque
         return false
       elsif count
         "kill #{pids[0..count-1].join(" ")}".bash
-      else
+      elsif pids.length>0
         "kill #{pids.join(" ")}".bash
+      else
+        return false
       end
       return true
     end

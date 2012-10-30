@@ -22,12 +22,16 @@ class Jobtracker
     Jobtracker.config['admins']
   end
 
+  def Jobtracker.admin_emails
+    Jobtracker.admins.map{|a| a['email']}
+  end
+
   def Jobtracker.worker
     Resque::Mobilize.find_worker_by_mongo_id("jobtracker")
   end
 
-  def Jobtracker.workers
-    Resque::Mobilize.workers
+  def Jobtracker.workers(state=nil)
+    Resque::Mobilize.workers(state)
   end
 
   def Jobtracker.status
@@ -94,6 +98,12 @@ class Jobtracker
     return true
   end
 
+  def Jobtracker.restart_workers!
+    Jobtracker.kill_workers
+    sleep 5
+    Jobtracker.prep_workers
+  end
+
   def Jobtracker.stop!
     #send signal for Jobtracker to check for
     Jobtracker.update_status('stopping')
@@ -119,9 +129,13 @@ class Jobtracker
     return (Jobtracker.last_notification.to_s.length==0 || Jobtracker.last_notification.to_datetime < (Time.now.utc - Jobtracker.notification_freq))
   end
 
-  def Jobtracker.max_timeout_workers
+  def Jobtracker.max_run_time_workers
     #return workers who have been cranking away for 6+ hours
-    return Jobtracker.worker_runtimes.select{|wr| (Time.now.utc - Time.parse(wr['runat']))>Jobtracker.max_run_time}
+      workers = Jobtracker.workers('working').select do |w|
+          w.job['runat'].to_s.length>0 and 
+            (Time.now.utc - Time.parse(w.job['runat'])) > Jobtracker.max_run_time
+      end
+      return workers
   end
 
   def Jobtracker.start_worker(count=nil)
@@ -137,20 +151,21 @@ class Jobtracker
       notifs = []
       if Jobtracker.failures.length>0
         n = {}
+        jfcs = Resque::Mobilize.failure_report
         n['subj'] = "#{jfcs.keys.length.to_s} failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
         #one row per exception type, with the job name
         n['body'] = jfcs.map{|k,v| v.map{|v,n| [k," : ",v,", ",n," times"].join}}.flatten.join("\n\n")
         notifs << n
       end
-      lws = Jobtracker.max_timeout_workers
+      lws = Jobtracker.max_run_time_workers
       if lws.length>0
         n = {}
-        n['subj'] = "#{lws.length.to_s} max timeout jobs"
+        n['subj'] = "#{lws.length.to_s} max run time jobs"
         n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} runat:#{w['runat'].to_s}}}.join("\n\n")
         notifs << n
       end
       notifs.each do |n|
-        Notice.alert(n['subj'],n['body'],Jobtracker.admins.join(",")).deliver
+        Emailer.write(n['subj'],n['body']).deliver
         Jobtracker.last_notification=Time.now.utc.to_s
         "Sent notification at #{Jobtracker.last_notification}".oputs
       end

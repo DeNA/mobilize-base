@@ -70,6 +70,7 @@ require 'popen4'
 require "mobilize-base/jobtracker"
 require "mobilize-base/handlers/gdriver"
 require "mobilize-base/handlers/mongoer"
+require "mobilize-base/handlers/emailer"
 
 #require "mobilize-base/handlers/*"
 #require "mobilize-base/models/*"
