@@ -15,9 +15,6 @@ module Mobilize
         ENV['PWD']
       end
     end
-    def Base.queues
-      ['mobilize_jobtracker','mobilize_worker','mobilize_requestor']
-    end
     def Base.config(config_name)
       config_dir = begin
                      "#{Rails.root}/config/"
