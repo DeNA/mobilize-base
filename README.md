@@ -4,97 +4,44 @@ Mobilize
 Mobilize is an end-to-end data transfer workflow manager with:
 * a Google Spreadsheets UI through [google-drive-ruby][0];
 * a queue manager through [Resque][1];
-* a persistent caching layer through [Mongoid][2];
+* a persistent caching / database layer through [Mongoid][2];
 * gems for data transfers to/from Hive, mySQL, and HTTP endpoints
-  (coming soon!).
+  (coming soon).
 
-(pronounced like "rescue") is a Redis-backed library for creating
-background jobs, placing those jobs on multiple queues, and processing
-them later.
+Mobilize gives you a full fledged solution
 
-Background jobs can be any Ruby class or module that responds to
-`perform`. Your existing classes can easily be converted to background
-jobs or you can create new classes specifically to do work. Or, you
-can do both.
-
-Resque is heavily inspired by DelayedJob (which rocks) and comprises
-three parts:
-
-1. A Ruby library for creating, querying, and processing jobs
-2. A Rake task for starting a worker which processes jobs
-3. A Sinatra app for monitoring queues, jobs, and workers.
-
-Resque workers can be distributed between multiple machines,
-support priorities, are resilient to memory bloat / "leaks," are
-optimized for REE (but work on MRI and JRuby), tell you what they're
-doing, and expect failure.
-
-Resque queues are persistent; support constant time, atomic push and
-pop (thanks to Redis); provide visibility into their contents; and
-store jobs as simple JSON packages.
-
-The Resque frontend tells you what workers are doing, what workers are
-not doing, what queues you're using, what's in those queues, provides
-general usage stats, and helps you track failures.
-
-The Blog Post
--------------
-
-For the backstory, philosophy, and history of Resque's beginnings,
-please see [the blog post][0].
+Mobilize-Base includes all the core scheduling and processing
+functionality, allowing you to:
+* put workers on the Mobilize Resque queue.
+* create [Requestors](#section_Requestor) and their associated Google Spreadsheet [Jobspecs](#section_Jobspec);
+* poll for [Jobs](#section_Job) on Jobspecs (currently gsheet to gsheet only) and add them to Resque;
+* monitor the status of Jobs on a rolling log.
 
 Table Of Contents
 -----------------
 
-   * [Overview](#section_Overview)
-   * [Jobs](#section_Jobs)
-      * [Persistence](#section_Jobs_Persistence)
-      * [send_later / async](#section_Jobs_send_later_async)
-      * [Failure](#section_Jobs_Failure)
-   * [Workers](#section_Workers)
-      * [Logging](#section_Workers_Logging)
-      * [Process IDs](#section_Workers_Process_IDs)
-      * [Running in the background](#section_Workers_Running_in_the_background)
-      * [Polling frequency](#section_Workers_Polling_frequency)
-      * [Priorities and Queue Lists](#section_Workers_Priorities_and_Queue_Lists)
-      * [Running All Queues](#section_Workers_Running_All_Queues)
-      * [Running Multiple Workers](#section_Workers_Running_Multiple_Workers)
-      * [Forking](#section_Workers_Forking)
-      * [Parents and Children](#section_Workers_Parents_and_Children)
-      * [Signals](#section_Workers_Signals)
-      * [Mysql::Error: MySQL server has gone away](#section_Workers_Mysql_Error_MySQL_server_has_gone_away)
-   * [The Front End](#section_The_Front_End)
-      * [Standalone](#section_The_Front_End_Standalone)
-      * [Using the front end for failure review](#section_Using_The_Front_End_For_Review)
-      * [Passenger](#section_The_Front_End_Passenger)
-      * [Rack::URLMap](#section_The_Front_End_Rack_URLMap)
-      * [Rails 3](#section_The_Front_End_Rails_3)
-   * [Resque vs DelayedJob](#section_Resque_vs_DelayedJob)
-   * [Installing Redis](#section_Installing_Redis)
-      * [Homebrew](#section_Installing_Redis_Homebrew)
-      * [View Resque](#section_Installing_Redis_Via_Resque)
-   * [Resque Dependencies](#section_Resque_Dependencies)
-   * [Installing Resque](#section_Installing_Resque)
-      * [In a Rack app, as a gem](#section_Installing_Resque_In_a_Rack_app_as_a_gem)
-      * [In a Rails 2.x app, as a gem](#section_Installing_Resque_In_a_Rails_2_x_app_as_a_gem)
-      * [In a Rails 2.x app, as a plugin](#section_Installing_Resque_In_a_Rails_2_x_app_as_a_plugin)
-      * [In a Rails 3 app, as a gem](#section_Installing_Resque_In_a_Rails_3_app_as_a_gem)
+   * [Installation](#section_Installation)
+      * [Redis](#section_Installing_Redis)
+      * [MongoDB](#section_Installing_MongoDB)
+      * [Mobilize-Base](#section_Installing_Mobilize-Base)
+      * [Default Folders](#section_Default_Folders)
    * [Configuration](#section_Configuration)
-   * [Plugins and Hooks](#section_Plugins_and_Hooks)
-   * [Namespaces](#section_Namespaces)
-   * [Demo](#section_Demo)
-   * [Monitoring](#section_Monitoring)
-      * [god](#section_Monitoring_god)
-      * [monit](#section_Monitoring_monit)
-   * [Questions](#section_Questions)
-   * [Development](#section_Development)
-   * [Contributing](#section_Contributing)
-   * [Mailing List](#section_Mailing_List)
+      * [Google Drive](#section_Configuring_Google_Drive)
+      * [Jobtracker](#section_Configuring_Jobtracker)
+      * [Mongoid](#section_Configuring_Mongoid)
+      * [Resque](#section_Configuring_Resque)
+   * [Startup](#section_Startup)
+      * [resque-web](#section_resque-web)
+      * [Creating Requestors](#section_Creating_Requestors)
+      * [Starting Workers](#section_Starting_Workers)
+      * [Starting Jobtracker](#section_Starting_Jobtracker)
+      * [Viewing Logs](#section_Viewing_Logs)
+      * [Running Test](#section_Running_Test)
    * [Meta](#section_Meta)
    * [Author](#section_Author)
 
-<a name='section_Overview'></a>
-Overview
+<a name='section_Installation'></a>
+Installation
 --------
 
 Resque allows you to create jobs and place them on a queue, then,
