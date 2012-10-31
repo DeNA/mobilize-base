@@ -1,27 +1,27 @@
 development:
   owner:
-    email: 'owner@host.com'
+    email: 'owner_development@host.com'
     pw: "google_drive_password"
   admins:
     - {email: 'admin@host.com'}
   workers:
-    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}
+    - {email: 'worker_development001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker_development002@host.com', pw: "worker002_google_drive_password"}
 test:
   owner:
-    email: 'owner@host.com'
+    email: 'owner_test@host.com'
     pw: "google_drive_password"
   admins:
     - {email: 'admin@host.com'}
   workers:
-    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}
+    - {email: 'worker_test001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker_test002@host.com', pw: "worker002_google_drive_password"}
 production:
   owner:
-    email: 'owner@host.com'
+    email: 'owner_production@host.com'
     pw: "google_drive_password"
   admins:
     - {email: 'admin@host.com'}
   workers:
-    - {email: 'worker001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker002@host.com', pw: "worker002_google_drive_password"}
+    - {email: 'worker_production001@host.com', pw: "worker001_google_drive_password"}
+    - {email: 'worker_production002@host.com', pw: "worker002_google_drive_password"}
