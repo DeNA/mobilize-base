@@ -2,9 +2,9 @@ Mobilize
 ========
 
 Mobilize is an end-to-end data transfer workflow manager with:
-* a Google Spreadsheets UI through [google-drive-ruby][0];
-* a queue manager through [Resque][1];
-* a persistent caching / database layer through [Mongoid][2];
+* a Google Spreadsheets UI through [google-drive-ruby][google_drive_ruby];
+* a queue manager through [Resque][resque];
+* a persistent caching / database layer through [Mongoid][mongoid];
 * gems for data transfers to/from Hive, mySQL, and HTTP endpoints
   (coming soon).
 
@@ -20,95 +20,98 @@ functionality, allowing you to:
 Table Of Contents
 -----------------
 
-   * [Installation](#section_Installation)
+   * [Installating](#section_Installing)
       * [Redis](#section_Installing_Redis)
       * [MongoDB](#section_Installing_MongoDB)
       * [Mobilize-Base](#section_Installing_Mobilize-Base)
-      * [Default Folders](#section_Default_Folders)
-   * [Configuration](#section_Configuration)
+      * [Default Folders and
+        Files](#section_Installing_Folders_and_Files)
+   * [Configuring](#section_Configuring)
       * [Google Drive](#section_Configuring_Google_Drive)
       * [Jobtracker](#section_Configuring_Jobtracker)
       * [Mongoid](#section_Configuring_Mongoid)
       * [Resque](#section_Configuring_Resque)
-   * [Startup](#section_Startup)
-      * [resque-web](#section_resque-web)
-      * [Creating Requestors](#section_Creating_Requestors)
+   * [Starting](#section_Starting)
+      * [resque-web](#section_Starting_resque-web)
+      * [Creating Requestors](#section_Starting_Requestors)
       * [Starting Workers](#section_Starting_Workers)
       * [Starting Jobtracker](#section_Starting_Jobtracker)
-      * [Viewing Logs](#section_Viewing_Logs)
-      * [Running Test](#section_Running_Test)
+      * [Viewing Logs](#section_Starting_Logs)
+      * [Running Test](#section_Starting_Test)
    * [Meta](#section_Meta)
    * [Author](#section_Author)
 
 <a name='section_Installation'></a>
 Installation
---------
+------------
 
-Resque allows you to create jobs and place them on a queue, then,
-later, pull those jobs off the queue and process them.
+Mobilize requires Ruby 1.9.3, and has been tested on OSX and Ubuntu. 
 
-Resque jobs are Ruby classes (or modules) which respond to the
-`perform` method. Here's an example:
+<a name='section_Installing_Redis'></a>
+### Redis
 
+Redis is a pre-requisite for running Resque. 
 
-``` ruby
-class Archive
-  @queue = :file_serve
+Please refer to the [Resque Redis Section][redis] for complete
+instructions.
 
-  def self.perform(repo_id, branch = 'master')
-    repo = Repository.find(repo_id)
-    repo.create_archive(branch)
-  end
-end
-```
+<a name='section_Installing_MongoDB'></a>
+### MongoDB
 
-The `@queue` class instance variable determines which queue `Archive`
-jobs will be placed in. Queues are arbitrary and created on the fly -
-you can name them whatever you want and have as many as you want.
+MongoDB is used to persist caches between reads and writes, keep track
+of Requestors and Jobs, and store Datasets that map to endpoints.
 
-To place an `Archive` job on the `file_serve` queue, we might add this
-to our application's pre-existing `Repository` class:
+Please refer to the [MongoDB Quickstart Page][mongodb_quickstart] to get started.
 
-``` ruby
-class Repository
-  def async_create_archive(branch)
-    Resque.enqueue(Archive, self.id, branch)
-  end
-end
-```
+The settings for database and port are set in config/mongoid.yml
+and are best left as default. Please refer to [Configuring
+Mongoid](#section_Configuring_Mongoid) for details.
 
-Now when we call `repo.async_create_archive('masterbrew')` in our
-application, a job will be created and placed on the `file_serve`
-queue.
+<a name='section_Installing_Mobilize-Base'></a>
+### Mobilize-Base
 
-Later, a worker will run something like this code to process the job:
+Mobilize-Base contains all of the gems it needs to run. 
+
+add this to your Gemfile:
 
 ``` ruby
-klass, args = Resque.reserve(:file_serve)
-klass.perform(*args) if klass.respond_to? :perform
+gem "mobilize-base", "~>1.0"
 ```
 
-Which translates to:
+or do
 
-``` ruby
-Archive.perform(44, 'masterbrew')
-```
+  $ gem install mobilize-base
 
-Let's start a worker to run `file_serve` jobs:
+for a ruby-wide install.
 
-    $ cd app_root
-    $ QUEUE=file_serve rake resque:work
+<a name='section_Installing_Folders_and_Files'></a>
+### Folders and Files
 
-This starts one Resque worker and tells it to work off the
-`file_serve` queue. As soon as it's ready it'll try to run the
-`Resque.reserve` code snippet above and process jobs until it can't
-find any more, at which point it will sleep for a small period and
-repeatedly poll the queue for more jobs.
+Mobilize requires a config folder and a log folder. 
 
-Workers can be given multiple queues (a "queue list") and run on
-multiple machines. In fact they can be run anywhere with network
-access to the Redis server.
+If you're on Rails, it will use the built-in config and log folders. 
 
+Otherwise, it will use log and config folders in the project folder (the
+same one that contains your Rakefile)
+
+Config File
+
+  $ mkdir config
+
+Additionally, you will need yml files for each of 4 configurations:
+
+  $ touch config/gdrive.yml
+
+  $ touch config/jobtracker.yml
+
+  $ touch config/mongoid.yml
+
+  $ touch config/resque.yml
+
+For now, Mobilize expects config and log folders at the project root
+level. (same as the Rakefile)
+
+Log File
 
 <a name='section_Jobs'></a>
 Jobs
@@ -697,7 +700,7 @@ First install the gem.
 
     $ gem install resque
 
-Next include it in your application.
+Next include it in your application
 
     $ cat config/initializers/load_resque.rb
     require 'resque'
@@ -982,9 +985,8 @@ Author
 
 Chris Wanstrath :: chris@ozmm.org :: @defunkt
 
-[0]: https://github.com/blog/542-introducing-resque
-[1]: https://help.github.com/forking/
-[2]: https://github.com/defunkt/resque/issues
-[sv]: http://semver.org/
-[rs]: https://github.com/defunkt/redis-namespace
-[cb]: https://wiki.github.com/defunkt/resque/contributing
+[google_drive_ruby]: https://github.com/gimite/google-drive-ruby
+[resque]: https://github.com/defunkt/resque
+[mongoid]: http://mongoid.org/en/mongoid/index.html
+[resque_redis]: https://github.com/defunkt/resque#section_Installing_Redis
+[mongodb_quickstart]: http://www.mongodb.org/display/DOCS/Quickstart
