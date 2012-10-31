@@ -9,6 +9,10 @@ Overview
 * The spreadsheets are currently hosted in the cloud on Google Spreadsheets, so that you can access them anywhere - even on your tablets.
 * Mobilize in pluggable and extensible, so tomorrow if you want to access data from a cool new database techonology, you can just add a module for that.
 
+Installation & Setup
+=====================
+
+
 Bugs & Feature Requests
 ========================
 * For any bugs or feature requests please contact Cassio at cpaesleme@ngmoco.com or Sagar at smehta@ngmoco.com
