@@ -25,7 +25,7 @@ class Requestor
     r = Requestor.where(:email => email).first
     r = Requestor.create(:email => email) unless r
     user_name = email.split("@").first
-    r.update_attributes(:name => user_name unless r.name.to_s.length>0)
+    r.update_attributes(:name => user_name) unless r.name.to_s.length>0
     return r
   end
 
