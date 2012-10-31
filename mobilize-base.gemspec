@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'bson_ext','1.6.1'
   s.add_runtime_dependency 'mongo', '1.6.1'
   s.add_runtime_dependency "mongoid", "~>3.0.0"
-  s.add_runtime_dependency 'redis','2.2.2'
+  s.add_runtime_dependency 'redis',"~>3.0.0"
   s.add_runtime_dependency 'resque','1.21.0'
   s.add_runtime_dependency 'google_drive','0.3.1'
   s.add_runtime_dependency 'bluepill','0.0.60'
