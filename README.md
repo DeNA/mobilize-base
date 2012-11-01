@@ -17,7 +17,6 @@ functionality, allowing you to:
 
 Table Of Contents
 -----------------
-
 * [Overview](#section_Overview)
 * [Install](#section_Install)
   * [Redis](#section_Install_Redis)
