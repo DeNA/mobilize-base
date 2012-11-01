@@ -23,7 +23,7 @@ class Jobtracker
   end
 
   def Jobtracker.admins
-    Resque::Mobilize.admins
+    Jobtracker.config['admins']
   end
 
   def Jobtracker.admin_emails
@@ -130,7 +130,8 @@ class Jobtracker
   end
 
   def Jobtracker.notif_due?
-    return (Jobtracker.last_notification.to_s.length==0 || Jobtracker.last_notification.to_datetime < (Time.now.utc - Jobtracker.notification_freq))
+    last_duetime = Time.now.utc - Jobtracker.notification_freq
+    return (Jobtracker.last_notification.to_s.length==0 || Jobtracker.last_notification.to_datetime < last_duetime)
   end
 
   def Jobtracker.max_run_time_workers

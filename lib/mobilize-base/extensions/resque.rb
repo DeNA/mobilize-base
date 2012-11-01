@@ -16,10 +16,6 @@ module Resque
       ::Mobilize::Base.log_path("mobilize-resque-#{::Mobilize::Base.env}")
     end
 
-    def Mobilize.admins
-      Resque::Mobilize.config['admins']
-    end
-
     def Mobilize.workers(state="all")
       raise "invalid state #{state}" unless ['all','idle','working','timeout'].include?(state)
       workers = Resque.workers.select{|w| w.queues.first == Resque::Mobilize.queue_name}
