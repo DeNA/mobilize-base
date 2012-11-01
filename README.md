@@ -221,10 +221,7 @@ Meta
 
 * Code: `git clone git://github.com/ngmoco/mobilize-base.git`
 * Home: <https://github.com/ngmoco/mobilize-base>
-* Docs: <http://rubydoc.info/gems/mobilize-base/frames>
 * Bugs: <https://github.com//mobilize-base/issues>
-* List: <mobilize-base@librelist.com>
-* Chat: <irc://irc.freenode.net/mobilize-base>
 * Gems: <http://rubygems.org/gems/mobilize-base>
 
 <a name='section_Author'></a>
@@ -238,7 +235,6 @@ Special Thanks
 --------------
 
 * Al Thompson and Sagar Mehta for awesome design advice and discussions.
-* The really smart people
 
 [google_drive_ruby]: https://github.com/gimite/google-drive-ruby
 [resque]: https://github.com/defunkt/resque
