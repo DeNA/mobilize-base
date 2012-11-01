@@ -18,26 +18,37 @@ functionality, allowing you to:
 Table Of Contents
 -----------------
 
-  * [Install](#section_Install)
-    * [Redis](#section_Install_Redis)
-    * [MongoDB](#section_Install_MongoDB)
-    * [Mobilize-Base](#section_Install_Mobilize-Base)
-    * [Default Folders and Files](#section_Install_Folders_and_Files)
-  * [Configure](#section_Configure)
-    * [Google Drive](#section_Configure_Google_Drive)
-    * [Jobtracker](#section_Configure_Jobtracker)
-    * [Mongoid](#section_Configure_Mongoid)
-    * [Resque](#section_Configure_Resque)
-  * [Start](#section_Start)
-    * [resque-web](#section_Start_resque-web)
-    * [Set Environment](#section_Start_Set_Environment)
-    * [Create Requestor](#section_Start_Requestors)
-    * [Start Workers](#section_Start_Workers)
-    * [Start Jobtracker](#section_Start_Jobtracker)
-    * [View Logs](#section_Start_Logs)
-    * [Run Test](#section_Start_Test)
-  * [Meta](#section_Meta)
-  * [Author](#section_Author)
+* [Overview](#section_Overview)
+* [Install](#section_Install)
+  * [Redis](#section_Install_Redis)
+  * [MongoDB](#section_Install_MongoDB)
+  * [Mobilize-Base](#section_Install_Mobilize-Base)
+  * [Default Folders and Files](#section_Install_Folders_and_Files)
+* [Configure](#section_Configure)
+  * [Google Drive](#section_Configure_Google_Drive)
+  * [Jobtracker](#section_Configure_Jobtracker)
+  * [Mongoid](#section_Configure_Mongoid)
+  * [Resque](#section_Configure_Resque)
+* [Start](#section_Start)
+  * [Start resque-web](#section_Start_Start_resque-web)
+  * [Set Environment](#section_Start_Set_Environment)
+  * [Create Requestor](#section_Start_Create_Requestor)
+  * [Start Workers](#section_Start_Start_Workers)
+  * [Start Jobtracker](#section_Start_Start_Jobtracker)
+  * [View Logs](#section_Start_View_Logs)
+  * [Run Test](#section_Start_Run_Test)
+* [Meta](#section_Meta)
+* [Author](#section_Author)
+
+<a name='section_Overview'></a>
+Overview
+-----------
+
+* Mobilize is a fun centralized way to access your data lying inside multiple different technoligies under one roof understood by everyone - that is Excel sheets!!
+* Mobilize can enable transfer of data across  diverse databases/technologies like to & from hive, hdfs, hbase, various apis, different databases so that people who are already well versed with dealing with excel sheets can still interact with these diverse technologies and be productive.
+* The spreadsheets are currently hosted in the cloud on Google Spreadsheets, so that you can access them anywhere - even on your tablets.
+* Mobilize in pluggable and extensible, so tomorrow if you want to access data from a cool new database techonology, you can just add a module for that.
+
 
 <a name='section_Install'></a>
 Install
@@ -259,11 +270,11 @@ Resque keeps track of Jobs, Workers and logging.
 
 It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
 
-* queue_name - the name of the Resque queue where you would like your jobs to
+* queue_name - the name of the Resque queue where you would like the Jobtracker and Resque Workers to
   run. Default is mobilize.
 * max_workers - the total number of simultaneous workers you would like
   on your queue. Default is 4 for development and test, 36 in
-production, but this depends on your hardware.
+production, but feel free to adjust depending on your hardware.
 
 ``` yml
 development:
@@ -276,6 +287,31 @@ production:
   queue_name: 'mobilize'
   max_workers: 36
 ```
+
+<a name='section_Start'></a>
+Start
+-----
+
+<a name='section_Start_Start_resque-web'></a>
+### Start resque-web
+
+<a name='section_Start_Set_Environment'></a>
+### Set Environment
+
+<a name='section_Start_Create_Requestor'></a>
+### Create Requestor
+
+<a name='section_Start_Start_Workers'></a>
+### Start Workers
+
+<a name='section_Start_Start_Jobtracker'></a>
+### Start Jobtracker
+
+<a name='section_Start_View_Logs'></a>
+### View Logs
+
+<a name='section_Start_Run_Test'></a>
+### Run Test
 
 <a name='section_Meta'></a>
 Meta
