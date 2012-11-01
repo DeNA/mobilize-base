@@ -115,7 +115,7 @@ level. (same as the Rakefile)
 
   $ mkdir log
 
-Resque will create a mobilize-resque-<environment>.log in that folder,
+Resque will create a mobilize-resque-`<environment>`.log in the log folder,
 and loop over 10 files, 10MB each.
 
 <a name='section_Configure'></a>
@@ -179,13 +179,16 @@ production:
 ```
 
 <a name='section_Configure_Jobtracker'></a>
-### Configure Google Jobtracker
+### Configure Jobtracker
 
-The Jobtracker sits on your Resque queue and does 2 things:
+The Jobtracker sits on your Resque and does 2 things:
 * check for Requestors that are due for polling;
 * send out notifications when:
   * there are failed jobs on Resque;
   * there are jobs on Resque that have run beyond the max run time.
+
+Emails are sent using ActionMailer, through the owner Google Drive
+account.
 
 To this end, it needs these parameters, for which there is a sample
 below and in the [lib/samples][git_samples] folder:
@@ -213,6 +216,65 @@ production:
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
     - {email: 'admin@host.com'}
+```
+
+<a name='section_Configure_Mongoid'></a>
+### Configure Mongoid
+
+Mongoid is the abstraction layer on top of MongoDB so we can interact
+with it in an ActiveRecord-like fashion. 
+
+It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
+
+You shouldn't need to change anything in this file.
+
+``` yml
+development:
+  sessions:
+    default:
+      database: mobilize-development
+      persist_in_safe_mode: true
+      hosts:
+        - localhost:27017
+test:
+  sessions:
+    default:
+      database: mobilize-test
+      persist_in_safe_mode: true
+      hosts:
+        - localhost:27017
+production:
+  sessions:
+    default:
+      database: mobilize-production
+      persist_in_safe_mode: true
+      hosts:
+        - localhost:27017
+```
+
+<a name='section_Configure_Resque'></a>
+### Configure Resque
+
+Resque keeps track of Jobs, Workers and logging.
+
+It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
+
+* queue_name - the name of the Resque queue where you would like your jobs to
+  run. Default is mobilize.
+* max_workers - the total number of simultaneous workers you would like
+  on your queue. Default is 4 for development and test, 36 in
+production, but this depends on your hardware.
+
+``` yml
+development:
+  queue_name: 'mobilize'
+  max_workers: 4
+test:
+  queue_name: 'mobilize'
+  max_workers: 4
+production:
+  queue_name: 'mobilize'
+  max_workers: 36
 ```
 
 <a name='section_Meta'></a>

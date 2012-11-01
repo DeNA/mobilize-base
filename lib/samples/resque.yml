@@ -1,6 +1,9 @@
 development:
   queue_name: 'mobilize'
   max_workers: 4
+test:
+  queue_name: 'mobilize'
+  max_workers: 4
 production:
   queue_name: 'mobilize'
   max_workers: 36
