@@ -19,23 +19,23 @@ Table Of Contents
 -----------------
 * [Overview](#section_Overview)
 * [Install](#section_Install)
-  * [Redis](#section_Install_Redis)
-  * [MongoDB](#section_Install_MongoDB)
-  * [Mobilize-Base](#section_Install_Mobilize-Base)
-  * [Default Folders and Files](#section_Install_Folders_and_Files)
+    * [Redis](#section_Install_Redis)
+    * [MongoDB](#section_Install_MongoDB)
+    * [Mobilize-Base](#section_Install_Mobilize-Base)
+    * [Default Folders and Files](#section_Install_Folders_and_Files)
 * [Configure](#section_Configure)
-  * [Google Drive](#section_Configure_Google_Drive)
-  * [Jobtracker](#section_Configure_Jobtracker)
-  * [Mongoid](#section_Configure_Mongoid)
-  * [Resque](#section_Configure_Resque)
+    * [Google Drive](#section_Configure_Google_Drive)
+    * [Jobtracker](#section_Configure_Jobtracker)
+    * [Mongoid](#section_Configure_Mongoid)
+    * [Resque](#section_Configure_Resque)
 * [Start](#section_Start)
-  * [Start resque-web](#section_Start_Start_resque-web)
-  * [Set Environment](#section_Start_Set_Environment)
-  * [Create Requestor](#section_Start_Create_Requestor)
-  * [Start Workers](#section_Start_Start_Workers)
-  * [Start Jobtracker](#section_Start_Start_Jobtracker)
-  * [View Logs](#section_Start_View_Logs)
-  * [Run Test](#section_Start_Run_Test)
+    * [Start resque-web](#section_Start_Start_resque-web)
+    * [Set Environment](#section_Start_Set_Environment)
+    * [Create Requestor](#section_Start_Create_Requestor)
+    * [Start Workers](#section_Start_Start_Workers)
+    * [Start Jobtracker](#section_Start_Start_Jobtracker)
+    * [View Logs](#section_Start_View_Logs)
+    * [Run Test](#section_Start_Run_Test)
 * [Meta](#section_Meta)
 * [Author](#section_Author)
 
@@ -301,6 +301,7 @@ A Mobilize instance can be considered "started" or "running" when you have:
 <a name='section_Start_Start_resque-web'></a>
 ### Start resque-web
 
+<<<<<<< HEAD
 To start resque-web, which is a kickass UI layer built in Sinatra,
 you'll need to install the resque gem explicitly, as in
 
@@ -317,6 +318,11 @@ and it'll start an instance on 127.0.0.1:5678
 You'll want to keep an eye on this as it tracks your workers in real
 time and allows you to keep track of failed jobs. More detail on the
 [Resque Standalone section][resque-web].
+=======
+...
+
+...
+>>>>>>> d6c7226072946c83893f2542db5bace1787dac8e
 
 <a name='section_Start_Set_Environment'></a>
 ### Set Environment
