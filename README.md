@@ -329,10 +329,8 @@ or "production," as per the yml files.
 Otherwise, it takes it from MOBILIZE_ENV parameter, set from irb, as in:
 
 ``` ruby
-
 > ENV['MOBILIZE_ENV'] = 'production'
 > require 'mobilize-base'
-
 ```
 This affects all parameters as set in the yml files, including the
 database.
@@ -349,9 +347,7 @@ command in irb (replace the user with your own email, or any email
 google recognizes).
 
 ``` ruby
-
 > Requestor.find_or_create_by_email("user@host.com")
-
 ```
 
 <a name='section_Start_Start_Workers'></a>
@@ -365,7 +361,6 @@ These will start as many workers as are defined in your resque.yml.
 To start Workers, do:
 
 ``` ruby
-
 > Jobtracker.prep_workers
 
 ```
@@ -374,7 +369,6 @@ if you have workers already running and would like to kill and refresh
 them, do:
 
 ``` ruby
-
 > Jobtracker.restart_workers!
 
 ```
@@ -398,7 +392,6 @@ Once the Resque workers are running, and you have at least one Requestor
 set up, it's time to start the Jobtracker:
 
 ``` ruby
-
 > Jobtracker.start
 
 ``` 
@@ -444,7 +437,7 @@ name>)` and enter values under each header:
 * write_handler	This is where the job writes its data to. For
   mobilize-base, you should enter "gsheet"
 
-* param_source This is an array of data, as read from a google sheet,
+* param_source This is the path to an array of data, as read from a google sheet,
   that is relayed to the job.
   The format is `<google docs book>/<google docs sheet>`, so if you
 wanted to read from the "output" sheet on the "monthly results" book you
@@ -457,10 +450,6 @@ itself you could write simply `<output>`.
 * destination This is the destination for the data, relayed to the job.
   For a gsheet write_handler, this would be the name of the sheet to be
 written to, similar to param_source.
-
-
-
-
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test
