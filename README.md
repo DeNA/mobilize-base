@@ -105,6 +105,16 @@ If you're on Rails, it will use the built-in config and log folders.
 Otherwise, it will use log and config folders in the project folder (the
 same one that contains your Rakefile)
 
+### Rakefile
+
+Inside the Rakefile in your project's root folder, make sure you have:
+
+``` ruby
+require 'mobilize-base/tasks'
+```
+
+This defines tasks essential to run the environment.
+
 ### Config File
 
   $ mkdir config

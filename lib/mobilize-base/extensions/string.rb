@@ -2,24 +2,6 @@ class String
   def to_a
     return [self]
   end
-  def r
-    Requestor.find(self)
-  end
-  def j
-    Job.find(self)
-  end
-  def dst
-    Dataset.find(self)
-  end
-  def rname
-    Requestor.find_by_name(self)
-  end
-  def jname
-    Job.find_by_name(self)
-  end
-  def to_md5
-    Digest::MD5.hexdigest(self)
-  end
   def oputs
     STDOUT.puts self
   end
@@ -91,20 +73,6 @@ class String
       return {}
     end
   end
-    def encrypt
-    require 'gibberish'
-    #uses included encryption files to encrypt string
-    passwd = Mobilize::Base.config('crypto')['key']
-    cipher = Gibberish::AES.new(passwd)
-    cipher.enc(self)
-  end
-  def decrypt
-    require 'gibberish'
-    #uses included encryption files to encrypt string
-    passwd = Mobilize::Base.config('crypto')['key']
-    cipher = Gibberish::AES.new(passwd)
-    cipher.dec(self)
-  end
   def tsv_to_hash_array
     rows = self.split("\n")
     return [] if rows.first.nil?
@@ -112,7 +80,7 @@ class String
     headers = rows.first.split("\t")
     if rows.length==1
       #return single member hash with all nil values
-      return headers.map{|k| {k=>nil}}.inject{|k,h| h.merge(k)}
+      return [headers.map{|k| {k=>nil}}.inject{|k,h| h.merge(k)}]
     end
     row_hash_arr =[]
     rows[1..-1].each do |row|
