@@ -10,27 +10,27 @@ module Mobilize
   module Base
     def Base.root
       begin
-        Rails.root
+        ::Rails.root
       rescue
         ENV['PWD']
       end
     end
     def Base.config(config_name)
       config_dir = begin
-                     "#{Rails.root}/config/"
+                     "#{::Rails.root}/config/"
                    rescue
                      "#{Base.root}/config/"
                    end
       yaml_path = "#{config_dir}#{config_name}.yml"
-      if File.exists?(yaml_path)
-        return YAML.load_file(yaml_path)
+      if ::File.exists?(yaml_path)
+        return ::YAML.load_file(yaml_path)
       else
         raise "Could not find #{config_name}.yml in #{config_dir}"
       end
     end
     def Base.env
       begin
-        Rails.env
+        ::Rails.env
       rescue
         #use MOBILIZE_ENV to manually set your environment when you start your app
         ENV['MOBILIZE_ENV'] || "development"
@@ -38,12 +38,12 @@ module Mobilize
     end
     def Base.log_path(log_name)
       log_dir = begin
-                  "#{Rails.root}/log/"
+                  "#{::Rails.root}/log/"
                 rescue
                   "#{Base.root}/log/"
                 end
       log_path = "#{log_dir}#{log_name}.log"
-      if File.exists?(log_dir)
+      if ::File.exists?(log_dir)
         return log_path
       else
         raise "Could not find #{log_dir} folder for logs"

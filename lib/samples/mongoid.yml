@@ -4,18 +4,18 @@ development:
       database: mobilize-development
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017
 test:
   sessions:
     default:
       database: mobilize-test
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017
 production:
   sessions:
     default:
       database: mobilize-production
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017

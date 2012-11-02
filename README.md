@@ -205,24 +205,24 @@ below and in the [lib/samples][git_samples] folder:
 
 ``` yml
 development:
-  cycle_freq: 10 #time between Jobtracker sweeps
+  cycle_freq: 10 #10 secs between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 600 #10 min between requestor checks
+  requestor_refresh_freq: 300 #5 min between requestor checks
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
     - {email: 'admin@host.com'}
 test:
-  cycle_freq: 10 #time between Jobtracker sweeps
+  cycle_freq: 10 #10 secs between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 600 #10 min between requestor checks
+  requestor_refresh_freq: 300 #5 min between requestor checks
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
     - {email: 'admin@host.com'}
 
 production:
-  cycle_freq: 10 #time between Jobtracker sweeps
+  cycle_freq: 10 #10 secs between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 600 #10 min between requestor checks
+  requestor_refresh_freq: 300 #5 min between requestor checks
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
     - {email: 'admin@host.com'}
@@ -245,21 +245,21 @@ development:
       database: mobilize-development
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017
 test:
   sessions:
     default:
       database: mobilize-test
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017
 production:
   sessions:
     default:
       database: mobilize-production
       persist_in_safe_mode: true
       hosts:
-        - localhost:27017
+        - 127.0.0.1:27017
 ```
 
 <a name='section_Configure_Resque'></a>
@@ -291,11 +291,45 @@ production:
 Start
 -----
 
+A Mobilize instance can be considered "started" or "running" when you have:
+
+1. Resque workers running on the Mobilize queue;
+2. A Jobtracker running on one of the Resque workers;
+3. One or more Requestors created in your MongoDB;
+4. One or more Jobs created in a Requestor's Jobspec;
+
 <a name='section_Start_Start_resque-web'></a>
 ### Start resque-web
 
+To start resque-web, which is a kickass UI layer built in Sinatra,
+you'll need to install the resque gem explicitly, as in
+
+``` ruby
+gem install resque
+```
+
+then, you can do 
+
+  $ resque-web
+
+and it'll start an instance on 127.0.0.1:5678
+
+You'll want to keep an eye on this as it tracks your workers in real
+time and allows you to keep track of failed jobs. More detail on the
+[Resque Standalone section][resque-web].
+
 <a name='section_Start_Set_Environment'></a>
 ### Set Environment
+
+Mobilize takes the environment from your Rails.env if you're running
+Rails.
+
+Otherwise, it takes it from MOBILIZE_ENV parameter, set from the command
+line, as in 
+
+
+  $ MOBILIZE_ENV = production irb
+
 
 <a name='section_Start_Create_Requestor'></a>
 ### Create Requestor
@@ -340,3 +374,4 @@ Special Thanks
 [mongodb_quickstart]: http://www.mongodb.org/display/DOCS/Quickstart
 [git_samples]: https://github.ngmoco.com/Ngpipes/mobilize-base/tree/master/lib/samples
 [rvm]: https://rvm.io/
+[resque-web]: https://github.com/defunkt/resque#standalone
