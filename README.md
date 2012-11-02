@@ -16,7 +16,7 @@ functionality, allowing you to:
 * monitor the status of Jobs on a rolling log.
 
 Table Of Contents
-=================
+-----------------
 * [Overview](#section_Overview)
 * [Install](#section_Install)
     * [Redis](#section_Install_Redis)
@@ -33,8 +33,9 @@ Table Of Contents
     * [Set Environment](#section_Start_Set_Environment)
     * [Create Requestor](#section_Start_Create_Requestor)
     * [Start Workers](#section_Start_Start_Workers)
-    * [Start Jobtracker](#section_Start_Start_Jobtracker)
     * [View Logs](#section_Start_View_Logs)
+    * [Start Jobtracker](#section_Start_Start_Jobtracker)
+    * [Create Job](#section_Start_Create_Job)
     * [Run Test](#section_Start_Run_Test)
 * [Meta](#section_Meta)
 * [Author](#section_Author)
@@ -343,17 +344,123 @@ Requestors are people who use the Mobilize service to move data from one
 endpoint to another. They each have a Jobspec, which is a google sheet
 that contains one or more Jobs.
 
+To create a requestor, use the Requestor.find_or_create_by_email
+command in irb (replace the user with your own email, or any email
+google recognizes).
 
+``` ruby
 
+> Requestor.find_or_create_by_email("user@host.com")
+
+```
 
 <a name='section_Start_Start_Workers'></a>
 ### Start Workers
 
-<a name='section_Start_Start_Jobtracker'></a>
-### Start Jobtracker
+Workers are rake tasks that load the Mobilize environment and allow the
+processing of the Jobtracker, Requestors and Jobs.
+
+These will start as many workers as are defined in your resque.yml.
+
+To start Workers, do:
+
+``` ruby
+
+> Jobtracker.prep_workers
+
+```
+
+if you have workers already running and would like to kill and refresh
+them, do:
+
+``` ruby
+
+> Jobtracker.restart_workers!
+
+```
+
+Note that this will kill any workers on the Mobilize queue.
 
 <a name='section_Start_View_Logs'></a>
 ### View Logs
+
+at this point, you'll want to start viewing the logs for the Resque
+workers -- they will be stored under your log folder. You can do:
+
+  $ tail -f log/mobilize-`<environment>`.log
+
+to view them.
+
+<a name='section_Start_Start_Jobtracker'></a>
+### Start Jobtracker
+
+Once the Resque workers are running, and you have at least one Requestor
+set up, it's time to start the Jobtracker:
+
+``` ruby
+
+> Jobtracker.start
+
+``` 
+
+The Jobtracker will automatically enqueue any Requestors that have not
+been processed in the requestor_refresh period defined in the
+jobtracker.yml, and create their Jobspecs if they do not exist. You can
+see this process on your Resque UI and in the log file.
+
+<a name='section_Start_Create_Job'></a>
+### Create Job
+
+Now it's time to go onto the Jobspec and add a Job to be processed.
+
+To do this, you should log into your Google Drive with either the
+owner's account, an admin account, or the Jobspec Requestor's account. These
+will be the accounts with edit permissions to a given Jobspec.
+
+Navigate to the Jobs tab on the Jobspec `(denoted by Jobspec_<requestor
+name>)` and enter values under each header:
+
+* name	This is the name of the job you would like to add. Names must be unique across all your jobs, otherwise you will get an error
+	
+* active	set this to blank or FALSE if you want to turn off a job
+	
+* schedule	This uses human readable syntax to schedule jobs. It accepts the following:
+  * every `<integer>` hour	fire the job at increments of `<integer>` hours, minimum of 1 hour
+  * every `<integer>` day	fire the job at increments of `<integer>` days, minimum of 1
+  * every `<integer>` day after <HH:MM>	fire the job at increments of <integer> days, after HH:MM UTC time
+  * every `<integer>` day_of_week after <HH:MM>	fire the job on specified day of week, after HH:MM UTC time; 1=Sunday
+  * every `<integer>` day_of_month after <HH:MM>	fire the job on specified day of month, after HH:MM UTC time
+	
+* status	Mobilize writes this field with the last status returned by the job
+
+* last_error Mobilize writes any errors to this field, and wipes it if
+  the job completes successfully.
+
+* destination_url	Mobilize writes this field with a link to the last dataset returned by the job, blank if none
+	
+* read_handler This is where the job reads its data from. For
+  mobilize-base, you should enter "gsheet"
+
+* write_handler	This is where the job writes its data to. For
+  mobilize-base, you should enter "gsheet"
+
+* param_source This is an array of data, as read from a google sheet,
+  that is relayed to the job.
+  The format is `<google docs book>/<google docs sheet>`, so if you
+wanted to read from the "output" sheet on the "monthly results" book you
+would write in `<monthly results>/<output>`. For a sheet in the Jobspec
+itself you could write simply `<output>`.
+
+* params This is a hash of data, expressed in a JSON. Not relevant to
+  mobilize-base
+
+* destination This is the destination for the data, relayed to the job.
+  For a gsheet write_handler, this would be the name of the sheet to be
+written to, similar to param_source.
+
+
+
+
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test
