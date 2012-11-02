@@ -126,7 +126,7 @@ module Mobilize
 
     def Resque.start_workers(count=1)
       count.times do
-        "(cd #{Base.root};rake mobilize:work) >> #{Resque.log_path} 2>&1 &".bash
+        "(cd #{Base.root};rake MOBILIZE_ENV=#{Base.env} mobilize:work) >> #{Resque.log_path} 2>&1 &".bash
       end
     end
 

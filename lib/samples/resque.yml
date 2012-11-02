@@ -1,9 +1,12 @@
 development:
   queue_name: 'mobilize'
   max_workers: 4
+  redis_port: 6379
 test:
   queue_name: 'mobilize'
   max_workers: 4
+  redis_port: 9736
 production:
   queue_name: 'mobilize'
   max_workers: 36
+  redis_port: 6379

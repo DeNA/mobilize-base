@@ -275,17 +275,22 @@ It needs the below parameters, which can be found in the [lib/samples][git_sampl
 * max_workers - the total number of simultaneous workers you would like
   on your queue. Default is 4 for development and test, 36 in
 production, but feel free to adjust depending on your hardware.
+* redis_port - you should probably leave this alone, it specifies the
+  default port for dev and prod and a separate one for testing.
 
 ``` yml
 development:
   queue_name: 'mobilize'
   max_workers: 4
+  redis_port: 6379
 test:
   queue_name: 'mobilize'
   max_workers: 4
+  redis_port: 9736
 production:
   queue_name: 'mobilize'
   max_workers: 36
+  redis_port: 6379
 ```
 
 <a name='section_Start'></a>
