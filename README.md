@@ -16,7 +16,7 @@ functionality, allowing you to:
 * monitor the status of Jobs on a rolling log.
 
 Table Of Contents
------------------
+=================
 * [Overview](#section_Overview)
 * [Install](#section_Install)
     * [Redis](#section_Install_Redis)
