@@ -42,6 +42,8 @@ module Mobilize
     def Jobtracker.status
       args = Jobtracker.get_args
       return args['status'] if args
+      job = Resque.jobs.select{|j| j['args'].first=='jobtracker'}.first
+      return 'queued' if job
       return 'stopped'
     end
 
@@ -86,7 +88,7 @@ module Mobilize
         raise "Jobtracker still #{Jobtracker.status}"
       else
         #make sure that workers are running and at the right number
-        Resque.prep_workers
+        #Resque.prep_workers
         #queue up the jobtracker (starts the perform method)
         Jobtracker.enqueue!
       end
