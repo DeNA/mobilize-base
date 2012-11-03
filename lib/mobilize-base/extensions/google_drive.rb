@@ -18,41 +18,10 @@ module GoogleDrive
       end
     end
   end
-  class AclEntry
-    def to_xml()  #:nodoc:
-      etag_attr = self.etag ? "gd:etag='#{h(self.etag)}'" : ""
-      value_attr = self.scope ? "value='#{h(self.scope)}'" : ""
-      if self.with_key
-        role_tag = <<-EOS
-            <gAcl:withKey key='[ACL KEY]'>
-              <gAcl:role value='#{h(self.role)}'/>
-            </gAcl:withKey>
-        EOS
-      else
-        role_tag = <<-EOS
-          <gAcl:role value='#{h(self.role)}'/>
-        EOS
-      end
-      
-      return <<-EOS
-        <entry
-            xmlns='http://www.w3.org/2005/Atom'
-            xmlns:gAcl='http://schemas.google.com/acl/2007'
-            xmlns:gd='http://schemas.google.com/g/2005'
-            #{etag_attr}>
-          <category scheme='http://schemas.google.com/g/2005#kind'
-              term='http://schemas.google.com/acl/2007#accessRule'/>
-          #{role_tag}
-          <gAcl:scope type='#{h(self.scope_type)}' #{value_attr}/>
-        </entry>
-      EOS
-    end
-  end
   class Acl
     def update_role(entry, role) #:nodoc:
       #do not send email notifications
       url_suffix = "?send-notification-emails=false"
-      puts url_suffix
       header = {"GData-Version" => "3.0", "Content-Type" => "application/atom+xml"}
       doc = @session.request(
           :put, %{#{entry.edit_url}#{url_suffix}}, :data => entry.to_xml(), :header => header, :auth => :writely)
@@ -65,7 +34,6 @@ module GoogleDrive
       #do not send email notifications
       entry = AclEntry.new(entry) if entry.is_a?(Hash)
       url_suffix = "?send-notification-emails=false"
-      puts url_suffix
       header = {"GData-Version" => "3.0", "Content-Type" => "application/atom+xml"}
       doc = @session.request(:post, "#{@acls_feed_url}#{url_suffix}", :data => entry.to_xml(), :header => header, :auth => :writely)
       entry.params = entry_to_params(doc.root)
