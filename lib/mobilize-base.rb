@@ -68,6 +68,7 @@ Resque.redis = "127.0.0.1:#{Mobilize::Resque.config['redis_port']}"
 require 'popen4'
 require "mobilize-base/jobtracker"
 require "mobilize-base/handlers/gdriver"
+require "mobilize-base/extensions/google_drive.rb"
 require "mobilize-base/handlers/mongoer"
 require "mobilize-base/handlers/emailer"
 

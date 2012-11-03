@@ -373,11 +373,10 @@ processing of the Jobtracker, Requestors and Jobs.
 
 These will start as many workers as are defined in your resque.yml.
 
-To start Workers, do:
+To start workers, do:
 
 ``` ruby
 > Jobtracker.prep_workers
-
 ```
 
 if you have workers already running and would like to kill and refresh
@@ -385,7 +384,6 @@ them, do:
 
 ``` ruby
 > Jobtracker.restart_workers!
-
 ```
 
 Note that this will kill any workers on the Mobilize queue.
@@ -408,7 +406,6 @@ set up, it's time to start the Jobtracker:
 
 ``` ruby
 > Jobtracker.start
-
 ``` 
 
 The Jobtracker will automatically enqueue any Requestors that have not
