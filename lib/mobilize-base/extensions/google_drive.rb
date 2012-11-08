@@ -1,19 +1,47 @@
 module GoogleDrive
   class ClientLoginFetcher
     def request_raw(method, url, data, extra_header, auth)
+      #this is patched to handle server errors due to http chaos
       uri = URI.parse(url)
-      http = @proxy.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      #set higher to allow for large downloads
+      response = nil
+      attempts = 0
+      sleep_time = nil
+      #try 5 times to make the call
+      while (response.nil? or response.code != "200") and attempts < 5
+        #instantiate http object, set params
+        http = @proxy.new(uri.host, uri.port)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        #set 600  to allow for large downloads
+        http.read_timeout = 600
+        response = self.http_call(http, method, uri, data, extra_header, auth)
+        if response.code != "200"
+          if response.body.downcase.index("rate limit") or response.body.downcase.index("captcha")
+            if sleep_time
+              sleep_time = sleep_time * attempts
+            else
+              sleep_time = (rand*100).to_i
+            end
+          else
+            sleep_time = 10
+          end
+          attempts += 1
+          puts "Sleeping for #{sleep_time.to_s} due to #{response.body}"
+          sleep sleep_time
+        end
+      end
+      raise response.body if response.code != "200"
+      return response
+    end
+    def http_call(http, method, uri, data, extra_header, auth)
       http.read_timeout = 600
       http.start() do
         path = uri.path + (uri.query ? "?#{uri.query}" : "")
         header = auth_header(auth).merge(extra_header)
         if method == :delete || method == :get
-          return http.__send__(method, path, header)
+          http.__send__(method, path, header)
         else
-          return http.__send__(method, path, data, header)
+          http.__send__(method, path, data, header)
         end
       end
     end
@@ -138,9 +166,9 @@ module GoogleDrive
       return true if tsvrows.length==0
       headers = tsvrows.first.split("\t")
       #cap cells at 400k
-      if (tsvrows.length*headers.length)>Mobilize::Gsheeter.max_cells
-        raise "Too many cells in dataset"
-      end
+      #if (tsvrows.length*headers.length)>Mobilize::Gsheeter.max_cells
+      #  raise "Too many cells in dataset"
+      #end
       batch_start = 0
       batch_length = 80
       rows_written = 0
