@@ -20,4 +20,5 @@ end
 
 #start test redis
 puts "Starting redis for testing at 127.0.0.1:#{Mobilize::Resque.config['redis_port']}..."
-`redis-server #{$dir}/redis-test.conf`
+`redis-server #{$dir}/test/redis-test.conf`
+Resque.redis = "localhost:#{Mobilize::Resque.config['redis_port']}"

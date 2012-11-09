@@ -1,7 +1,7 @@
 require 'test_helper'
 
 describe "Mobilize" do
-  
+
   def before
     puts 'before'
 
@@ -25,15 +25,15 @@ describe "Mobilize" do
     puts "TODO: requestor creates specbook"
 
     puts "TODO: jobtracker creates jobspec with 'jobs' sheet with headers"
-    
+
     puts "TODO: runs test job with test source gsheet"
-      
+
     puts "TODO: verify that jobtracker posts tests source to test destination"
 
     # clean up
     Mobilize::Requestor.find_or_create_by_email(email).delete      
   end
-    
+
   after do
     processes = `ps -A -o pid,command | grep [r]edis-test`.split($/)
     pids = processes.map { |process| process.split(" ")[0] }
