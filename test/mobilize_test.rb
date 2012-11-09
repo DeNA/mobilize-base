@@ -31,7 +31,7 @@ describe "Mobilize" do
     puts "TODO: verify that jobtracker posts tests source to test destination"
 
     # clean up
-    Mobilize::Requestor.find_or_create_by_email(email).delete      
+    Mobilize::Requestor.find_or_create_by_email(email).delete
   end
 
   after do
