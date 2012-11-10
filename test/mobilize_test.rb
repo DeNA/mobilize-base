@@ -20,7 +20,7 @@ describe "Mobilize" do
     requestor = Mobilize::Requestor.find_or_create_by_email(email)
     assert requestor.email == email
 
-    puts "TODO: enqueues jobtracker" 
+    puts "TODO: enqueues jobtracker"
 
     puts "TODO: requestor creates specbook"
 

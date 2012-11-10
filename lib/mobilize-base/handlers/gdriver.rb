@@ -108,6 +108,9 @@ module Mobilize
   end
 
   module Gbooker
+    def Gbooker.find_all_by_title(title,email=nil)
+      Gdriver.books(email,{"title"=>title,"title-exact"=>"true"})
+    end
     def Gbooker.find_or_create_by_title(title,email)
       books = Gdriver.books(email,{"title"=>title,"title-exact"=>"true"})
       #there should only be one book with each title, otherwise we have fail
