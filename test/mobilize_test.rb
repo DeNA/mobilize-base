@@ -20,9 +20,19 @@ describe "Mobilize" do
     requestor = Mobilize::Requestor.find_or_create_by_email(email)
     assert requestor.email == email
 
-    puts "TODO: enqueues jobtracker"
+    puts "TODO: enqueues jobtracker" 
+    # delete any old specbooks from previous test runs
+    jobspec_title = requestor.jobspec_title
+    books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+    books.each{|book| book.delete}
+
+    Mobilize::Jobtracker.start
+    sleep 30
+    assert Mobilize::Jobtracker.status == 'queued'
 
     puts "TODO: requestor creates specbook"
+    books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+    assert books.length == 1
 
     puts "TODO: jobtracker creates jobspec with 'jobs' sheet with headers"
 
