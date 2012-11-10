@@ -195,6 +195,13 @@ module Mobilize
       sheet.write(tsv)
     end
 
+    def Gsheeter.find_all_by_name(name,email)
+      book_title,sheet_title = name.split("/")
+      books = Gdriver.books(email,{"title"=>book_title,"title-exact"=>"true"})
+      sheets = books.map{|b| b.worksheets}.flatten.select{|w| w.title == sheet_title }
+      sheets
+    end
+
     def Gsheeter.find_or_create_by_name(name,email=nil,rows=100,cols=20)
       book_title,sheet_title = name.split("/")
       book = Gbooker.find_or_create_by_title(book_title,email)
@@ -215,9 +222,10 @@ module Mobilize
       name = dst.name
       book_title,sheet_title = name.split("/")
       #make sure book exists and is assigned to this user
-      book = r.find_or_create_gbook_by_title(book_title,email)
+      r.find_or_create_gbook_by_title(book_title,email)
       #add admin write access
       sheet = Gsheeter.find_or_create_by_name(name)
+      sheet_title = nil
       return sheet
     end
 
@@ -232,6 +240,7 @@ module Mobilize
       #assume jobspec source if none given
       source = [r.jobspec_title,source].join("/") if sheet.nil?
       tsv = Gsheeter.find_or_create_by_name(source,email).to_tsv
+      book = nil
       return tsv
     end
 

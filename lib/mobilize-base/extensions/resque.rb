@@ -147,9 +147,9 @@ module Mobilize
       if count.to_i > pids.length or count == 0
         return false
       elsif count
-        "kill #{pids[0..count-1].join(" ")}".bash
+        "kill #{pids[0..count-1].join(" ")}".bash(false)
       elsif pids.length>0
-        "kill #{pids.join(" ")}".bash
+        "kill #{pids.join(" ")}".bash(false)
       else
         return false
       end

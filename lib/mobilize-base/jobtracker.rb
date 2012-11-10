@@ -117,7 +117,7 @@ module Mobilize
       sleep 5
       i=0
       while Jobtracker.status=='stopping'
-        "#{Jobtracker.to_s} still on queue, waiting".opp
+        puts "#{Jobtracker.to_s} still on queue, waiting"
         sleep 5
         i+=1
       end
@@ -162,7 +162,7 @@ module Mobilize
           jfcs = Resque.failure_report
           n['subj'] = "#{jfcs.keys.length.to_s} failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
           #one row per exception type, with the job name
-          n['body'] = jfcs.map{|k,v| v.map{|v,n| [k," : ",v,", ",n," times"].join}}.flatten.join("\n\n")
+          n['body'] = jfcs.map{|key,val| val.map{|b,name| [k," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
           notifs << n
         end
         lws = Jobtracker.max_run_time_workers
@@ -172,8 +172,8 @@ module Mobilize
           n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} runat:#{w['runat'].to_s}}}.join("\n\n")
           notifs << n
         end
-        notifs.each do |n|
-          Emailer.write(n['subj'],n['body']).deliver
+        notifs.each do |notif|
+          Emailer.write(n['subj'],notif['body']).deliver
           Jobtracker.last_notification=Time.now.utc.to_s
           "Sent notification at #{Jobtracker.last_notification}".oputs
         end

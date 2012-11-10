@@ -7,7 +7,7 @@ module GoogleDrive
       attempts = 0
       sleep_time = nil
       #try 5 times to make the call
-      while (response.nil? or response.code != "200") and attempts < 5
+      while (response.nil? or response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}) and attempts < 5
         #instantiate http object, set params
         http = @proxy.new(uri.host, uri.port)
         http.use_ssl = true
@@ -15,7 +15,7 @@ module GoogleDrive
         #set 600  to allow for large downloads
         http.read_timeout = 600
         response = self.http_call(http, method, uri, data, extra_header, auth)
-        if response.code != "200"
+        if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
           if response.body.downcase.index("rate limit") or response.body.downcase.index("captcha")
             if sleep_time
               sleep_time = sleep_time * attempts
@@ -30,7 +30,7 @@ module GoogleDrive
           sleep sleep_time
         end
       end
-      raise response.body if response.code != "200"
+      raise response.body if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
       return response
     end
     def http_call(http, method, uri, data, extra_header, auth)
@@ -114,8 +114,6 @@ module GoogleDrive
     def update_acl(email,role="writer")
       f = self
       #need these flags for HTTP retries
-      update_complete = false
-      retries = 0
       #create req_acl hash to add to current acl
       if entry = f.acl_entry(email)
         if [nil,"none","delete"].include?(role)
@@ -137,8 +135,6 @@ module GoogleDrive
     end
     def acl_entry(email)
       f = self
-      curr_acls = f.acls
-      curr_emails = curr_acls.map{|a| a.scope}
       f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope == email}.first
     end
 
@@ -172,7 +168,6 @@ module GoogleDrive
       batch_start = 0
       batch_length = 80
       rows_written = 0
-      rowscols = nil
       #http
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
