@@ -1,7 +1,7 @@
 module Mobilize
   module Resque
     def Resque.config
-      Base.config('resque')[::Mobilize::Base.env]
+      Base.config('resque')[Base.env]
     end
 
     def Resque.queue_name
@@ -43,7 +43,7 @@ module Mobilize
       failed_jobs = Resque.failures.map{|f| f['payload']}
       return failed_jobs if state == 'failed'
       timeout_jobs = Resque.workers("timeout").map{|w| w.job['payload']}
-      return tiomeout_jobs if state == 'timeout'
+      return timeout_jobs if state == 'timeout'
       return working_jobs + queued_jobs + failed_jobs if state == 'all'
     end
 
@@ -60,9 +60,12 @@ module Mobilize
     def Resque.update_job_status(mongo_id,msg)
       #this only works on working workers
       worker = Resque.find_worker_by_mongo_id(mongo_id)
-      return false unless worker
-      Resque.set_worker_args(worker,{"status"=>msg})
       #also fire a log, cap logfiles at 10 MB
+      if !worker
+        Logger.new(Resque.log_path, 10, 1024*1000*10).info("[no worker for #{mongo_id}: #{Time.now.utc}] status: #{msg}")
+        return false
+      end
+      Resque.set_worker_args(worker,{"status"=>msg})
       Logger.new(Resque.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] status: #{msg}")
       return true
     end
@@ -81,7 +84,7 @@ module Mobilize
       json = ::Resque.redis.get(key)
       if json
         hash = JSON.parse(json)
-        payload_args = hash['payload']['args'].last
+        hash['payload']['args'].last
       end
     end
 

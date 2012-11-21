@@ -154,6 +154,11 @@ module Mobilize
       Resque.kill_workers(count)
     end
 
+    def Jobtracker.set_test_env
+      ENV['MOBILIZE_ENV']='test'
+      ::Resque.redis="localhost:9736"
+    end
+
     def Jobtracker.run_notifications
       if Jobtracker.notif_due?
         notifs = []
@@ -162,7 +167,7 @@ module Mobilize
           jfcs = Resque.failure_report
           n['subj'] = "#{jfcs.keys.length.to_s} failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
           #one row per exception type, with the job name
-          n['body'] = jfcs.map{|key,val| val.map{|b,name| [k," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
+          n['body'] = jfcs.map{|key,val| val.map{|b,name| [key," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
           notifs << n
         end
         lws = Jobtracker.max_run_time_workers
@@ -186,6 +191,7 @@ module Mobilize
         requestors = Requestor.all
         Jobtracker.run_notifications
         requestors.each do |r|
+          Jobtracker.update_status("Running requestor #{r.name}")
           if r.is_due?
             r.enqueue!
             Jobtracker.update_status("Enqueued requestor #{r.name}")

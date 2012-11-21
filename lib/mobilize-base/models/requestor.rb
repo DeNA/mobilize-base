@@ -35,7 +35,7 @@ module Mobilize
     end
 
     def Requestor.perform(id,*args)
-      r = Requestor.find(id)
+      r = Requestor.find(id.to_s)
       #reserve email account for read
       gdrive_email = Gdriver.get_worker_email_by_mongo_id(id)
       return false unless gdrive_email
@@ -111,7 +111,6 @@ module Mobilize
       jobs_sheet = r.jobs_sheet(gdrive_email)
       rem_jobs = jobs_sheet.to_tsv.tsv_to_hash_array
       #go through each job, update relevant job with its params
-      j_writes = []
       headers = Requestor.jobs_sheet_headers
       #write headers
       headers.each_with_index do |h,h_i|
@@ -209,7 +208,6 @@ module Mobilize
       r = self
       return false if r.is_working?
       last_due_time = Time.now.utc - Jobtracker.requestor_refresh_freq
-      last_run = r.last_run
       return true if r.last_run.nil? or r.last_run < last_due_time
     end
 
