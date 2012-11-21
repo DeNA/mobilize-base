@@ -96,7 +96,7 @@ module Mobilize
       #deactivate requestor jobs that are not included in sheet;
       #this makes sure we don't run obsolete jobs
       (r.jobs.map{|j| j.id.to_s} - loc_jobs.map{|j| j.id.to_s}).each do |rjid|
-        j = rjid.j
+        j = Job.find(rjid)
         if j.active
           j.update_attributes(:active=>false)
           r.update_status("Deactivated job:#{r.name}=>#{j.name}")

@@ -157,6 +157,8 @@ module Mobilize
     def Jobtracker.set_test_env
       ENV['MOBILIZE_ENV']='test'
       ::Resque.redis="localhost:9736"
+      mongoid_config_path = "#{Mobilize::Base.root}/config/mongoid.yml"
+      Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
     end
 
     def Jobtracker.run_notifications

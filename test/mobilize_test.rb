@@ -14,10 +14,13 @@ describe "Mobilize" do
     #kill all workers
     Mobilize::Jobtracker.kill_workers
 
-    puts 'enqueue 4 workers on Resque'
+    puts 'enqueue 4 workers on Resque, wait 20s'
     Mobilize::Jobtracker.prep_workers
     sleep 20
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
+
+    #make sure old one is deleted
+    Mobilize::Requestor.find_or_create_by_email(email).delete
 
     puts "create requestor 'mobilize'"
     requestor = Mobilize::Requestor.find_or_create_by_email(email)
@@ -31,26 +34,26 @@ describe "Mobilize" do
     #delete old datasets for this specbook
     Mobilize::Dataset.all.select{|d| d.name.starts_with?(jobspec_title)}.each{|d| d.delete}
 
-    puts "enqueue jobtracker"
+    puts "enqueue jobtracker, wait 60s"
     Mobilize::Jobtracker.start
     sleep 60
     puts "jobtracker status: #{Mobilize::Jobtracker.status}" 
     puts "status:#{Mobilize::Jobtracker.status}" #!= 'stopped'
 
-    puts "requestor creates specbook"
+    puts "requestor created specbook?"
     books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
     assert books.length == 1
 
-    puts "Jobtracker creates jobspec with 'jobs' sheet with headers"
+    puts "Jobtracker created jobspec with 'jobs' sheet?"
     jobs_sheets = Mobilize::Gsheeter.find_all_by_name("#{jobspec_title}/Jobs",email)
     assert jobs_sheets.length == 1
 
-    puts "add test_source data incl blank column"
+    puts "add test_source data"
 
     test_source_rows = [
-      ["test_header","test_header2","test_header3","","skip_header1","skip_header2"],
-      ["t1"]*6,
-      ["t2"]*6
+      ["test_header","test_header2","test_header3"],
+      ["t1"]*3,
+      ["t2"]*3
     ]
 
     book = books.first
@@ -59,18 +62,21 @@ describe "Mobilize" do
     test_source_tsv = test_source_rows.map{|r| r.join("\t")}.join("\n")
     test_source_sheet.write(test_source_tsv)
 
-    puts "add row to jobs sheet"
+    puts "add row to jobs sheet, wait 100s"
+
+    #delete existing Jobs from the db
+    Mobilize::Job.each{|j| j.delete}
 
     jobs_sheet = jobs_sheets.first
 
     test_job_row =    {"name" => "test",
                      "active" => "true",
-                   "schedule" => "once",
+                   "schedule" => "every 0.hour",
                      "status" => "",
                  "last_error" => "",
             "destination_url" => "",
-               "read_handler" => "gsheet",
-              "write_handler" => "gsheet",
+               "read_handler" => "gsheeter",
+              "write_handler" => "gsheeter",
                "param_source" => "test_source",
                      "params" => "",
                 "destination" => "test_destination"}
@@ -82,11 +88,14 @@ describe "Mobilize" do
 
     jobs_sheet.save
 
-    puts "verify that jobtracker posts tests source to test destination"
+    puts "job row added, force enqueued requestor"
+    requestor.enqueue!
+    sleep 100
 
+    puts "jobtracker posted test source data to test destination, and checksum succeeded?"
+    test_destination_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_destination",email)
 
-    # clean up
-    Mobilize::Requestor.find_or_create_by_email(email).delete
+    assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
   end
 
   after do
