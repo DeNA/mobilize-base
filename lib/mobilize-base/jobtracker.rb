@@ -205,7 +205,7 @@ module Mobilize
       return true
     end
 
-    def create_test_job
+    def Jobtracker.create_test_job
       #set test environment
       Jobtracker.set_test_env
 

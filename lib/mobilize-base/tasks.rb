@@ -40,4 +40,33 @@ namespace :mobilize do
       end
     end
   end
+
+  desc "Populate test Jobspec"
+  task :test do
+    conf_file = File.dirname(__FILE__) + '/../../test/redis-test.conf'
+    test_dir = "#{ENV['PWD']}/test/"
+    unless File.exists?(test_dir)
+      puts "creating test dir"
+      `mkdir #{test_dir}`
+    end
+    unless File.exists?("#{test_dir}redis-test.conf")
+      puts "creating redis config file"
+      `cp #{conf_file} #{test_dir}`
+    end
+
+    processes = `ps -A -o pid,command | grep [r]edis-test`.split($/)
+    pids = processes.map { |process| process.split(" ")[0] }
+    puts "Killing test redis server..."
+    pids.each { |pid| Process.kill("TERM", pid.to_i) }
+    puts "removing redis db dump file"
+    sleep 5
+    `rm -f #{test_dir}/dump.rdb #{test_dir}/dump-cluster.rdb`
+
+    puts "starting redis on test port"
+    `redis-server #{test_dir}/redis-test.conf`
+
+    ENV['MOBILIZE_ENV'] = 'test'
+    require 'mobilize-base'
+    Mobilize::Jobtracker.create_test_job
+  end
 end
