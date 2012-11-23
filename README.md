@@ -455,10 +455,21 @@ written to, similar to param_source.
 <a name='section_Start_Run_Test'></a>
 ### Run Test
 
-The test will create and populate a Jobspec_`<owner>`_test book.
+To run tests, you will need to 
 
+1) clone the repository 
 
+From the project folder, run
 
+2) rake mobilize:setup
+
+and populate the "test" environment in the config files with the
+necessary details.
+
+3) $ rake test
+
+This will create a test Jobspec with a sample job. These will run off a
+test redis instance which will be killed once the tests finish.
 
 <a name='section_Meta'></a>
 Meta
