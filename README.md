@@ -115,26 +115,16 @@ require 'mobilize-base/tasks'
 
 This defines tasks essential to run the environment.
 
-### Config File
+### Config and Log Folders
 
-  $ mkdir config
+run 
 
-Additionally, you will need yml files for each of 4 configurations:
+  $ rake mobilize:setup
 
-  $ touch config/gdrive.yml
-
-  $ touch config/jobtracker.yml
-
-  $ touch config/mongoid.yml
-
-  $ touch config/resque.yml
-
-For now, Mobilize expects config and log folders at the project root
+Mobilize will create config and log folders at the project root
 level. (same as the Rakefile)
 
-### Log File
-
-  $ mkdir log
+It will also create all required config files, which are detailed below.
 
 Resque will create a mobilize-resque-`<environment>`.log in the log folder,
 and loop over 10 files, 10MB each.
@@ -145,7 +135,6 @@ Configure
 
 All Mobilize configurations live in files in `config/*.yml`. Samples can
 be found below or on github in the [lib/samples][git_samples] folder.
-
 
 <a name='section_Configure_Google_Drive'></a>
 ### Configure Google Drive
