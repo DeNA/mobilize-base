@@ -204,5 +204,89 @@ module Mobilize
       Jobtracker.update_status("told to stop")
       return true
     end
+
+    def create_test_job
+      #set test environment
+      Jobtracker.set_test_env
+
+      email = Mobilize::Gdriver.owner_email
+
+      #kill all workers
+      Mobilize::Jobtracker.kill_workers
+
+      puts 'enqueue 4 workers on Resque, wait 20s'
+      Mobilize::Jobtracker.prep_workers
+      sleep 20
+      raise "workers not queued" unless Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
+
+      #make sure old one is deleted
+      Mobilize::Requestor.find_or_create_by_email(email).delete
+
+      puts "create requestor from owner"
+      requestor = Mobilize::Requestor.find_or_create_by_email(email)
+      raise "requestor not created" unless requestor.email == email
+
+      puts "delete old test books and datasets"
+      # delete any old specbooks from previous test runs
+      jobspec_title = requestor.jobspec_title
+      books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+      books.each{|book| book.delete}
+      #delete old datasets for this specbook
+      Mobilize::Dataset.all.select{|d| d.name.starts_with?(jobspec_title)}.each{|d| d.delete}
+
+      puts "enqueue jobtracker, wait 60s for it to create Jobspec with Jobs sheet"
+      Mobilize::Jobtracker.start
+      sleep 60
+      puts "jobtracker status: #{Mobilize::Jobtracker.status}" 
+      puts "status:#{Mobilize::Jobtracker.status}" #!= 'stopped'
+
+      books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+      raise "book not created" unless books.length == 1
+
+      jobs_sheets = Mobilize::Gsheeter.find_all_by_name("#{jobspec_title}/Jobs",email)
+      raise "Jobs sheet not created" unless jobs_sheets.length == 1
+
+      puts "add test_source data"
+
+      test_source_rows = [
+        ["test_header","test_header2","test_header3"],
+        ["t1"]*3,
+        ["t2"]*3
+      ]
+
+      test_source_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_source",email)
+
+      test_source_tsv = test_source_rows.map{|r| r.join("\t")}.join("\n")
+      test_source_sheet.write(test_source_tsv)
+
+      #delete existing Jobs from the db
+      Mobilize::Job.each{|j| j.delete}
+
+      jobs_sheet = jobs_sheets.first
+
+      test_job_row =    {"name" => "test",
+                       "active" => "true",
+                     "schedule" => "every 0.hour",
+                       "status" => "",
+                   "last_error" => "",
+              "destination_url" => "",
+                 "read_handler" => "gsheeter",
+                "write_handler" => "gsheeter",
+                 "param_source" => "test_source",
+                       "params" => "",
+                  "destination" => "test_destination"}
+
+      #update second row w details
+      test_job_row.values.each_with_index do |v,v_i|
+        jobs_sheet[2,v_i+1] = v
+      end
+
+      jobs_sheet.save
+
+      puts "job row added to Jobs sheet, enqueueing requestor to process job on resque."
+      requestor.enqueue!
+      puts "check progress on Resque UI or log file"
+      return true
+    end
   end
 end
