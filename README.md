@@ -492,7 +492,12 @@ Cassio Paes-Leme :: cpaesleme@ngmoco.com :: @cpaesleme
 Special Thanks
 --------------
 
-* Al Thompson and Sagar Mehta for awesome design advice and discussions.
+* Al Thompson and Sagar Mehta for awesome design advice and discussions
+* Elliott Clark for enlightening me to the wonders of Resque
+* Bob Colner for pointing me to google-drive-ruby when I tried to
+reinvent the wheel
+* ngmoco:) and DeNA Global for supporting and adopting the Mobilize
+platform
 
 [google_drive_ruby]: https://github.com/gimite/google-drive-ruby
 [resque]: https://github.com/defunkt/resque
