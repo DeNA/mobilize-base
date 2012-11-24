@@ -152,8 +152,12 @@ module GoogleDrive
   class Worksheet
     def to_tsv
       sheet = self
-      #http
-      sheet.rows.map{|r| r.join("\t")}.join("\n")
+      rows = sheet.rows
+      header = rows.first
+      return nil unless header and header.first.to_s.length>0
+      #look for blank cols to indicate end of row
+      row_last_i = (header.index("") || header.length)-1
+      rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
     end
     def write(tsv,check=true,job_id=nil)
       sheet = self
@@ -161,14 +165,9 @@ module GoogleDrive
       #no rows, no write
       return true if tsvrows.length==0
       headers = tsvrows.first.split("\t")
-      #cap cells at 400k
-      #if (tsvrows.length*headers.length)>Mobilize::Gsheeter.max_cells
-      #  raise "Too many cells in dataset"
-      #end
       batch_start = 0
       batch_length = 80
       rows_written = 0
-      #http
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
       pct_tens_complete =["0"]

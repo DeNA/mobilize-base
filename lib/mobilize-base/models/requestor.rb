@@ -121,6 +121,8 @@ module Mobilize
         #skip bad rows
         next if (rj['name'].to_s.first == "#" or ['name','schedule','read_handler','write_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
         j = r.jobs(rj['name'])
+        #update active to false if this was a run once
+        j.update_attributes(:active=>false) if j.schedule.to_s == 'once'
         jobs_sheet[rj_i+2,headers.index('active')+1] = j.active.to_s
         jobs_sheet[rj_i+2,headers.index('status')+1] = j.status.to_s.gsub("\n",";").gsub("\t"," ")
         jobs_sheet[rj_i+2,headers.index('last_error')+1] = j.last_error.to_s.gsub("\n",";").gsub("\t"," ")
