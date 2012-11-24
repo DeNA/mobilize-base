@@ -69,21 +69,36 @@ describe "Mobilize" do
 
     jobs_sheet = jobs_sheets.first
 
-    test_job_row =    {"name" => "test",
-                     "active" => "true",
-                   "schedule" => "every 0.hour",
-                     "status" => "",
-                 "last_error" => "",
-            "destination_url" => "",
-               "read_handler" => "gsheeter",
-              "write_handler" => "gsheeter",
-               "param_source" => "test_source",
-                     "params" => "",
-                "destination" => "test_destination"}
+    test_job_rows =    [{"name" => "test",
+                       "active" => "true",
+                     "schedule" => "once",
+                       "status" => "",
+                   "last_error" => "",
+              "destination_url" => "",
+                 "read_handler" => "gsheeter",
+                "write_handler" => "gsheeter",
+                 "param_source" => "test_source",
+                       "params" => "",
+                  "destination" => "test_destination"},
+                  #run after the first
+                        {"name" => "test2",
+                       "active" => "true",
+                     "schedule" => "after test",
+                       "status" => "",
+                   "last_error" => "",
+              "destination_url" => "",
+                 "read_handler" => "gsheeter",
+                "write_handler" => "gsheeter",
+                 "param_source" => "test_source",
+                       "params" => "",
+                  "destination" => "test_destination2"}
+    ]
 
     #update second row w details
-    test_job_row.values.each_with_index do |v,v_i|
-      jobs_sheet[2,v_i+1] = v
+    test_job_rows.each_with_index do |r,r_i|
+      r.values.each_with_index do |v,v_i|
+      jobs_sheet[r_i+2,v_i+1] = v
+      end
     end
 
     jobs_sheet.save

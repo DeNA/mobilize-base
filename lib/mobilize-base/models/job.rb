@@ -72,7 +72,7 @@ module Mobilize
           #check for any dependent jobs, if there are, enqueue them
           r = j.requestor
           dep_jobs = Job.where(:active=>true, :requestor_id=>r.id.to_s, :schedule=>"after #{j.name}").to_a
-          dep_jobs += Job.where(:active=>true, :schedule=>"after #{r.name}|=>|#{j.name}").to_a
+          dep_jobs += Job.where(:active=>true, :schedule=>"after #{r.name}/#{j.name}").to_a
           #put begin/rescue so all dependencies run
           dep_jobs.each{|dj| begin;dj.enqueue! unless dj.is_working?;rescue;end}
         else

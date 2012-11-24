@@ -419,12 +419,14 @@ name>)` and enter values under each header:
 * active	set this to blank or FALSE if you want to turn off a job
 	
 * schedule	This uses human readable syntax to schedule jobs. It accepts the following:
-  * every `<integer>` hour	fire the job at increments of `<integer>` hours, minimum of 1 hour
-  * every `<integer>` day	fire the job at increments of `<integer>` days, minimum of 1
-  * every `<integer>` day after <HH:MM>	fire the job at increments of <integer> days, after HH:MM UTC time
-  * every `<integer>` day_of_week after <HH:MM>	fire the job on specified day of week, after HH:MM UTC time; 1=Sunday
-  * every `<integer>` day_of_month after <HH:MM>	fire the job on specified day of month, after HH:MM UTC time
-	
+  * every `<integer>` hour --	fire the job at increments of `<integer>` hours, minimum of 1 hour
+  * every `<integer>` day	-- fire the job at increments of `<integer>` days, minimum of 1
+  * every `<integer>` day after <HH:MM>	-- fire the job at increments of <integer> days, after HH:MM UTC time
+  * every `<integer>` day_of_week after <HH:MM>	-- fire the job on specified day of week, after HH:MM UTC time; 1=Sunday
+  * every `<integer>` day_of_month after <HH:MM> -- fire the job on specified day of month, after HH:MM UTC time
+  * once -- fire the job once if active is set to TRUE, set active to FALSE right after
+	* after `<jobname>` -- fire the job after the job named `<jobname>`
+
 * status	Mobilize writes this field with the last status returned by the job
 
 * last_error Mobilize writes any errors to this field, and wipes it if
