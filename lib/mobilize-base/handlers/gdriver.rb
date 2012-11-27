@@ -278,10 +278,10 @@ module Mobilize
     def Gsheeter.write_by_job_id(job_id)
       j = Job.find(job_id)
       r = j.requestor
-      tgt_name = if j.target.split("/").length==1
-                    "#{r.jobspec_title}#{"/"}#{j.target}"
+      tgt_name = if j.destination.split("/").length==1
+                    "#{r.jobspec_title}#{"/"}#{j.destination}"
                   else
-                    j.target
+                    j.destination
                   end
       sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',tgt_name)
       sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?

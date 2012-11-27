@@ -432,7 +432,7 @@ name>)` and enter values under each header:
 * last_error Mobilize writes any errors to this field, and wipes it if
   the job completes successfully.
 
-* target_url	Mobilize writes this field with a link to the last dataset returned by the job, blank if none
+* destination_url	Mobilize writes this field with a link to the last dataset returned by the job, blank if none
 	
 * read_handler This is where the job reads its data from. For
   mobilize-base, you should enter "gsheet"
@@ -450,7 +450,7 @@ itself you could write simply `<output>`.
 * params This is a hash of data, expressed in a JSON, which can be used
 for parameters.
 
-* target This is the target for the data, relayed to the job.
+* destination This is the destination for the data, relayed to the job.
   For a gsheet write_handler, this would be the name of the sheet to be
 written to, similar to param_sheets.
 

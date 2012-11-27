@@ -9,6 +9,13 @@ describe "Mobilize" do
 
   # enqueues 4 workers on Resque
   it "runs integration test" do
+    puts "clear out test db"
+    Mongoid.session(:default).collections.each do |collection| 
+      unless collection.name =~ /^system\./
+        collection.drop
+      end
+    end
+
     email = Mobilize::Gdriver.owner_email
 
     #kill all workers
@@ -19,9 +26,6 @@ describe "Mobilize" do
     sleep 20
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
-    #make sure old one is deleted
-    Mobilize::Requestor.find_or_create_by_email(email).delete
-
     puts "create requestor 'mobilize'"
     requestor = Mobilize::Requestor.find_or_create_by_email(email)
     assert requestor.email == email
@@ -31,8 +35,6 @@ describe "Mobilize" do
     jobspec_title = requestor.jobspec_title
     books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
     books.each{|book| book.delete}
-    #delete old datasets for this specbook
-    Mobilize::Dataset.all.select{|d| d.name.starts_with?(jobspec_title)}.each{|d| d.delete}
 
     puts "enqueue jobtracker, wait 60s"
     Mobilize::Jobtracker.start
@@ -74,24 +76,24 @@ describe "Mobilize" do
                      "schedule" => "once",
                        "status" => "",
                    "last_error" => "",
-                   "target_url" => "",
+              "destination_url" => "",
                  "read_handler" => "gsheeter",
                 "write_handler" => "gsheeter",
                  "param_sheets" => "test_source",
                        "params" => "",
-                       "target" => "test_target"},
+                  "destination" => "test_destination"},
                   #run after the first
                         {"name" => "test2",
                        "active" => "true",
                      "schedule" => "after test",
                        "status" => "",
                    "last_error" => "",
-                   "target_url" => "",
+              "destination_url" => "",
                  "read_handler" => "gsheeter",
                 "write_handler" => "gsheeter",
                  "param_sheets" => "test_source",
                        "params" => "",
-                       "target" => "test_target2"}
+                  "destination" => "test_destination2"}
     ]
 
     #update second row w details
@@ -107,10 +109,10 @@ describe "Mobilize" do
     requestor.enqueue!
     sleep 100
 
-    puts "jobtracker posted test sheet data to test target, and checksum succeeded?"
-    test_target_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_target",email)
+    puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
+    test_destination_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_destination",email)
 
-    assert test_target_sheet.to_tsv == test_source_sheet.to_tsv
+    assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
   end
 
   after do

@@ -31,7 +31,7 @@ module Mobilize
     end
 
     def Requestor.jobs_sheet_headers
-      %w{name active schedule status last_error target_url read_handler write_handler param_sheets params target}
+      %w{name active schedule status last_error destination_url read_handler write_handler param_sheets params destination}
     end
 
     def Requestor.perform(id,*args)
@@ -87,7 +87,7 @@ module Mobilize
                             :write_handler => rj['write_handler'],
                             :param_sheets => rj['param_sheets'],
                             :params => rj['params'],
-                            :target => rj['target'])
+                            :destination => rj['destination'])
         #update laststatus with "Created job for" if job is due
         j.update_status("Due and active at #{Time.now.utc}") if j.is_due? and j.active
         #add this job to list of local ones
@@ -126,7 +126,7 @@ module Mobilize
         jobs_sheet[rj_i+2,headers.index('active')+1] = j.active.to_s
         jobs_sheet[rj_i+2,headers.index('status')+1] = j.status.to_s.gsub("\n",";").gsub("\t"," ")
         jobs_sheet[rj_i+2,headers.index('last_error')+1] = j.last_error.to_s.gsub("\n",";").gsub("\t"," ")
-        jobs_sheet[rj_i+2,headers.index('target_url')+1] = j.target_url.to_s
+        jobs_sheet[rj_i+2,headers.index('destination_url')+1] = j.destination_url.to_s
       end
       jobs_sheet.save
       r.update_status(r.name + " jobs written")
