@@ -193,7 +193,7 @@ module Mobilize
         requestors = Requestor.all
         Jobtracker.run_notifications
         requestors.each do |r|
-          Jobtracker.update_status("Running requestor #{r.name}")
+          Jobtracker.update_status("Checking requestor #{r.name}")
           if r.is_due?
             r.enqueue!
             Jobtracker.update_status("Enqueued requestor #{r.name}")

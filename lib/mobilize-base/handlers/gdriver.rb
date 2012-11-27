@@ -231,18 +231,11 @@ module Mobilize
 
     def Gsheeter.read_by_job_id(job_id)
       j = Job.find(job_id)
-      r = j.requestor
       #reserve email account for read
       email = Gdriver.get_worker_email_by_mongo_id(job_id)
       return false unless email
-      #only take the first sheet
-      source = j.param_sheets.split(",").first
-      book,sheet = source.split("/")
-      #assume jobspec source if none given
-      source = [r.jobspec_title,source].join("/") if sheet.nil?
-      tsv = Gsheeter.find_or_create_by_name(source,email).to_tsv
-      book = nil
-      return tsv
+      #pull tsv from cache
+      j.param_sheet_dsts.first.read_cache
     end
 
     def Gsheeter.read_by_dst_id(dst_id,email=nil)

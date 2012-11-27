@@ -38,7 +38,10 @@ module Mobilize
       r = Requestor.find(id.to_s)
       #reserve email account for read
       gdrive_email = Gdriver.get_worker_email_by_mongo_id(id)
-      return false unless gdrive_email
+      unless gdrive_email
+        "no gdrive_email available for #{r.name}".oputs
+        return false
+      end
       jobs_sheet = r.jobs_sheet(gdrive_email)
       #write headers to sheet
       Requestor.jobs_sheet_headers.each_with_index do |h,h_i|
@@ -52,7 +55,16 @@ module Mobilize
       #queue up the jobs that are due and active
       r.jobs.each do |j|
         begin
-          j.enqueue! if j.active and j.is_due?
+          if j.active and j.is_due?
+            #cache all param_sheets
+            j.param_sheet_dsts.each do |psdst|
+             #read tsv, write to cache for job to use
+              tsv = Gsheeter.find_or_create_by_name(psdst.name,gdrive_email).to_tsv
+              r.update_status("caching #{psdst.name}")
+              psdst.write_cache(tsv)
+            end
+            j.enqueue!
+          end
         rescue ScriptError,StandardError => exc
           #update errors
           j.update_attributes(:last_error=>exc.to_s,:last_trace=>exc.backtrace.to_s)
@@ -207,7 +219,7 @@ module Mobilize
     end
 
     def is_due?
-      r = self
+      r = self.reload
       return false if r.is_working?
       last_due_time = Time.now.utc - Jobtracker.requestor_refresh_freq
       return true if r.last_run.nil? or r.last_run < last_due_time

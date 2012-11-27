@@ -28,6 +28,19 @@ module Mobilize
       Mobilize::Resque.find_worker_by_mongo_id(j.id.to_s)
     end
 
+    def param_sheet_dsts
+      j = self
+      r = j.requestor
+      j.param_sheets.split(",").map do |ps|
+        #prepend jobspec title if there is no path separator
+        full_ps = ps.index("/") ? ps : [r.jobspec_title,ps].join("/")
+        #find or create dataset for this sheet
+        dst = Dataset.find_or_create_by_handler_and_name("gsheeter",full_ps)
+        dst.update_attributes(:requestor_id=>r.id.to_s) unless dst.requestor_id
+        dst
+      end
+    end
+
     def Job.find_by_name(name)
       Job.where(:name=>name).first
     end
@@ -186,11 +199,11 @@ module Mobilize
 
     def is_due?
       j = self
-      return false if j.is_working? or j.schedule.to_s.starts_with?("after")
+      return false if j.is_working? or j.active == false or j.schedule.to_s.starts_with?("after")
       last_run = j.last_completed_at
       #check schedule
       schedule = j.schedule
-      return true if schedule == 'once' and j.active
+      return true if schedule == 'once'
       #strip the "every" from the front if present
       schedule = schedule.gsub("every","").gsub("."," ").strip
       value,unit,operator,job_utctime = schedule.split(" ")

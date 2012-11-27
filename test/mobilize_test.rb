@@ -36,9 +36,9 @@ describe "Mobilize" do
     books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
     books.each{|book| book.delete}
 
-    puts "enqueue jobtracker, wait 60s"
+    puts "enqueue jobtracker, wait 45s"
     Mobilize::Jobtracker.start
-    sleep 60
+    sleep 45
     puts "jobtracker status: #{Mobilize::Jobtracker.status}" 
     puts "status:#{Mobilize::Jobtracker.status}" #!= 'stopped'
 
@@ -64,10 +64,7 @@ describe "Mobilize" do
     test_source_tsv = test_source_rows.map{|r| r.join("\t")}.join("\n")
     test_source_sheet.write(test_source_tsv)
 
-    puts "add row to jobs sheet, wait 100s"
-
-    #delete existing Jobs from the db
-    Mobilize::Job.each{|j| j.delete}
+    puts "add row to jobs sheet, wait 60s"
 
     jobs_sheet = jobs_sheets.first
 
@@ -107,7 +104,7 @@ describe "Mobilize" do
 
     puts "job row added, force enqueued requestor"
     requestor.enqueue!
-    sleep 100
+    sleep 60
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     test_destination_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_destination",email)
