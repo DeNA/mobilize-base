@@ -235,7 +235,8 @@ module Mobilize
       #reserve email account for read
       email = Gdriver.get_worker_email_by_mongo_id(job_id)
       return false unless email
-      source = j.param_source
+      #only take the first sheet
+      source = j.param_sheets.split(",").first
       book,sheet = source.split("/")
       #assume jobspec source if none given
       source = [r.jobspec_title,source].join("/") if sheet.nil?
@@ -277,32 +278,32 @@ module Mobilize
     def Gsheeter.write_by_job_id(job_id)
       j = Job.find(job_id)
       r = j.requestor
-      dest_name = if j.destination.split("/").length==1
-                    "#{r.jobspec_title}#{"/"}#{j.destination}"
+      tgt_name = if j.target.split("/").length==1
+                    "#{r.jobspec_title}#{"/"}#{j.target}"
                   else
-                    j.destination
+                    j.target
                   end
-      sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',dest_name)
+      sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',tgt_name)
       sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?
       email = Gdriver.get_worker_email_by_mongo_id(job_id)
       #return false if there are no emails available
       return false unless email
       #create temp tab, write data to it, checksum it against the source
-      tempsheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',"#{dest_name}_temp")
+      tempsheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',"#{tgt_name}_temp")
       tempsheet_dst.update_attributes(:requestor_id=>r.id.to_s) if tempsheet_dst.requestor_id.nil?
       tempsheet = Gsheeter.find_or_create_by_dst_id(tempsheet_dst.id.to_s)
       #tsv is the second to last stage's output (the last is the write)
       tsv = Dataset.find(j.tasks[j.prior_task]['output_dst_id']).read
       tempsheet.write(tsv,true,job_id)
       #delete current sheet, replace it with temp one
-      sheet = Gsheeter.find_or_create_by_name(dest_name,email)
+      sheet = Gsheeter.find_or_create_by_name(tgt_name,email)
       title = sheet.title
       #http
       sheet.delete
       tempsheet.title = title
       tempsheet.save
       sheet_dst.update_attributes(:url=>tempsheet.spreadsheet.human_url)
-      "Write successful for #{dest_name}".oputs
+      "Write successful for #{tgt_name}".oputs
       return true
     end
   end

@@ -14,9 +14,9 @@ module Mobilize
     field :last_completed_at, type: Time
     field :read_handler, type: String
     field :write_handler, type: String
-    field :param_source, type: String #name of sheet on doc
-    field :param_hash, type: String #JSON
-    field :destination, type: String #output destination - could be file, could be sheet
+    field :files, type: String #name of sheet(s) on doc
+    field :params, type: String #JSON
+    field :target, type: String #output target - could be file, could be sheet
 
     index({ requestor_id: 1})
     index({ name: 1})
@@ -129,18 +129,18 @@ module Mobilize
       return j.tasks.keys[task_idx-1]
     end
 
-    def destination_url
+    def target_url
       j = self
-      return nil if j.destination.nil?
-      destination = j.destination
+      return nil if j.target.nil?
+      target = j.target
       dst = if j.write_handler == 'gsheet'
-              destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
-              Dataset.find_by_handler_and_name('gsheeter',destination)
+              target = [j.requestor.jobspec_title,j.target].join("/") if target.split("/").length==1
+              Dataset.find_by_handler_and_name('gsheeter',target)
             elsif j.write_handler == 'gtxt'
               #all gtxt files must end in gz
-              destination += ".gz" unless destination.ends_with?(".gz")
-              destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
-              Dataset.find_by_handler_and_name('gtxter',destination)
+              target += ".gz" unless target.ends_with?(".gz")
+              target = [s.requestor.name,"_"].join + target unless target.starts_with?([s.requestor.name,"_"].join)
+              Dataset.find_by_handler_and_name('gtxter',target)
             end
       return dst.url if dst
     end

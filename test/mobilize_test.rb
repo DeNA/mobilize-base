@@ -74,24 +74,24 @@ describe "Mobilize" do
                      "schedule" => "once",
                        "status" => "",
                    "last_error" => "",
-              "destination_url" => "",
+                   "target_url" => "",
                  "read_handler" => "gsheeter",
                 "write_handler" => "gsheeter",
-                 "param_source" => "test_source",
+                 "param_sheets" => "test_source",
                        "params" => "",
-                  "destination" => "test_destination"},
+                       "target" => "test_target"},
                   #run after the first
                         {"name" => "test2",
                        "active" => "true",
                      "schedule" => "after test",
                        "status" => "",
                    "last_error" => "",
-              "destination_url" => "",
+                   "target_url" => "",
                  "read_handler" => "gsheeter",
                 "write_handler" => "gsheeter",
-                 "param_source" => "test_source",
+                 "param_sheets" => "test_source",
                        "params" => "",
-                  "destination" => "test_destination2"}
+                       "target" => "test_target2"}
     ]
 
     #update second row w details
@@ -107,10 +107,10 @@ describe "Mobilize" do
     requestor.enqueue!
     sleep 100
 
-    puts "jobtracker posted test source data to test destination, and checksum succeeded?"
-    test_destination_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_destination",email)
+    puts "jobtracker posted test sheet data to test target, and checksum succeeded?"
+    test_target_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_target",email)
 
-    assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
+    assert test_target_sheet.to_tsv == test_source_sheet.to_tsv
   end
 
   after do
