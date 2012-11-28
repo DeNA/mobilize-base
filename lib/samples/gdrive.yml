@@ -1,4 +1,5 @@
 development:
+  domain: 'host.com'
   owner:
     email: 'owner_development@host.com'
     pw: "google_drive_password"
@@ -8,6 +9,7 @@ development:
     - {email: 'worker_development001@host.com', pw: "worker001_google_drive_password"}
     - {email: 'worker_development002@host.com', pw: "worker002_google_drive_password"}
 test:
+  domain: 'host.com'
   owner:
     email: 'owner_test@host.com'
     pw: "google_drive_password"
@@ -17,6 +19,7 @@ test:
     - {email: 'worker_test001@host.com', pw: "worker001_google_drive_password"}
     - {email: 'worker_test002@host.com', pw: "worker002_google_drive_password"}
 production:
+  domain: 'host.com'
   owner:
     email: 'owner_production@host.com'
     pw: "google_drive_password"

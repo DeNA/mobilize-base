@@ -7,14 +7,12 @@ module Mobilize
     field :active, type: Boolean #active, inactive
     field :schedule, type: String
     field :active_task, type: String
-    field :tasks, type: Hash
+    field :tasks, type: String
     field :status, type: String
     field :last_error, type: String
     field :last_trace, type: String
     field :last_completed_at, type: Time
-    field :read_handler, type: String
-    field :write_handler, type: String
-    field :files, type: String #name of sheet(s) on doc
+    field :datasets, type: String #name of data sources
     field :params, type: String #JSON
     field :destination, type: String #output destination - could be file, could be sheet
 
@@ -28,16 +26,29 @@ module Mobilize
       Mobilize::Resque.find_worker_by_mongo_id(j.id.to_s)
     end
 
-    def param_sheet_dsts
+    def dst_array
       j = self
       r = j.requestor
-      j.param_sheets.split(",").map do |ps|
+      j.datasets.split(",").map do |ps|
         #prepend jobspec title if there is no path separator
         full_ps = ps.index("/") ? ps : [r.jobspec_title,ps].join("/")
         #find or create dataset for this sheet
-        dst = Dataset.find_or_create_by_handler_and_name("gsheeter",full_ps)
+        dst = Dataset.find_or_create_by_handler_and_name("gsheet",full_ps)
         dst.update_attributes(:requestor_id=>r.id.to_s) unless dst.requestor_id
         dst
+      end
+    end
+
+    def task_array
+      self.tasks.split(",")
+    end
+
+    def task_output_dsts
+      j = self
+      r = j.requestor
+      dst_names = j.task_array.map{|t| [r.name,j.name,t.name].join("/")}
+      dst_names.map do |dst_name|
+        Dataset.find_or_create_by_requestor_id_and_handler_and_name(r.id.to_s,'mongodb',dst_name)
       end
     end
 
@@ -58,24 +69,18 @@ module Mobilize
     #called by Resque
     def Job.perform(id,*args)
       j = Job.find(id)
-      task_params = j.tasks[j.active_task]
+      r = j.requestor
+      handler,method_name = j.active_task.split(".")
+      task_idx = j.task_array.index(j.active_task)
       begin
         j.update_status(%{Starting #{j.active_task} task at #{Time.now.utc}})
-        task_output = "Mobilize::#{task_params['handler'].humanize}".constantize.send(j.active_task,id)
+        task_output = "Mobilize::#{handler.humanize}".constantize.send("#{method_name}_by_job_id",id)
         #this allows user to return false if the stage didn't go as expected and needs to retry
         #e.g. tried to write to Google but all the accounts were in use
         return false if task_output == false
-        task_output_dst_id = if task_output.to_s.length==24 and Dataset.find(task_output.to_s)
-                              #user has returned dst as output from task
-                              task_output
-                            else
-                              #store the output in a cache
-                              dst = Dataset.find_or_create_by_requestor_id_and_handler_and_name(j.requestor.id.to_s,'mongoer',"#{j.id.to_s}/#{j.active_task}")
-                              dst.write_cache(task_output.to_s)
-                              dst.id.to_s
-                            end
-        j.tasks[j.active_task]['output_dst_id'] = task_output_dst_id
-        if j.active_task == j.tasks.keys.last
+        task_output_dst = j.task_output_dsts[task_idx]
+        task_output_dst.write_cache(task_output)
+        if j.active_task == j.task_array.last
           j.active_task = nil
           j.last_error = ""
           j.last_trace = ""
@@ -89,9 +94,8 @@ module Mobilize
           #put begin/rescue so all dependencies run
           dep_jobs.each{|dj| begin;dj.enqueue! unless dj.is_working?;rescue;end}
         else
-          task_names = j.tasks.keys
-          stage_idx = task_names.index(j.active_task) + 1
-          j.active_task = j.tasks.keys[stage_idx]
+          task_idx = j.task_array.index(j.active_task) + 1
+          j.active_task = j.task_array[task_idx]
           j.save!
           #queue up next task
           j.enqueue!
@@ -111,14 +115,9 @@ module Mobilize
 
     def enqueue!
       j = self
-      #assign first task if none assigned
-      if j.tasks.blank?
-        #make a hash with the read/write tasks
-        j.update_attributes(:tasks=>{"read_by_job_id"=>{'handler'=>j.read_handler},
-                                     "write_by_job_id"=>{'handler'=>j.write_handler}})
-      end
-      j.update_attributes(:active_task=>"read_by_job_id") if j.active_task.blank?
-      ::Resque::Job.create("mobilize",Job,j.id.to_s,%{#{j.requestor.name}=>#{j.name}})
+      r = j.requestor
+      j.update_attributes(:active_task=>j.task_array.first) if j.active_task.blank?
+      ::Resque::Job.create("mobilize",Job,j.id.to_s,%{#{r.name}=>#{j.name}})
       return true
     end
 
@@ -137,9 +136,9 @@ module Mobilize
     def prior_task
       j = self
       return nil if j.active_task.nil?
-      task_idx = j.tasks.keys.index(j.active_task)
+      task_idx = j.task_array.index(j.active_task)
       return nil if task_idx==0
-      return j.tasks.keys[task_idx-1]
+      return j.task_array[task_idx-1]
     end
 
     def destination_url
@@ -148,12 +147,12 @@ module Mobilize
       destination = j.destination
       dst = if j.write_handler == 'gsheet'
               destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
-              Dataset.find_by_handler_and_name('gsheeter',destination)
-            elsif j.write_handler == 'gtxt'
-              #all gtxt files must end in gz
+              Dataset.find_by_handler_and_name('gsheet',destination)
+            elsif j.write_handler == 'gfile'
+              #all gfiles must end in gz
               destination += ".gz" unless destination.ends_with?(".gz")
               destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
-              Dataset.find_by_handler_and_name('gtxter',destination)
+              Dataset.find_by_handler_and_name('gfile',destination)
             end
       return dst.url if dst
     end

@@ -74,9 +74,8 @@ describe "Mobilize" do
                        "status" => "",
                    "last_error" => "",
               "destination_url" => "",
-                 "read_handler" => "gsheeter",
-                "write_handler" => "gsheeter",
-                 "param_sheets" => "test_source",
+                        "tasks" => "gsheet.read,gsheet.write",
+                     "datasets" => "test_source",
                        "params" => "",
                   "destination" => "test_destination"},
                   #run after the first
@@ -86,9 +85,8 @@ describe "Mobilize" do
                        "status" => "",
                    "last_error" => "",
               "destination_url" => "",
-                 "read_handler" => "gsheeter",
-                "write_handler" => "gsheeter",
-                 "param_sheets" => "test_source",
+                        "tasks" => "gsheet.read,gsheet.write",
+                     "datasets" => "test_source",
                        "params" => "",
                   "destination" => "test_destination2"}
     ]

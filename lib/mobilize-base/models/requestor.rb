@@ -31,7 +31,7 @@ module Mobilize
     end
 
     def Requestor.jobs_sheet_headers
-      %w{name active schedule status last_error destination_url read_handler write_handler param_sheets params destination}
+      %w{name active schedule status last_error destination_url tasks datasets params destination}
     end
 
     def Requestor.perform(id,*args)
@@ -90,14 +90,13 @@ module Mobilize
       loc_jobs = []
       rem_jobs.each_with_index do |rj,rj_i|
         #skip bad rows
-        next if (rj['name'].to_s.first == "#" or ['name','schedule','read_handler','write_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
+        next if (rj['name'].to_s.first == "#" or ['name','schedule','tasks','active'].select{|c| rj[c].to_s.strip==""}.length>0)
         j = Job.find_or_create_by_requestor_id_and_name(r.id.to_s,rj['name'])
         #update top line params
         j.update_attributes(:active => rj['active'],
                             :schedule => rj['schedule'],
-                            :read_handler => rj['read_handler'],
-                            :write_handler => rj['write_handler'],
-                            :param_sheets => rj['param_sheets'],
+                            :tasks => rj['tasks'],
+                            :datasets => rj['datasets'],
                             :params => rj['params'],
                             :destination => rj['destination'])
         #update laststatus with "Created job for" if job is due
@@ -131,7 +130,7 @@ module Mobilize
       #write rows
       rem_jobs.each_with_index do |rj,rj_i|
         #skip bad rows
-        next if (rj['name'].to_s.first == "#" or ['name','schedule','read_handler','write_handler','active'].select{|c| rj[c].to_s.strip==""}.length>0)
+        next if (rj['name'].to_s.first == "#" or ['name','schedule','tasks','active'].select{|c| rj[c].to_s.strip==""}.length>0)
         j = r.jobs(rj['name'])
         #update active to false if this was a run once
         j.update_attributes(:active=>false) if j.schedule.to_s == 'once'
@@ -166,7 +165,7 @@ module Mobilize
 
     def find_or_create_gbook_by_title(title,gdrive_email)
       r = self
-      book_dst = Dataset.find_or_create_by_handler_and_name('gbooker',title)
+      book_dst = Dataset.find_or_create_by_handler_and_name('gbook',title)
       #give dst this requestor if none
       book_dst.update_attributes(:requestor_id=>r.id.to_s) if book_dst.requestor_id.nil?
       book = Gbooker.find_or_create_by_dst_id(book_dst.id.to_s,gdrive_email)
@@ -175,7 +174,7 @@ module Mobilize
 
     def find_or_create_gsheet_by_name(name,gdrive_email)
       r = self
-      sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheeter',name)
+      sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheet',name)
       sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?
       sheet = Gsheeter.find_or_create_by_dst_id(sheet_dst.id.to_s,gdrive_email)
       return sheet

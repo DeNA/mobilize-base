@@ -52,18 +52,18 @@ module Mobilize
     def read_cache
       dst = self
       dst.update_attributes(:last_read_at=>Time.now.utc)
-      return Mongoer.read_by_filename(dst.id.to_s)
+      return Mongodb.read_by_filename(dst.id.to_s)
     end
 
     def write_cache(string,expire_at=nil)
       dst = self
-      Mongoer.write_by_filename(dst.id.to_s,string)
+      Mongodb.write_by_filename(dst.id.to_s,string)
       dst.update_attributes(:last_cached_at=>Time.now.utc,:cache_expire_at=>expire_at,:size=>string.length)
       return true
     end
 
     def delete_cache
-      return Mongoer.delete_by_filename(dst.id.to_s)
+      return Mongodb.delete_by_filename(dst.id.to_s)
     end
 
   end
