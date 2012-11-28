@@ -154,13 +154,6 @@ module Mobilize
       Resque.kill_workers(count)
     end
 
-    def Jobtracker.set_test_env
-      ENV['MOBILIZE_ENV']='test'
-      ::Resque.redis="localhost:9736"
-      mongoid_config_path = "#{Mobilize::Base.root}/config/mongoid.yml"
-      Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
-    end
-
     def Jobtracker.run_notifications
       if Jobtracker.notif_due?
         notifs = []
@@ -180,7 +173,7 @@ module Mobilize
           notifs << n
         end
         notifs.each do |notif|
-          Emailer.write(n['subj'],notif['body']).deliver
+          Email.write(n['subj'],notif['body']).deliver
           Jobtracker.last_notification=Time.now.utc.to_s
           "Sent notification at #{Jobtracker.last_notification}".oputs
         end
@@ -203,6 +196,42 @@ module Mobilize
       end
       Jobtracker.update_status("told to stop")
       return true
+    end
+
+
+    #test methods
+    def Jobtracker.restart_test_redis
+      Jobtracker.stop_test_redis
+      if !system("which redis-server")
+        raise "** can't find `redis-server` in your path, you need redis to run Resque and Mobilize"
+      end
+      "redis-server #{Base.root}/test/redis-test.conf".bash
+    end
+
+    def Jobtracker.stop_test_redis
+      processes = `ps -A -o pid,command | grep [r]edis-test`.split($/)
+      pids = processes.map { |process| process.split(" ")[0] }
+      puts "Killing test redis server..."
+      pids.each { |pid| Process.kill("TERM", pid.to_i) }
+      puts "removing redis db dump file"
+      sleep 5
+      `rm -f #{Base.root}/test/dump.rdb #{Base.root}/test/dump-cluster.rdb`
+    end
+
+    def Jobtracker.set_test_env
+      ENV['MOBILIZE_ENV']='test'
+      ::Resque.redis="localhost:9736"
+      mongoid_config_path = "#{Base.root}/config/mongoid.yml"
+      Mongoid.load!(mongoid_config_path, Base.env)
+    end
+
+    def Jobtracker.drop_test_db
+      Jobtracker.set_test_env
+      Mongoid.session(:default).collections.each do |collection| 
+        unless collection.name =~ /^system\./
+          collection.drop
+        end
+      end
     end
   end
 end

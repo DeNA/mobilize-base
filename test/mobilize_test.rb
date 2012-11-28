@@ -3,20 +3,19 @@ require 'test_helper'
 describe "Mobilize" do
 
   def before
-    puts 'before'
-
+    puts 'nothing before'
   end
 
   # enqueues 4 workers on Resque
   it "runs integration test" do
-    puts "clear out test db"
-    Mongoid.session(:default).collections.each do |collection| 
-      unless collection.name =~ /^system\./
-        collection.drop
-      end
-    end
 
-    email = Mobilize::Gdriver.owner_email
+    puts "restart test redis"
+    Mobilize::Jobtracker.restart_test_redis
+
+    puts "clear out test db"
+    Mobilize::Jobtracker.drop_test_db
+
+    email = Mobilize::Gdrive.owner_email
 
     #kill all workers
     Mobilize::Jobtracker.kill_workers
@@ -31,9 +30,9 @@ describe "Mobilize" do
     assert requestor.email == email
 
     puts "delete old books and datasets"
-    # delete any old specbooks from previous test runs
+    # delete any old jobspec from previous test runs
     jobspec_title = requestor.jobspec_title
-    books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+    books = Mobilize::Gbook.find_all_by_title(jobspec_title)
     books.each{|book| book.delete}
 
     puts "enqueue jobtracker, wait 45s"
@@ -42,12 +41,12 @@ describe "Mobilize" do
     puts "jobtracker status: #{Mobilize::Jobtracker.status}" 
     puts "status:#{Mobilize::Jobtracker.status}" #!= 'stopped'
 
-    puts "requestor created specbook?"
-    books = Mobilize::Gbooker.find_all_by_title(jobspec_title)
+    puts "requestor created jobspec?"
+    books = Mobilize::Gbook.find_all_by_title(jobspec_title)
     assert books.length == 1
 
     puts "Jobtracker created jobspec with 'jobs' sheet?"
-    jobs_sheets = Mobilize::Gsheeter.find_all_by_name("#{jobspec_title}/Jobs",email)
+    jobs_sheets = Mobilize::Gsheet.find_all_by_name("#{jobspec_title}/Jobs",email)
     assert jobs_sheets.length == 1
 
     puts "add test_source data"
@@ -59,12 +58,12 @@ describe "Mobilize" do
     ]
 
     book = books.first
-    test_source_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_source",email)
+    test_source_sheet = Mobilize::Gsheet.find_or_create_by_name("#{jobspec_title}/test_source",email)
 
     test_source_tsv = test_source_rows.map{|r| r.join("\t")}.join("\n")
     test_source_sheet.write(test_source_tsv)
 
-    puts "add row to jobs sheet, wait 60s"
+    puts "add row to jobs sheet, wait 120s"
 
     jobs_sheet = jobs_sheets.first
 
@@ -74,7 +73,7 @@ describe "Mobilize" do
                        "status" => "",
                    "last_error" => "",
               "destination_url" => "",
-                        "tasks" => "gsheet.read,gsheet.write",
+                        "tasks" => "gsheet.read, gsheet.write",
                      "datasets" => "test_source",
                        "params" => "",
                   "destination" => "test_destination"},
@@ -85,38 +84,25 @@ describe "Mobilize" do
                        "status" => "",
                    "last_error" => "",
               "destination_url" => "",
-                        "tasks" => "gsheet.read,gsheet.write",
+                        "tasks" => "gsheet.read, gsheet.write",
                      "datasets" => "test_source",
                        "params" => "",
                   "destination" => "test_destination2"}
     ]
 
-    #update second row w details
-    test_job_rows.each_with_index do |r,r_i|
-      r.values.each_with_index do |v,v_i|
-      jobs_sheet[r_i+2,v_i+1] = v
-      end
-    end
-
-    jobs_sheet.save
+    jobs_sheet.add_or_update_rows(test_job_rows)
 
     puts "job row added, force enqueued requestor"
     requestor.enqueue!
-    sleep 60
+    sleep 120
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
-    test_destination_sheet = Mobilize::Gsheeter.find_or_create_by_name("#{jobspec_title}/test_destination",email)
+    test_destination_sheet = Mobilize::Gsheet.find_or_create_by_name("#{jobspec_title}/test_destination",email)
 
     assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
+
+    puts "stop test redis"
+    Mobilize::Jobtracker.stop_test_redis
   end
 
-  after do
-    processes = `ps -A -o pid,command | grep [r]edis-test`.split($/)
-    pids = processes.map { |process| process.split(" ")[0] }
-    puts "Killing test redis server..."
-    pids.each { |pid| Process.kill("TERM", pid.to_i) }
-    puts "removing redis db dump file"
-    sleep 5
-    `rm -f #{$dir}/dump.rdb #{$dir}/dump-cluster.rdb`
-  end
 end

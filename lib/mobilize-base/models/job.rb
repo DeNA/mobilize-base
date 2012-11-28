@@ -26,10 +26,11 @@ module Mobilize
       Mobilize::Resque.find_worker_by_mongo_id(j.id.to_s)
     end
 
-    def dst_array
+    def dataset_array
       j = self
       r = j.requestor
-      j.datasets.split(",").map do |ps|
+      dsts = j.datasets.split(",").map{|dst| dst.strip}
+      dsts.map do |ps|
         #prepend jobspec title if there is no path separator
         full_ps = ps.index("/") ? ps : [r.jobspec_title,ps].join("/")
         #find or create dataset for this sheet
@@ -40,16 +41,21 @@ module Mobilize
     end
 
     def task_array
-      self.tasks.split(",")
+      self.tasks.split(",").map{|t| t.strip}
     end
 
     def task_output_dsts
       j = self
       r = j.requestor
-      dst_names = j.task_array.map{|t| [r.name,j.name,t.name].join("/")}
+      dst_names = j.task_array.map{|tname| [r.name,j.name,tname].join("/")}
       dst_names.map do |dst_name|
         Dataset.find_or_create_by_requestor_id_and_handler_and_name(r.id.to_s,'mongodb',dst_name)
       end
+    end
+
+    def task_idx
+      j = self
+      j.task_array.index(j.active_task)
     end
 
     def Job.find_by_name(name)
@@ -71,14 +77,14 @@ module Mobilize
       j = Job.find(id)
       r = j.requestor
       handler,method_name = j.active_task.split(".")
-      task_idx = j.task_array.index(j.active_task)
       begin
         j.update_status(%{Starting #{j.active_task} task at #{Time.now.utc}})
         task_output = "Mobilize::#{handler.humanize}".constantize.send("#{method_name}_by_job_id",id)
         #this allows user to return false if the stage didn't go as expected and needs to retry
         #e.g. tried to write to Google but all the accounts were in use
         return false if task_output == false
-        task_output_dst = j.task_output_dsts[task_idx]
+        task_output_dst = j.task_output_dsts[j.task_idx]
+        task_output = task_output.to_s unless task_output.class == String
         task_output_dst.write_cache(task_output)
         if j.active_task == j.task_array.last
           j.active_task = nil
@@ -94,8 +100,8 @@ module Mobilize
           #put begin/rescue so all dependencies run
           dep_jobs.each{|dj| begin;dj.enqueue! unless dj.is_working?;rescue;end}
         else
-          task_idx = j.task_array.index(j.active_task) + 1
-          j.active_task = j.task_array[task_idx]
+          #set next task
+          j.active_task = j.task_array[j.task_idx+1]
           j.save!
           #queue up next task
           j.enqueue!
@@ -145,10 +151,10 @@ module Mobilize
       j = self
       return nil if j.destination.nil?
       destination = j.destination
-      dst = if j.write_handler == 'gsheet'
+      dst = if j.task_array.last == 'gsheet.write'
               destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
               Dataset.find_by_handler_and_name('gsheet',destination)
-            elsif j.write_handler == 'gfile'
+            elsif j.task_array.last == 'gfile.write'
               #all gfiles must end in gz
               destination += ".gz" unless destination.ends_with?(".gz")
               destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
@@ -165,23 +171,6 @@ module Mobilize
     def set_worker_args(args)
       j = self
       Jobtracker.set_worker_args(j.worker,args)
-    end
-
-    def cache_params
-      j = self
-      #go to paramsheet and read
-      param_path = if j.paramsheet.split("/").length==1
-                     [j.requestor.jobspec_title,j.paramsheet].join("/")
-                   else
-                     j.paramsheet
-                   end
-      param_sheet = j.requestor.find_or_create_gsheet_by_path(param_path)
-      param_tsv = param_sheet.to_tsv
-      param_dst = j.requestor.gsheets.select{|s| s.path == param_sheet.path}
-      param_dst.cache.write(param_tsv)
-      s.update_attributes(:param_dst_id=>paramdst.id.to_s)
-      (s.requestor.name + "'s #{s.name} params cached").oputs
-      return true
     end
 
     def update_status(msg)

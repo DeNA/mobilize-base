@@ -37,7 +37,7 @@ module Mobilize
     def Requestor.perform(id,*args)
       r = Requestor.find(id.to_s)
       #reserve email account for read
-      gdrive_email = Gdriver.get_worker_email_by_mongo_id(id)
+      gdrive_email = Gdrive.get_worker_email_by_mongo_id(id)
       unless gdrive_email
         "no gdrive_email available for #{r.name}".oputs
         return false
@@ -56,12 +56,12 @@ module Mobilize
       r.jobs.each do |j|
         begin
           if j.active and j.is_due?
-            #cache all param_sheets
-            j.param_sheet_dsts.each do |psdst|
+            #cache all datasets
+            j.dataset_array.each do |dst|
              #read tsv, write to cache for job to use
-              tsv = Gsheeter.find_or_create_by_name(psdst.name,gdrive_email).to_tsv
-              r.update_status("caching #{psdst.name}")
-              psdst.write_cache(tsv)
+              tsv = Gsheet.find_or_create_by_name(dst.name,gdrive_email).to_tsv
+              r.update_status("caching #{dst.name}")
+              dst.write_cache(tsv)
             end
             j.enqueue!
           end
@@ -124,20 +124,19 @@ module Mobilize
       #go through each job, update relevant job with its params
       headers = Requestor.jobs_sheet_headers
       #write headers
-      headers.each_with_index do |h,h_i|
-        jobs_sheet[1,h_i+1] = h
-      end
+      jobs_sheet.add_headers(headers)
       #write rows
       rem_jobs.each_with_index do |rj,rj_i|
         #skip bad rows
         next if (rj['name'].to_s.first == "#" or ['name','schedule','tasks','active'].select{|c| rj[c].to_s.strip==""}.length>0)
-        j = r.jobs(rj['name'])
-        #update active to false if this was a run once
-        j.update_attributes(:active=>false) if j.schedule.to_s == 'once'
-        jobs_sheet[rj_i+2,headers.index('active')+1] = j.active.to_s
-        jobs_sheet[rj_i+2,headers.index('status')+1] = j.status.to_s.gsub("\n",";").gsub("\t"," ")
-        jobs_sheet[rj_i+2,headers.index('last_error')+1] = j.last_error.to_s.gsub("\n",";").gsub("\t"," ")
-        jobs_sheet[rj_i+2,headers.index('destination_url')+1] = j.destination_url.to_s
+        if j = r.jobs(rj['name'])
+          #update active to false if this was a run once
+          j.update_attributes(:active=>false) if j.schedule.to_s == 'once'
+          jobs_sheet[rj_i+2,headers.index('active')+1] = j.active.to_s
+          jobs_sheet[rj_i+2,headers.index('status')+1] = j.status.to_s.gsub("\n",";").gsub("\t"," ")
+          jobs_sheet[rj_i+2,headers.index('last_error')+1] = j.last_error.to_s.gsub("\n",";").gsub("\t"," ")
+          jobs_sheet[rj_i+2,headers.index('destination_url')+1] = j.destination_url.to_s
+        end
       end
       jobs_sheet.save
       r.update_status(r.name + " jobs written")
@@ -168,7 +167,7 @@ module Mobilize
       book_dst = Dataset.find_or_create_by_handler_and_name('gbook',title)
       #give dst this requestor if none
       book_dst.update_attributes(:requestor_id=>r.id.to_s) if book_dst.requestor_id.nil?
-      book = Gbooker.find_or_create_by_dst_id(book_dst.id.to_s,gdrive_email)
+      book = Gbook.find_or_create_by_dst_id(book_dst.id.to_s,gdrive_email)
       return book
     end
 
@@ -176,7 +175,7 @@ module Mobilize
       r = self
       sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheet',name)
       sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if sheet_dst.requestor_id.nil?
-      sheet = Gsheeter.find_or_create_by_dst_id(sheet_dst.id.to_s,gdrive_email)
+      sheet = Gsheet.find_or_create_by_dst_id(sheet_dst.id.to_s,gdrive_email)
       return sheet
     end
 
@@ -229,6 +228,5 @@ module Mobilize
       ::Resque::Job.create("mobilize",Requestor,r.id.to_s,{"name"=>r.name})
       return true
     end
-
   end
 end

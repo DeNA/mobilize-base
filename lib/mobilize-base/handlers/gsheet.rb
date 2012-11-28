@@ -24,7 +24,7 @@ module Mobilize
 
     def Gsheet.find_or_create_by_name(name,email=nil,rows=100,cols=20)
       book_title,sheet_title = name.split("/")
-      book = Gbooker.find_or_create_by_title(book_title,email)
+      book = Gbook.find_or_create_by_title(book_title,email)
       #http
       sheet = book.worksheets.select{|w| w.title==sheet_title}.first
       if sheet.nil?
@@ -104,9 +104,9 @@ module Mobilize
       #create temp tab, write data to it, checksum it against the source
       temp_sheet_dst = Dataset.find_or_create_by_handler_and_name('gsheet',"#{dest_name}_temp")
       temp_sheet_dst.update_attributes(:requestor_id=>r.id.to_s) if temp_sheet_dst.requestor_id.nil?
-      temp_sheet = Gsheet.find_or_create_by_dst_id(temp_sheet_dst.id.to_s)
-      #tsv is the second to last stage's output (the last is the write)
-      tsv = Dataset.find(j.task_output_dsts[j.task_idx-1].read)
+      temp_sheet = Gsheet.find_or_create_by_name(temp_sheet_dst.name,email)
+      #tsv is the prior task's output
+      tsv = j.task_output_dsts[j.task_idx-1].read
       temp_sheet.write(tsv,true,job_id)
       #delete current sheet, replace it with temp one
       sheet = Gsheet.find_or_create_by_name(dest_name,email)

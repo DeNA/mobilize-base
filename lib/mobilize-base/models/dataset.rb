@@ -22,7 +22,7 @@ module Mobilize
       if dst.last_cached_at and (dst.cache_expire_at.nil? or dst.cache_expire_at > Time.now.utc)
         return dst.read_cache
       else
-        return dst.handler.humanize.constantize.read_by_dst_id(dst.id.to_s)
+        return "Mobilize::#{dst.handler.humanize}".constantize.read_by_dst_id(dst.id.to_s)
       end
     end
 

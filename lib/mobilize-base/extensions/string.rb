@@ -13,6 +13,7 @@ class String
   end
   def bash(except=true)
     pid,stdin,stdout,stderr = Open4.popen4(self)
+    pid,stdin = [nil,nil]
     raise stderr.read if (stderr.read.length>0 and except==true)
     return stdout.read
   end
@@ -70,6 +71,7 @@ class String
     begin
       return JSON.parse(self)
     rescue => exc
+      exc = nil
       return {}
     end
   end
@@ -80,7 +82,7 @@ class String
     headers = rows.first.split("\t")
     if rows.length==1
       #return single member hash with all nil values
-      return [headers.map{|k| {k=>nil}}.inject{|k,h| h.merge(k)}]
+      return [headers.map{|k| {k=>nil}}.inject{|k,h| k.merge(h)}]
     end
     row_hash_arr =[]
     rows[1..-1].each do |row|

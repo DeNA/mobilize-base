@@ -75,7 +75,7 @@ module GoogleDrive
     def add_worker_acl
       f = self
       return true if f.has_worker_acl?
-      Mobilize::Gdriver.worker_emails.each do |a| 
+      Mobilize::Gdrive.worker_emails.each do |a| 
         f.update_acl(a)
       end
     end
@@ -84,7 +84,7 @@ module GoogleDrive
       f = self
       #admin includes workers
       return true if f.has_admin_acl?
-      (Mobilize::Gdriver.admin_emails + Mobilize::Gdriver.worker_emails).each do |a| 
+      (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).each do |a| 
         f.update_acl(a)
       end
     end
@@ -92,7 +92,7 @@ module GoogleDrive
     def has_admin_acl?
       f = self
       curr_emails = f.acls.map{|a| a.scope}.sort
-      admin_emails = Mobilize::Gdriver.admin_emails.sort
+      admin_emails = Mobilize::Gdrive.admin_emails.sort
       if (curr_emails & admin_emails) == admin_emails
         return true
       else
@@ -103,7 +103,7 @@ module GoogleDrive
     def has_worker_acl?
       f = self
       curr_emails = f.acls.map{|a| a.scope}.sort
-      worker_emails = Mobilize::Gdriver.worker_emails.sort
+      worker_emails = Mobilize::Gdrive.worker_emails.sort
       if (curr_emails & worker_emails) == worker_emails
         return true
       else
@@ -159,6 +159,32 @@ module GoogleDrive
       row_last_i = (header.index("") || header.length)-1
       rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
     end
+    def add_headers(headers)
+      headers.each_with_index do |h,h_i|
+        self[1,h_i+1] = h
+      end
+    end
+
+    def add_or_update_rows(upd_rows)
+      sheet = self
+      curr_rows = sheet.to_tsv.tsv_to_hash_array
+      headers = curr_rows.first.keys
+      curr_rows = [] if curr_rows.length==1 and curr_rows.first['name'].nil?
+      curr_row_names = curr_rows.map{|r| r['name']}
+      upd_rows.each_with_index do |row,urow_i|
+        crow_i = curr_row_names.index(row['name'])
+        if crow_i.nil?
+          curr_row_names << row['name']
+          crow_i = curr_row_names.length-1
+        end
+        row.each do |col_n,col_v|
+          col_v_i = headers.index(col_n)
+          sheet[crow_i+2,col_v_i+1] = col_v
+        end
+      end
+      sheet.save
+    end
+
     def write(tsv,check=true,job_id=nil)
       sheet = self
       tsvrows = tsv.split("\n")
@@ -197,7 +223,6 @@ module GoogleDrive
           if job_id
             newstatus = "100 pct written at #{Time.now.utc}"
             Mobilize::Job.find(job_id).update_status(newstatus)
-            newstatus.oputs
           end
           break
         else
