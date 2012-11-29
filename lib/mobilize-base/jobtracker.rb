@@ -107,8 +107,9 @@ module Mobilize
 
     def Jobtracker.restart_workers!
       Jobtracker.kill_workers
-      sleep 5
+      sleep 10
       Jobtracker.prep_workers
+      Jobtracker.update_status("put workers back on the queue")
     end
 
     def Jobtracker.stop!
@@ -117,7 +118,7 @@ module Mobilize
       sleep 5
       i=0
       while Jobtracker.status=='stopping'
-        puts "#{Jobtracker.to_s} still on queue, waiting"
+        Jobtracker.update_status("#{Jobtracker.to_s} still on queue, waiting")
         sleep 5
         i+=1
       end
@@ -175,7 +176,7 @@ module Mobilize
         notifs.each do |notif|
           Email.write(n['subj'],notif['body']).deliver
           Jobtracker.last_notification=Time.now.utc.to_s
-          "Sent notification at #{Jobtracker.last_notification}".oputs
+          Jobtracker.update_status("Sent notification at #{Jobtracker.last_notification}")
         end
       end
       return true
@@ -235,17 +236,14 @@ module Mobilize
     end
 
     def Jobtracker.build_test_jobspec(requestor_id)
+      Jobtracker.set_test_env
       requestor = Requestor.find(requestor_id)
-      Mobilize::Jobtracker.kill_workers
-      sleep 5
-      puts 'enqueue 4 workers on Resque'
-      Mobilize::Jobtracker.prep_workers
-      puts "delete old books and datasets"
+      Jobtracker.update_status("delete old books and datasets")
       # delete any old jobspec from previous test runs
       jobspec_title = requestor.jobspec_title
       books = Mobilize::Gbook.find_all_by_title(jobspec_title)
       books.each{|book| book.delete}
-      puts "enqueue jobtracker, wait 45s"
+      Jobtracker.update_status("enqueue jobtracker, wait 45s")
       Mobilize::Jobtracker.start
       sleep 45
     end

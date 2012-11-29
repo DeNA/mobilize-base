@@ -15,6 +15,9 @@ describe "Mobilize" do
     puts "clear out test db"
     Mobilize::Jobtracker.drop_test_db
 
+    puts "restart workers"
+    Mobilize::Jobtracker.restart_workers!
+
     puts "build test jobspec"
     email = Mobilize::Gdrive.owner_email
     puts "create requestor 'mobilize'"
