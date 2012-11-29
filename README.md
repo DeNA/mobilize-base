@@ -19,24 +19,24 @@ Table Of Contents
 -----------------
 * [Overview](#section_Overview)
 * [Install](#section_Install)
-    * [Redis](#section_Install_Redis)
-    * [MongoDB](#section_Install_MongoDB)
-    * [Mobilize-Base](#section_Install_Mobilize-Base)
-    * [Default Folders and Files](#section_Install_Folders_and_Files)
+  * [Redis](#section_Install_Redis)
+  * [MongoDB](#section_Install_MongoDB)
+  * [Mobilize-Base](#section_Install_Mobilize-Base)
+  * [Default Folders and Files](#section_Install_Folders_and_Files)
 * [Configure](#section_Configure)
-    * [Google Drive](#section_Configure_Google_Drive)
-    * [Jobtracker](#section_Configure_Jobtracker)
-    * [Mongoid](#section_Configure_Mongoid)
-    * [Resque](#section_Configure_Resque)
+  * [Google Drive](#section_Configure_Google_Drive)
+  * [Jobtracker](#section_Configure_Jobtracker)
+  * [Mongoid](#section_Configure_Mongoid)
+  * [Resque](#section_Configure_Resque)
 * [Start](#section_Start)
-    * [Start resque-web](#section_Start_Start_resque-web)
-    * [Set Environment](#section_Start_Set_Environment)
-    * [Create Requestor](#section_Start_Create_Requestor)
-    * [Start Workers](#section_Start_Start_Workers)
-    * [View Logs](#section_Start_View_Logs)
-    * [Start Jobtracker](#section_Start_Start_Jobtracker)
-    * [Create Job](#section_Start_Create_Job)
-    * [Run Test](#section_Start_Run_Test)
+  * [Start resque-web](#section_Start_Start_resque-web)
+  * [Set Environment](#section_Start_Set_Environment)
+  * [Create Requestor](#section_Start_Create_Requestor)
+  * [Start Workers](#section_Start_Start_Workers)
+  * [View Logs](#section_Start_View_Logs)
+  * [Start Jobtracker](#section_Start_Start_Jobtracker)
+  * [Create Job](#section_Start_Create_Job)
+  * [Run Test](#section_Start_Run_Test)
 * [Meta](#section_Meta)
 * [Author](#section_Author)
 
@@ -124,7 +124,7 @@ This defines tasks essential to run the environment.
 
 run 
 
-  $ rake mobilize:setup
+  $ rake mobilize_base:setup
 
 Mobilize will create config and log folders at the project root
 level. (same as the Rakefile)
@@ -145,6 +145,8 @@ be found below or on github in the [lib/samples][git_samples] folder.
 ### Configure Google Drive
 
 Google drive needs:
+* a host domain, which can be gmail.com. All gdrive accounts should have
+the same domain, and all Requestors should have emails in this domain.
 * an owner email address and password. You can set up separate owners
   for different environments as in the below file, which will keep your
 mission critical workers from getting rate-limit errors.
@@ -164,6 +166,7 @@ Sample gdrive.yml:
 ``` yml
 
 development:
+  host: 'host.com'
   owner:
     email: 'owner_development@host.com'
     pw: "google_drive_password"
@@ -173,6 +176,7 @@ development:
     - {email: 'worker_development001@host.com', pw: "worker001_google_drive_password"}
     - {email: 'worker_development002@host.com', pw: "worker002_google_drive_password"}
 test:
+  host: 'host.com'
   owner:
     email: 'owner_test@host.com'
     pw: "google_drive_password"
@@ -182,6 +186,7 @@ test:
     - {email: 'worker_test001@host.com', pw: "worker001_google_drive_password"}
     - {email: 'worker_test002@host.com', pw: "worker002_google_drive_password"}
 production:
+  host: 'host.com'
   owner:
     email: 'owner_production@host.com'
     pw: "google_drive_password"
@@ -439,25 +444,23 @@ name>)` and enter values under each header:
 
 * destination_url	Mobilize writes this field with a link to the last dataset returned by the job, blank if none
 	
-* read_handler This is where the job reads its data from. For
-  mobilize-base, you should enter "gsheet"
+* tasks Comma-separated list of steps to be performed by the job. For
+mobilize base, you can enter "gsheet.read, gsheet.write" (no quotes).
+These
 
-* write_handler	This is where the job writes its data to. For
-  mobilize-base, you should enter "gsheet"
-
-* param_sheets This is a comma-delimited list of sheets, relayed to the job,
-which can be used for parameters.
-  The format is `<google docs book>/<google docs sheet>`, so if you
+* datasets Comma-delimited list of datasets to be cached in mongo and
+relayed to the job.
+  For mobilize-base, the format is `<google docs book>/<google docs sheet>`, so if you
 wanted to read from the "output" sheet on the "monthly_results" book you
 would write in `monthly_results/output`. For a sheet in the Jobspec
-itself you could write simply `<output>`.
+itself you could write simply `output`.
 
 * params This is a hash of data, expressed in a JSON, which can be used
 for parameters.
 
 * destination This is the destination for the data, relayed to the job.
-  For a gsheet write_handler, this would be the name of the sheet to be
-written to, similar to param_sheets.
+  For gsheet.write, this would be the name of the sheet to be
+written to, similar to datasets.
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test
@@ -484,7 +487,7 @@ Meta
 
 * Code: `git clone git://github.com/ngmoco/mobilize-base.git`
 * Home: <https://github.com/ngmoco/mobilize-base>
-* Bugs: <https://github.com//mobilize-base/issues>
+* Bugs: <https://github.com/ngmoco/mobilize-base/issues>
 * Gems: <http://rubygems.org/gems/mobilize-base>
 
 <a name='section_Author'></a>
