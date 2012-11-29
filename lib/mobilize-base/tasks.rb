@@ -18,7 +18,8 @@ namespace :mobilize do
 
     worker.work(ENV['INTERVAL'] || 5) # interval, will block
   end
-
+end
+namespace :mobilize_base do
   desc "Set up config and log folders and files"
   task :setup do
     sample_dir = File.dirname(__FILE__) + '/../samples/'
