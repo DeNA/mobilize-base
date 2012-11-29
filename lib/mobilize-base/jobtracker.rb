@@ -233,5 +233,21 @@ module Mobilize
         end
       end
     end
+
+    def Jobtracker.build_test_jobspec(requestor_id)
+      requestor = Requestor.find(requestor_id)
+      Mobilize::Jobtracker.kill_workers
+      sleep 5
+      puts 'enqueue 4 workers on Resque'
+      Mobilize::Jobtracker.prep_workers
+      puts "delete old books and datasets"
+      # delete any old jobspec from previous test runs
+      jobspec_title = requestor.jobspec_title
+      books = Mobilize::Gbook.find_all_by_title(jobspec_title)
+      books.each{|book| book.delete}
+      puts "enqueue jobtracker, wait 45s"
+      Mobilize::Jobtracker.start
+      sleep 45
+    end
   end
 end
