@@ -506,6 +506,7 @@ Special Thanks
 reinvent the wheel
 * ngmoco:) and DeNA Global for supporting and adopting the Mobilize
 platform
+* gimite, defunkt, 10gen, and countless other github heroes
 
 [google_drive_ruby]: https://github.com/gimite/google-drive-ruby
 [resque]: https://github.com/defunkt/resque

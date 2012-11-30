@@ -1,2 +1,2 @@
 - {name: test, active: true, schedule: once,status: "", last_error: "",destination_url: "", tasks: "gsheet.read, gsheet.write", datasets: test_source, params: "", destination: test_destination}
-- {name: test2, active: true, schedule: "after test", status: "",last_error: "",destination_url: "", tasks: "gsheet.read, gsheet.write", datasets: test_source, params: "", destination: test_destination}
+- {name: test2, active: true, schedule: "after test", status: "",last_error: "",destination_url: "", tasks: "gsheet.read, gsheet.write", datasets: test_source, params: "", destination: test_destination_after}
