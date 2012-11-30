@@ -59,8 +59,6 @@ describe "Mobilize" do
 
     assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
 
-    puts "stop test redis"
-    Mobilize::Jobtracker.stop_test_redis
   end
 
 end
