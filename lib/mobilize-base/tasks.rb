@@ -6,7 +6,13 @@ namespace :mobilize do
   desc "Start a Resque worker"
   task :work do
     require 'resque'
-    require 'mobilize-base'
+    begin
+      #require all mobilize gems in order of release
+      require 'mobilize-base'
+      require 'mobilize-ssh'
+    rescue
+      #do nothing
+    end
 
     begin
       worker = Resque::Worker.new(Mobilize::Resque.config['queue_name'])
