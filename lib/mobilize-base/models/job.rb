@@ -31,8 +31,8 @@ module Mobilize
       r = j.requestor
       dsts = j.datasets.split(",").map{|dst| dst.strip}
       dsts.map do |ps|
-        #prepend jobspec title if there is no path separator
-        full_ps = ps.index("/") ? ps : [r.jobspec_title,ps].join("/")
+        #prepend runner title if there is no path separator
+        full_ps = ps.index("/") ? ps : [r.runner_title,ps].join("/")
         #find or create dataset for this sheet
         dst = Dataset.find_or_create_by_handler_and_name("gsheet",full_ps)
         dst.update_attributes(:requestor_id=>r.id.to_s) unless dst.requestor_id
@@ -152,7 +152,7 @@ module Mobilize
       return nil if j.destination.nil?
       destination = j.destination
       dst = if j.task_array.last == 'gsheet.write'
-              destination = [j.requestor.jobspec_title,j.destination].join("/") if destination.split("/").length==1
+              destination = [j.requestor.runner_title,j.destination].join("/") if destination.split("/").length==1
               Dataset.find_by_handler_and_name('gsheet',destination)
             elsif j.task_array.last == 'gfile.write'
               #all gfiles must end in gz

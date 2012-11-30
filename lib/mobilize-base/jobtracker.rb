@@ -235,13 +235,13 @@ module Mobilize
       end
     end
 
-    def Jobtracker.build_test_jobspec(requestor_id)
+    def Jobtracker.build_test_runner(requestor_id)
       Jobtracker.set_test_env
       requestor = Requestor.find(requestor_id)
       Jobtracker.update_status("delete old books and datasets")
-      # delete any old jobspec from previous test runs
-      jobspec_title = requestor.jobspec_title
-      books = Mobilize::Gbook.find_all_by_title(jobspec_title)
+      # delete any old runner from previous test runs
+      runner_title = requestor.runner_title
+      books = Mobilize::Gbook.find_all_by_title(runner_title)
       books.each{|book| book.delete}
       Jobtracker.update_status("enqueue jobtracker, wait 45s")
       Mobilize::Jobtracker.start

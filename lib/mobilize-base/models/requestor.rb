@@ -77,8 +77,8 @@ module Mobilize
 
     def jobs_sheet(gdrive_email)#gdrive_email to read with
       r = self
-      r.find_or_create_gbook_by_title(r.jobspec_title,gdrive_email)
-      jobs_name = [r.jobspec_title,"Jobs"].join("/")
+      r.find_or_create_gbook_by_title(r.runner_title,gdrive_email)
+      jobs_name = [r.runner_title,"Jobs"].join("/")
       r.find_or_create_gsheet_by_name(jobs_name,gdrive_email)
     end
 
@@ -143,16 +143,16 @@ module Mobilize
       return true
     end
 
-    def jobspec_title
+    def runner_title
       r = self
-      prefix = "Jobspec_"
+      prefix = "Runner("
       suffix = ""
       if Mobilize::Base.env == 'development'
-        suffix = "_dev"
+        suffix = "_dev)"
       elsif Mobilize::Base.env == 'test' or Mobilize::Base.env == 'pry_dev'
-        suffix = "_test"
+        suffix = "_test)"
       elsif Mobilize::Base.env == 'production' or Mobilize::Base.env == 'integration'
-        suffix = ""
+        suffix = ")"
       else
         raise "Invalid environment"
       end

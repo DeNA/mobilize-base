@@ -11,8 +11,8 @@ Mobilize is an end-to-end data transfer workflow manager with:
 Mobilize-Base includes all the core scheduling and processing
 functionality, allowing you to:
 * put workers on the Mobilize Resque queue.
-* create [Requestors](#section_Start_Requestors_Requestor) and their associated Google Spreadsheet [Jobspecs](#section_Start_Requestors_Jobspec);
-* poll for [Jobs](#section_Job) on Jobspecs (currently gsheet to gsheet only) and add them to Resque;
+* create [Requestors](#section_Start_Requestors_Requestor) and their associated Google Spreadsheet [Runners](#section_Start_Requestors_Runner);
+* poll for [Jobs](#section_Job) on Runners (currently gsheet to gsheet only) and add them to Resque;
 * monitor the status of Jobs on a rolling log.
 
 Table Of Contents
@@ -311,7 +311,7 @@ A Mobilize instance can be considered "started" or "running" when you have:
 1. Resque workers running on the Mobilize queue;
 2. A Jobtracker running on one of the Resque workers;
 3. One or more Requestors created in your MongoDB;
-4. One or more Jobs created in a Requestor's Jobspec;
+4. One or more Jobs created in a Requestor's Runner;
 
 <a name='section_Start_Start_resque-web'></a>
 ### Start resque-web
@@ -353,7 +353,7 @@ database.
 ### Create Requestor
 
 Requestors are people who use the Mobilize service to move data from one
-endpoint to another. They each have a Jobspec, which is a google sheet
+endpoint to another. They each have a Runner, which is a google sheet
 that contains one or more Jobs.
 
 To create a requestor, use the Requestor.find_or_create_by_email
@@ -409,20 +409,20 @@ set up, it's time to start the Jobtracker:
 
 The Jobtracker will automatically enqueue any Requestors that have not
 been processed in the requestor_refresh period defined in the
-jobtracker.yml, and create their Jobspecs if they do not exist. You can
+jobtracker.yml, and create their Runners if they do not exist. You can
 see this process on your Resque UI and in the log file.
 
 <a name='section_Start_Create_Job'></a>
 ### Create Job
 
-Now it's time to go onto the Jobspec and add a Job to be processed.
+Now it's time to go onto the Runner and add a Job to be processed.
 
 To do this, you should log into your Google Drive with either the
-owner's account, an admin account, or the Jobspec Requestor's account. These
-will be the accounts with edit permissions to a given Jobspec.
+owner's account, an admin account, or the Runner Requestor's account. These
+will be the accounts with edit permissions to a given Runner.
 
-Navigate to the Jobs tab on the Jobspec `(denoted by Jobspec_<requestor
-name>)` and enter values under each header:
+Navigate to the Jobs tab on the Runner `(denoted by Runner(<requestor
+name>))` and enter values under each header:
 
 * name	This is the name of the job you would like to add. Names must be unique across all your jobs, otherwise you will get an error
 	
@@ -452,7 +452,7 @@ These
 relayed to the job.
   For mobilize-base, the format is `<google docs book>/<google docs sheet>`, so if you
 wanted to read from the "output" sheet on the "monthly_results" book you
-would write in `monthly_results/output`. For a sheet in the Jobspec
+would write in `monthly_results/output`. For a sheet in the Runner
 itself you could write simply `output`.
 
 * params This is a hash of data, expressed in a JSON, which can be used
@@ -478,7 +478,7 @@ necessary details.
 
 3) $ rake test
 
-This will create a test Jobspec with a sample job. These will run off a
+This will create a test Runner with a sample job. These will run off a
 test redis instance which will be killed once the tests finish.
 
 <a name='section_Meta'></a>

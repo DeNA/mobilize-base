@@ -92,7 +92,7 @@ module Mobilize
       j = Job.find(job_id)
       r = j.requestor
       dest_name = if j.destination.split("/").length==1
-                    "#{r.jobspec_title}#{"/"}#{j.destination}"
+                    "#{r.runner_title}#{"/"}#{j.destination}"
                   else
                     j.destination
                   end

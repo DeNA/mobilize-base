@@ -10,8 +10,7 @@ namespace :mobilize do
       #require all mobilize gems in order of release
       require 'mobilize-base'
       require 'mobilize-ssh'
-    rescue
-      #do nothing
+    rescue Exception=>exc
     end
 
     begin
