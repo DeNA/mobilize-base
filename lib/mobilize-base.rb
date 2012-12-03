@@ -23,7 +23,7 @@ module Mobilize
                    end
       yaml_path = "#{config_dir}#{config_name}.yml"
       if ::File.exists?(yaml_path)
-        return ::YAML.load_file(yaml_path)
+        return ::YAML.load_file(yaml_path)[Base.env]
       else
         raise "Could not find #{config_name}.yml in #{config_dir}"
       end
@@ -75,5 +75,5 @@ require "mobilize-base/extensions/google_drive/acl"
 require "mobilize-base/extensions/google_drive/client_login_fetcher"
 require "mobilize-base/extensions/google_drive/file"
 require "mobilize-base/extensions/google_drive/worksheet"
-require "mobilize-base/handlers/mongodb"
+require "mobilize-base/handlers/gridfs"
 require "mobilize-base/handlers/email"

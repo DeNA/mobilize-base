@@ -44,7 +44,37 @@ module GoogleDrive
       sheet.save
     end
 
-    def write(tsv,check=true,job_id=nil)
+    def merge(merge_sheet)
+      #write the top left of sheet
+      #with the contents of merge_sheet
+      sheet = self
+      curr_rows = sheet.num_rows
+      curr_cols = sheet.num_cols
+      merge_rows = merge_sheet.num_rows
+      merge_cols = merge_sheet.num_cols
+      #make sure sheet is at least as big as necessary
+      if merge_rows > curr_rows
+        sheet.max_rows = merge_rows
+        sheet.save
+      end
+      if merge_cols > curr_cols
+        sheet.max_cols = merge_cols
+        sheet.save
+      end
+      batch_start = 0
+      batch_length = 80
+      merge_sheet.rows.each_with_index do |row,row_i|
+        row.each_with_index do |val,col_i|
+          sheet[row_i+1,col_i+1] = val
+        end
+        if row_i > batch_start + batch_length
+          sheet.save
+          batch_start += (batch_length+1)
+        end
+      end
+    end
+
+    def write(tsv)
       sheet = self
       tsvrows = tsv.split("\n")
       #no rows, no write
@@ -55,8 +85,6 @@ module GoogleDrive
       rows_written = 0
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
-      pct_tens_complete =["0"]
-      curr_pct_complete = "00"
       #make sure sheet is at least as big as necessary
       if tsvrows.length != curr_rows
         sheet.max_rows = tsvrows.length
@@ -79,29 +107,12 @@ module GoogleDrive
         batch_start += (batch_length + 1)
         rows_written+=batch_length
         if batch_start>tsvrows.length+1
-          if job_id
-            newstatus = "100 pct written at #{Time.now.utc}"
-            Mobilize::Job.find(job_id).update_status(newstatus)
-          end
-          break
-        else
-          #pad digit
-          curr_pct_complete = "%02d" % ((rows_written+1).to_f*100/tsvrows.length.to_f).round(0)
-          if !pct_tens_complete.include?(curr_pct_complete.first)
-            if job_id
-              newstatus = "#{curr_pct_complete} pct written at #{Time.now.utc}"
-              Mobilize::Job.find(job_id).update_status(newstatus)
-              newstatus.oputs
-              pct_tens_complete << curr_pct_complete.first
-            end
-          end
+         break
         end
       end
-      #checksum it against the source
-      sheet.checksum(tsv) if check
       true
     end
-    def checksum(tsv)
+    def check_and_fix(tsv)
       sheet = self
       sheet.reload
       #loading remote data for checksum

@@ -1,7 +1,7 @@
 module Mobilize
   module Jobtracker
     def Jobtracker.config
-      Base.config('jobtracker')[Base.env]
+      Base.config('jobtracker')
     end
 
     #modify this to increase the frequency of request cycles

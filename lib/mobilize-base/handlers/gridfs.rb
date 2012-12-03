@@ -2,7 +2,7 @@ module Mobilize
   class Gridfs
 
     def Gridfs.config
-      Base.config('gridfs')[Base.env]
+      Base.config('gridfs')
     end
 
     def Gridfs.grid

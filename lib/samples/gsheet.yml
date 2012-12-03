@@ -1,0 +1,6 @@
+development:
+  max_cells: 400000
+test:
+  max_cells: 400000
+production:
+  max_cells: 400000

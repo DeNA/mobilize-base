@@ -1,7 +1,7 @@
 module Mobilize
   module Gdrive
     def Gdrive.config
-      Base.config('gdrive')[Base.env]
+      Base.config('gdrive')
     end
 
     def Gdrive.domain
