@@ -29,7 +29,7 @@ namespace :mobilize_base do
   task :setup do
     sample_dir = File.dirname(__FILE__) + '/../samples/'
     sample_files = Dir.entries(sample_dir)
-    config_dir = "#{ENV['PWD']}/config/"
+    config_dir = "#{ENV['PWD']}/config/mobilize/"
     log_dir = "#{ENV['PWD']}/log/"
     unless File.exists?(config_dir)
       puts "creating config dir"
@@ -41,7 +41,7 @@ namespace :mobilize_base do
     end
     sample_files.each do |fname|
       unless File.exists?("#{config_dir}#{fname}")
-        puts "creating config/#{fname}"
+        puts "creating config/mobilize/#{fname}"
         `cp #{sample_dir}#{fname} #{config_dir}#{fname}`
       end
     end

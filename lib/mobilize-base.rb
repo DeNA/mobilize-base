@@ -17,9 +17,9 @@ module Mobilize
     end
     def Base.config(config_name)
       config_dir = begin
-                     "#{::Rails.root}/config/"
+                     "#{::Rails.root}/config/mobilize/"
                    rescue
-                     "#{Base.root}/config/"
+                     "#{Base.root}/config/mobilize/"
                    end
       yaml_path = "#{config_dir}#{config_name}.yml"
       if ::File.exists?(yaml_path)
@@ -51,7 +51,7 @@ module Mobilize
     end
   end
 end
-mongoid_config_path = "#{Mobilize::Base.root}/config/mongoid.yml"
+mongoid_config_path = "#{Mobilize::Base.root}/config/mobilize/mongoid.yml"
 if File.exists?(mongoid_config_path)
   require 'mongo'
   require 'mongoid'
@@ -71,6 +71,9 @@ require "mobilize-base/handlers/gdrive"
 require "mobilize-base/handlers/gfile"
 require "mobilize-base/handlers/gbook"
 require "mobilize-base/handlers/gsheet"
-require "mobilize-base/extensions/google_drive"
+require "mobilize-base/extensions/google_drive/acl"
+require "mobilize-base/extensions/google_drive/client_login_fetcher"
+require "mobilize-base/extensions/google_drive/file"
+require "mobilize-base/extensions/google_drive/worksheet"
 require "mobilize-base/handlers/mongodb"
 require "mobilize-base/handlers/email"

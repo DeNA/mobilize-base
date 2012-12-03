@@ -19,25 +19,23 @@ describe "Mobilize" do
     Mobilize::Jobtracker.restart_workers!
 
     puts "build test runner"
-    email = Mobilize::Gdrive.owner_email
+    gdrive_slot = Mobilize::Gdrive.owner_email
     puts "create requestor 'mobilize'"
-    requestor = Mobilize::Requestor.find_or_create_by_email(email)
-    assert requestor.email == email    
+    u = Mobilize::User.find_or_create_by_email(email)
+    assert u.email == email
 
-    Mobilize::Jobtracker.build_test_runner(requestor.id.to_s) 
+    Mobilize::Jobtracker.build_test_runner(u.email)
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
-    runner_title = requestor.runner_title
-
-    puts "requestor created runner?"
-    books = Mobilize::Gbook.find_all_by_title(runner_title)
+    puts "Requestor created runner with 'jobs' sheet?"
+    r = u.runner.gsheet(gdrive_slot).to_tsv
     assert books.length == 1
-    
+
     puts "Jobtracker created runner with 'jobs' sheet?"
-    jobs_sheets = Mobilize::Gsheet.find_all_by_name("#{runner_title}/Jobs",email)
+    jobs_sheets = Mobilize::Gsheet.find_all_by_name("#{runner_title}/jobs",email)
     assert jobs_sheets.length == 1
 
-    puts "add test_source data"    
+    puts "add test_source data"
     book = books.first
     test_source_sheet = Mobilize::Gsheet.find_or_create_by_name("#{runner_title}/test_source",email)
 

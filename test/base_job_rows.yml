@@ -1,2 +1,15 @@
-- {name: test, active: true, schedule: once,status: "", last_error: "",destination_url: "", tasks: "gsheet.read, gsheet.write", datasets: test_source, params: "", destination: test_destination}
-- {name: test2, active: true, schedule: "after test", status: "",last_error: "",destination_url: "", tasks: "gsheet.read, gsheet.write", datasets: test_source, params: "", destination: test_destination_after}
+name: "base1"
+active: true
+trigger: once
+status: ""
+task1: 'gsheet.read "Runner(mobilize_test)/base1_task1.in"'
+task2: 'gsheet.write "base1/task1/out", "Runner(mobilize_test)/base1.out"'
+task3: 'gsheet.write "base1/task1/err", "Runner(mobilize_test)/base1.err"'
+
+name: "base2"
+active: true
+trigger: "after base1"
+status: ""
+task1: 'job.read "base1/task1/out"'
+task2: 'gsheet.write "task1/out", "Runner(mobilize_test)/base1.out"'
+task3: 'gsheet.write "task1/err", "Runner(mobilize_test)/base2.err"'

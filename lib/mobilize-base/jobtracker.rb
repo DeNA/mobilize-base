@@ -14,8 +14,8 @@ module Mobilize
       Jobtracker.config['notification_freq']
     end
 
-    def Jobtracker.requestor_refresh_freq
-      Jobtracker.config['requestor_refresh_freq']
+    def Jobtracker.runner_read_freq
+      Jobtracker.config['runner_read_freq']
     end
 
     #long running tolerance
@@ -32,7 +32,7 @@ module Mobilize
     end
 
     def Jobtracker.worker
-      Resque.find_worker_by_mongo_id("jobtracker")
+      Resque.find_worker_by_path("jobtracker")
     end
 
     def Jobtracker.workers(state="all")
@@ -184,7 +184,7 @@ module Mobilize
 
     def Jobtracker.perform(id,*args)
       while Jobtracker.status != 'stopping'
-        requestors = Requestor.all
+        requestors = User.all
         Jobtracker.run_notifications
         requestors.each do |r|
           Jobtracker.update_status("Checking requestor #{r.name}")
@@ -235,14 +235,13 @@ module Mobilize
       end
     end
 
-    def Jobtracker.build_test_runner(requestor_id)
+    def Jobtracker.build_test_runner(user_email)
       Jobtracker.set_test_env
-      requestor = Requestor.find(requestor_id)
+      u = User.where(:email=>user_email).first
       Jobtracker.update_status("delete old books and datasets")
       # delete any old runner from previous test runs
-      runner_title = requestor.runner_title
-      books = Mobilize::Gbook.find_all_by_title(runner_title)
-      books.each{|book| book.delete}
+      gdrive_slot = Gdrive.owner_email
+      u.runner.gsheet(gdrive_slot).spreadsheet.delete
       Jobtracker.update_status("enqueue jobtracker, wait 45s")
       Mobilize::Jobtracker.start
       sleep 45

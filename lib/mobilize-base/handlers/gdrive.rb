@@ -42,11 +42,11 @@ module Mobilize
     end
 
     #email management - used to make sure not too many emails get used at the same time
-    def Gdrive.get_worker_email_by_mongo_id(mongo_id)
-      active_emails = Mobilize::Resque.jobs('working').map{|j| j['email'] if j['email']}.compact
+    def Gdrive.slot_worker_by_path(path)
+      working_slots = Mobilize::Resque.jobs('working').map{|j| j['gdrive_slot'] if j['gdrive_slot']}.compact
       Gdrive.workers.sort_by{rand}.each do |w|
-        if !(active_emails.include?(w['email']))
-          Mobilize::Resque.update_job_email(mongo_id,w['email'])
+        unless working_slots.include?(w['email'])
+          Mobilize::Resque.set_worker_args_by_path(path,{'gdrive_slot'=>w['email']})
           return w['email']
         end
       end

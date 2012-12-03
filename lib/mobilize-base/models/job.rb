@@ -2,199 +2,42 @@ module Mobilize
   class Job
     include Mongoid::Document
     include Mongoid::Timestamps
-    field :requestor_id, type: String
-    field :name, type: String
-    field :active, type: Boolean #active, inactive
-    field :schedule, type: String
-    field :active_task, type: String
-    field :tasks, type: String
+    field :handler, type: String
+    field :path, type: String
+    field :active, type: Boolean
+    field :trigger, type: String
     field :status, type: String
-    field :last_error, type: String
-    field :last_trace, type: String
     field :last_completed_at, type: Time
-    field :datasets, type: String #name of data sources
-    field :params, type: String #JSON
-    field :destination, type: String #output destination - could be file, could be sheet
 
-    index({ requestor_id: 1})
-    index({ name: 1})
+    index({ path: 1})
 
-    before_destroy :destroy_output_dst_ids
-
-    def worker
+    def tasks
       j = self
-      Mobilize::Resque.find_worker_by_mongo_id(j.id.to_s)
+      Task.where(:path=>/^#{j.path}/).to_a.sort_by{|t| t.path}
     end
 
-    def dataset_array
-      j = self
-      r = j.requestor
-      dsts = j.datasets.split(",").map{|dst| dst.strip}
-      dsts.map do |ps|
-        #prepend runner title if there is no path separator
-        full_ps = ps.index("/") ? ps : [r.runner_title,ps].join("/")
-        #find or create dataset for this sheet
-        dst = Dataset.find_or_create_by_handler_and_name("gsheet",full_ps)
-        dst.update_attributes(:requestor_id=>r.id.to_s) unless dst.requestor_id
-        dst
-      end
-    end
-
-    def task_array
-      self.tasks.split(",").map{|t| t.strip}
-    end
-
-    def task_output_dsts
-      j = self
-      r = j.requestor
-      dst_names = j.task_array.map{|tname| [r.name,j.name,tname].join("/")}
-      dst_names.map do |dst_name|
-        Dataset.find_or_create_by_requestor_id_and_handler_and_name(r.id.to_s,'mongodb',dst_name)
-      end
-    end
-
-    def task_idx
-      j = self
-      j.task_array.index(j.active_task)
-    end
-
-    def Job.find_by_name(name)
-      Job.where(:name=>name).first
-    end
-
-    def Job.find_all_by_requestor_id(requestor_id)
-      Job.where(:requestor_id=>requestor_id).to_a
-    end
-
-    def Job.find_or_create_by_requestor_id_and_name(requestor_id,name)
-      j = Job.where(:requestor_id=>requestor_id, :name=>name).first
-      j = Job.create(:requestor_id=>requestor_id, :name=>name) unless j
+    def Job.find_or_create_by_handler_and_path(handler,path)
+      j = Job.where(:handler=>handler, :path=>path).first
+      j = Job.create(:handler=>handler, :path=>path) unless j
       return j
     end
 
-    #called by Resque
-    def Job.perform(id,*args)
-      j = Job.find(id)
-      r = j.requestor
-      handler,method_name = j.active_task.split(".")
-      begin
-        j.update_status(%{Starting #{j.active_task} task at #{Time.now.utc}})
-        task_output = "Mobilize::#{handler.humanize}".constantize.send("#{method_name}_by_job_id",id)
-        #this allows user to return false if the stage didn't go as expected and needs to retry
-        #e.g. tried to write to Google but all the accounts were in use
-        return false if task_output == false
-        task_output_dst = j.task_output_dsts[j.task_idx]
-        task_output = task_output.to_s unless task_output.class == String
-        task_output_dst.write_cache(task_output)
-        if j.active_task == j.task_array.last
-          j.active_task = nil
-          j.last_error = ""
-          j.last_trace = ""
-          j.last_completed_at = Time.now.utc
-          j.status = %{Completed all tasks at #{Time.now.utc}}
-          j.save!
-          #check for any dependent jobs, if there are, enqueue them
-          r = j.requestor
-          dep_jobs = Job.where(:active=>true, :requestor_id=>r.id.to_s, :schedule=>"after #{j.name}").to_a
-          dep_jobs += Job.where(:active=>true, :schedule=>"after #{r.name}/#{j.name}").to_a
-          #put begin/rescue so all dependencies run
-          dep_jobs.each{|dj| begin;dj.enqueue! unless dj.is_working?;rescue;end}
-        else
-          #set next task
-          j.active_task = j.task_array[j.task_idx+1]
-          j.save!
-          #queue up next task
-          j.enqueue!
-        end
-      rescue ScriptError,StandardError => exc
-        #record the failure in Job so it appears on spec sheets
-        j.status='failed'
-        j.save!
-        j.update_status("Failed at #{Time.now.utc.to_s}")
-        j.update_attributes(:last_error=>exc.to_s,:last_trace=>exc.backtrace.to_s)
-        [exc.to_s,exc.backtrace.to_s].join("=>").oputs
-        #raising here will cause the failure to show on the Resque UI
-        raise exc
-      end
-      return true
-    end
-
-    def enqueue!
-      j = self
-      r = j.requestor
-      j.update_attributes(:active_task=>j.task_array.first) if j.active_task.blank?
-      ::Resque::Job.create("mobilize",Job,j.id.to_s,%{#{r.name}=>#{j.name}})
-      return true
-    end
-
     #convenience methods
-    def requestor
+    def runner
       j = self
-      return Requestor.find(j.requestor_id)
-    end
-
-    def restart
-      j = self
-      j.update_attributes(:last_completed_at=>nil)
-      return true
-    end
-
-    def prior_task
-      j = self
-      return nil if j.active_task.nil?
-      task_idx = j.task_array.index(j.active_task)
-      return nil if task_idx==0
-      return j.task_array[task_idx-1]
-    end
-
-    def destination_url
-      j = self
-      return nil if j.destination.nil?
-      destination = j.destination
-      dst = if j.task_array.last == 'gsheet.write'
-              destination = [j.requestor.runner_title,j.destination].join("/") if destination.split("/").length==1
-              Dataset.find_by_handler_and_name('gsheet',destination)
-            elsif j.task_array.last == 'gfile.write'
-              #all gfiles must end in gz
-              destination += ".gz" unless destination.ends_with?(".gz")
-              destination = [s.requestor.name,"_"].join + destination unless destination.starts_with?([s.requestor.name,"_"].join)
-              Dataset.find_by_handler_and_name('gfile',destination)
-            end
-      return dst.url if dst
-    end
-
-    def worker_args
-      j = self
-      Jobtracker.get_worker_args(j.worker)
-    end
-
-    def set_worker_args(args)
-      j = self
-      Jobtracker.set_worker_args(j.worker,args)
-    end
-
-    def update_status(msg)
-      j = self
-      j.update_attributes(:status=>msg)
-      Mobilize::Resque.update_job_status(j.id.to_s,msg)
-      return true
-    end
-
-    def is_working?
-      j = self
-      Mobilize::Resque.active_mongo_ids.include?(j.id.to_s)
+      return Runner.where(:handler=>j.handler,:path=>j.path.split("/")[0..-3].join("/")).first
     end
 
     def is_due?
       j = self
-      return false if j.is_working? or j.active == false or j.schedule.to_s.starts_with?("after")
+      return false if j.is_working? or j.active == false or j.trigger.to_s.starts_with?("after")
       last_run = j.last_completed_at
-      #check schedule
-      schedule = j.schedule
-      return true if schedule == 'once'
+      #check trigger
+      trigger = j.trigger
+      return true if trigger == 'once'
       #strip the "every" from the front if present
-      schedule = schedule.gsub("every","").gsub("."," ").strip
-      value,unit,operator,job_utctime = schedule.split(" ")
+      trigger = trigger.gsub("every","").gsub("."," ").strip
+      value,unit,operator,job_utctime = trigger.split(" ")
       curr_utctime = Time.now.utc
       curr_utcdate = curr_utctime.to_date.strftime("%Y-%m-%d")
       if job_utctime

@@ -47,36 +47,32 @@ module Mobilize
       return working_jobs + queued_jobs + failed_jobs if state == 'all'
     end
 
-    def Resque.active_mongo_ids
-      #first argument of the payload is the mongo id in Mongo unless the worker is Jobtracker
+    def Resque.active_paths
+      #first argument of the payload is the runner / task path unless the worker is Jobtracker
       Resque.jobs('active').map{|j| j['args'].first unless j['class']=='Jobtracker'}.compact
     end
 
     #Resque workers and methods to find
-    def Resque.find_worker_by_mongo_id(mongo_id)
-      Resque.workers('working').select{|w| w.job['payload']['args'][0] == mongo_id}.first
+    def Resque.find_worker_by_path(path)
+      Resque.workers('working').select{|w| w.job['payload']['args'].first == path}.first
     end
 
-    def Resque.update_job_status(mongo_id,msg)
+    def Resque.update_status_by_path(path,msg)
+      args = {'status'=>msg}
+      Resque.set_worker_args_by_path(path,args)
+    end
+
+    def Resque.set_worker_args_by_path(path,args)
       #this only works on working workers
-      worker = Resque.find_worker_by_mongo_id(mongo_id)
+      worker = Resque.find_worker_by_path(path)
+      args_string = args.map{|k,v| "#{k}: #{v}, "}.join(";")
       #also fire a log, cap logfiles at 10 MB
-      if !worker
-        Logger.new(Resque.log_path, 10, 1024*1000*10).info("[no worker for #{mongo_id}: #{Time.now.utc}] status: #{msg}")
-        return false
-      end
-      Resque.set_worker_args(worker,{"status"=>msg})
-      Logger.new(Resque.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] status: #{msg}")
-      return true
-    end
-
-    def Resque.update_job_email(mongo_id,email)
-      #this only works on working workers
-      worker = Resque.find_worker_by_mongo_id(mongo_id)
+      worker_string = worker ? worker.to_s : "no worker"
+      info_msg = "[#{worker_string} for #{path}: #{Time.now.utc}] #{args_string}"
+      Logger.new(Resque.log_path, 10, 1024*1000*10).info(info_msg)
       return false unless worker
-      Resque.set_worker_args(worker,{"email"=>email})
-      #also fire a log, cap logfiles at 10 MB
-      Logger.new(Resque.log_path, 10, 1024*1000*10).info("[#{worker} #{Time.now.utc}] email: #{email}")
+      Resque.set_worker_args(worker,args)
+      return true
     end
 
     def Resque.get_worker_args(worker)
@@ -114,7 +110,7 @@ module Mobilize
       fjobs = {}
       excs = Hash.new(0)
       Resque.failures.each do |f|
-        sname = f['payload']['class'] + ("=>" + f['payload']['args'].second['name'].to_s if f['payload']['args'].second).to_s
+        sname = f['payload']['args'].first
         excs = f['error']
         if fjobs[sname].nil?
           fjobs[sname] = {excs => 1} 
