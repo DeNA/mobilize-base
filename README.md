@@ -26,8 +26,9 @@ Table Of Contents
 * [Configure](#section_Configure)
   * [Google Drive](#section_Configure_Google_Drive)
   * [Jobtracker](#section_Configure_Jobtracker)
-  * [Mongoid](#section_Configure_Mongoid)
   * [Resque](#section_Configure_Resque)
+  * [Gridfs](#section_Configure_Gridfs)
+  * [Mongoid](#section_Configure_Mongoid)
 * [Start](#section_Start)
   * [Start resque-web](#section_Start_Start_resque-web)
   * [Set Environment](#section_Start_Set_Environment)
@@ -37,8 +38,11 @@ Table Of Contents
   * [Start Jobtracker](#section_Start_Start_Jobtracker)
   * [Create Job](#section_Start_Create_Job)
   * [Run Test](#section_Start_Run_Test)
+  * [Add Gbooks and Gsheets](#section_Start_Add_Gbooks_And_Gsheets)
 * [Meta](#section_Meta)
 * [Author](#section_Author)
+* [Special Thanks](#section_Special_Thanks)
+
 
 <a name='section_Overview'></a>
 Overview
@@ -271,6 +275,30 @@ production:
   redis_port: 6379
 ```
 
+<a name='section_Configure_Gridfs'></a>
+### Configure Gridfs
+
+Mobilize stores cached data in MongoDB Gridfs. 
+It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
+
+* max_versions - the number of __different__ versions of data to keep
+for a given cache. Default is 10. This is meant mostly to allow you to
+restore Runners from cache if necessary.
+* max_compressed_write_size - the amount of compressed data Gridfs will
+allow. If you try to write more than this, an exception will be thrown.
+
+``` yml
+development:
+  max_versions: 10 #number of versions of cache to keep in gridfs
+  max_compressed_write_size: 1000000000 #~1GB
+test:
+  max_versions: 10 #number of versions of cache to keep in gridfs
+  max_compressed_write_size: 1000000000 #~1GB
+production:
+  max_versions: 10 #number of versions of cache to keep in gridfs
+  max_compressed_write_size: 1000000000 #~1GB
+```
+
 <a name='section_Configure_Mongoid'></a>
 ### Configure Mongoid
 
@@ -360,11 +388,11 @@ endpoint to another. They each have a Runner, which is a google sheet
 that contains one or more Jobs.
 
 To create a requestor, use the User.find_or_create_by_name
-command in irb (replace the user with your own name, or any name
+command (replace the user with your own name, or any name
 in your domain).
 
 ``` ruby
-> User.find_or_create_by_name("user_name")
+irb> User.find_or_create_by_name("user_name")
 ```
 
 <a name='section_Start_Start_Workers'></a>
@@ -388,13 +416,13 @@ them, do:
 > Jobtracker.restart_workers!
 ```
 
-Note that this will kill any workers on the Mobilize queue.
+Note that restart will kill any workers on the Mobilize queue.
 
 <a name='section_Start_View_Logs'></a>
 ### View Logs
 
 at this point, you'll want to start viewing the logs for the Resque
-workers -- they will be stored under your log folder. You can do:
+workers -- they will be stored under your log folder, by default log/. You can do:
 
   $ tail -f log/mobilize-`<environment>`.log
 
@@ -431,7 +459,7 @@ name>))` and enter values under each header:
 	
 * active	set this to blank or FALSE if you want to turn off a job
 	
-* schedule	This uses human readable syntax to schedule jobs. It accepts the following:
+* trigger	This uses human readable syntax to schedule jobs. It accepts the following:
   * every `<integer>` hour --	fire the job at increments of `<integer>` hours, minimum of 1 hour
   * every `<integer>` day	-- fire the job at increments of `<integer>` days, minimum of 1
   * every `<integer>` day after <HH:MM>	-- fire the job at increments of <integer> days, after HH:MM UTC time
@@ -442,28 +470,26 @@ name>))` and enter values under each header:
 
 * status	Mobilize writes this field with the last status returned by the job
 
-* last_error Mobilize writes any errors to this field, and wipes it if
-  the job completes successfully.
-
-* destination_url	Mobilize writes this field with a link to the last dataset returned by the job, blank if none
-	
-* tasks Comma-separated list of steps to be performed by the job. For
-mobilize base, you can enter "gsheet.read, gsheet.write" (no quotes).
-These
-
-* datasets Comma-delimited list of datasets to be cached in mongo and
-relayed to the job.
-  For mobilize-base, the format is `<google docs book>/<google docs sheet>`, so if you
-wanted to read from the "output" sheet on the "monthly_results" book you
-would write in `monthly_results/output`. For a sheet in the Runner
-itself you could write simply `output`.
-
-* params This is a hash of data, expressed in a JSON, which can be used
-for parameters.
-
-* destination This is the destination for the data, relayed to the job.
-  For gsheet.write, this would be the name of the sheet to be
-written to, similar to datasets.
+* task1..task5 List of tasks to be performed by the job. 
+  * Tasks have this syntax: <handler>.<call> <params>.
+    * handler specifies the file that should receive the task
+    * the call specifies the method within the file. The method should
+be called `"<Handler>.<call>_by_task_path"`
+    * the params the method accepts, which are custom to each
+task. These should be a comma-delimited list, with each param in
+quotes.
+    * For mobilize-base, the following tasks are available:
+      * gsheet.read `<input_gsheet_full_path>`, which reads the sheet. 
+        * The gsheet_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
+"Requestor_mobilize(test)/base1_task1.in".
+      * gsheet.write `<task_relative_path>`,`<output_gsheet_path>`,
+which writes the specified task output to the output_gsheet. 
+        * The task_path should be of the form `<task_column>` or
+`<job_name/task_column>`. The test uses "base1/task1" for the first test
+and simply "task1" for the second test. Both of these take the output
+from the first task.
+        * The test uses "Requestor_mobilize(test)/base1.out" and
+"Requestor_mobilize(test)/base2.out" for output sheets.
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test
@@ -483,6 +509,44 @@ necessary details.
 
 This will create a test Runner with a sample job. These will run off a
 test redis instance which will be killed once the tests finish.
+
+<a name='section_Start_'></a>
+### Run Test
+
+To run tests, you will need to 
+
+1) clone the repository 
+
+From the project folder, run
+
+2) rake mobilize_base:setup
+
+and populate the "test" environment in the config files with the
+necessary details.
+
+3) $ rake test
+
+This will create a test Runner with a sample job. These will run off a
+test redis instance. This instance will be kept alive so you can test
+additional Mobilize modules. (see [mobilize-ssh][mobilize-ssh] for more)
+
+<a name='section_Start_Add_Gbooks_And_Gsheets'></a>
+### Add Gbooks and Gsheets
+
+A User's Runner should be kept clean, preferably with only the jobs
+sheet. The test keeps everything in the
+Runner, but in reality you will want to create lots of different books
+to share with different people in your organization.
+
+To add a new Gbook, create one as you normally would, then make sure the
+Owner is the same user as specified in your gdrive.yml/owner/name value.
+Mobilize will handle the rest, extending permissions to workers and
+admins.
+
+Also make sure any Gsheets you specify for __read__ operations exist
+prior to calling the job, or there will be an error. __Write__
+operations will create the book and sheet if it does not already exist,
+already under ownership of the owner account.
 
 <a name='section_Meta'></a>
 Meta
@@ -509,7 +573,8 @@ Special Thanks
 reinvent the wheel
 * ngmoco:) and DeNA Global for supporting and adopting the Mobilize
 platform
-* gimite, defunkt, 10gen, and countless other github heroes
+* gimite, defunkt, 10gen, and the countless other github heroes and
+crewmembers.
 
 [google_drive_ruby]: https://github.com/gimite/google-drive-ruby
 [resque]: https://github.com/defunkt/resque

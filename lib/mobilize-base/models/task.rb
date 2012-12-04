@@ -31,8 +31,8 @@ module Mobilize
       t = self
       t.param_string.split(",").map do |p| 
         ps = p.strip
-        ps = ps[1..-1] if ps[0] == '"'
-        ps = ps[0..-2] if ps[-1] == '"'
+        ps = ps[1..-1] if ['"',"'"].include?(ps[0])
+        ps = ps[0..-2] if ['"',"'"].include?(ps[-1])
         ps
       end
     end
