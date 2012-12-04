@@ -21,10 +21,11 @@ describe "Mobilize" do
     puts "build test runner"
     gdrive_slot = Mobilize::Gdrive.owner_email
     puts "create user 'mobilize'"
-    u = Mobilize::User.find_or_create_by_email(gdrive_slot)
+    user_name = gdrive_slot.split("@").first
+    u = Mobilize::User.find_or_create_by_name(user_name)
     assert u.email == gdrive_slot
 
-    Mobilize::Jobtracker.build_test_runner(u.email)
+    Mobilize::Jobtracker.build_test_runner(user_name)
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
     puts "Jobtracker created runner with 'jobs' sheet?"

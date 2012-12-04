@@ -146,7 +146,7 @@ module Mobilize
 
     def user
       r = self
-      user_name = r.path.split(" - ").second.split("(").first.split("/").first
+      user_name = r.path.split("_").second.split("(").first.split("/").first
       User.where(:email=>[user_name,Gdrive.domain].join("@")).first
     end
 

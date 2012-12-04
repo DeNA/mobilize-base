@@ -39,11 +39,14 @@ module Mobilize
         ENV['MOBILIZE_ENV'] || "development"
       end
     end
+    def Base.log_dir
+      ENV['MOBILIZE_LOG_DIR'] ||= "log/"
+    end
     def Base.log_path(log_name)
       log_dir = begin
-                  "#{::Rails.root}/log/"
+                  "#{::Rails.root}/#{Base.log_dir}"
                 rescue
-                  "#{Base.root}/log/"
+                  "#{Base.root}/#{Base.log_dir}"
                 end
       log_path = "#{log_dir}#{log_name}.log"
       if ::File.exists?(log_dir)

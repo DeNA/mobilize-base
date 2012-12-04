@@ -236,9 +236,9 @@ module Mobilize
       end
     end
 
-    def Jobtracker.build_test_runner(user_email)
+    def Jobtracker.build_test_runner(user_name)
       Jobtracker.set_test_env
-      u = User.where(:email=>user_email).first
+      u = User.where(:name=>user_name).first
       Jobtracker.update_status("delete old books and datasets")
       # delete any old runner from previous test runs
       gdrive_slot = Gdrive.owner_email

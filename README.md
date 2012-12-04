@@ -11,7 +11,7 @@ Mobilize is an end-to-end data transfer workflow manager with:
 Mobilize-Base includes all the core scheduling and processing
 functionality, allowing you to:
 * put workers on the Mobilize Resque queue.
-* create [Requestors](#section_Start_Requestors_Requestor) and their associated Google Spreadsheet [Runners](#section_Start_Requestors_Runner);
+* create [Users](#section_Start_Users_User) and their associated Google Spreadsheet [Runners](#section_Start_Users_Runner);
 * poll for [Jobs](#section_Job) on Runners (currently gsheet to gsheet only) and add them to Resque;
 * monitor the status of Jobs on a rolling log.
 
@@ -31,7 +31,7 @@ Table Of Contents
 * [Start](#section_Start)
   * [Start resque-web](#section_Start_Start_resque-web)
   * [Set Environment](#section_Start_Set_Environment)
-  * [Create Requestor](#section_Start_Create_Requestor)
+  * [Create User](#section_Start_Create_User)
   * [Start Workers](#section_Start_Start_Workers)
   * [View Logs](#section_Start_View_Logs)
   * [Start Jobtracker](#section_Start_Start_Jobtracker)
@@ -75,7 +75,7 @@ instructions.
 ### MongoDB
 
 MongoDB is used to persist caches between reads and writes, keep track
-of Requestors and Jobs, and store Datasets that map to endpoints.
+of Users and Jobs, and store Datasets that map to endpoints.
 
 Please refer to the [MongoDB Quickstart Page][mongodb_quickstart] to get started.
 
@@ -115,10 +115,10 @@ same one that contains your Rakefile)
 Inside the Rakefile in your project's root folder, make sure you have:
 
 ``` ruby
-require 'mobilize-base/tasks'
+require 'mobilize-base/rakes'
 ```
 
-This defines tasks essential to run the environment.
+This defines rake tasks essential to run the environment.
 
 ### Config and Log Folders
 
@@ -126,10 +126,14 @@ run
 
   $ rake mobilize_base:setup
 
-Mobilize will create config and log folders at the project root
-level. (same as the Rakefile)
+Mobilize will create config/mobilize/ and log/ folders at the project root
+level. (same as the Rakefile). 
 
-It will also create all required config files, which are detailed below.
+(You can override these by passing
+MOBILIZE_CONFIG_DIR and/or MOBILIZE_LOG_DIR arguments to the command.
+All directories must end with a '/'.)
+
+The script will also create samples for all required config files, which are detailed below.
 
 Resque will create a mobilize-resque-`<environment>`.log in the log folder,
 and loop over 10 files, 10MB each.
@@ -138,71 +142,71 @@ and loop over 10 files, 10MB each.
 Configure
 ------------
 
-All Mobilize configurations live in files in `config/*.yml`. Samples can
+All Mobilize configurations live in files in `config/mobilize/*.yml` by
+default. Samples can
 be found below or on github in the [lib/samples][git_samples] folder.
 
 <a name='section_Configure_Google_Drive'></a>
 ### Configure Google Drive
 
-Google drive needs:
-* a host domain, which can be gmail.com. All gdrive accounts should have
-the same domain, and all Requestors should have emails in this domain.
-* an owner email address and password. You can set up separate owners
+gdrive.yml needs:
+* a domain, which can be gmail.com but may be different depending on
+your organization. All gdrive accounts should have
+the same domain, and all Users should have emails in this domain.
+* an owner name and password. You can set up separate owners
   for different environments as in the below file, which will keep your
 mission critical workers from getting rate-limit errors.
 * one or more admins with email attributes -- these will be for people
-  who should be given write permissions to ALL Mobilize sheets, for
-maintenance purposes.
-* one or more workers with email and pw attributes -- they will be used
+  who should be given write permissions to all Mobilize books in the
+environment for maintenance purposes.
+* one or more workers with name and pw attributes -- they will be used
   to queue up google reads and writes. This can be the same as the owner
 account for testing purposes or low-volume environments. 
 
 __Mobilize only allows one Resque
 worker at a time to use a Google drive worker account for
-reading/writing.__
+reading/writing, which is called a gdrive_slot.__
 
 Sample gdrive.yml:
 
 ``` yml
-
 development:
-  host: 'host.com'
+  domain: 'host.com'
   owner:
-    email: 'owner_development@host.com'
+    name: 'owner_development'
     pw: "google_drive_password"
   admins:
-    - {email: 'admin@host.com'}
+    - {name: 'admin'}
   workers:
-    - {email: 'worker_development001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker_development002@host.com', pw: "worker002_google_drive_password"}
+    - {name: 'worker_development001', pw: "worker001_google_drive_password"}
+    - {name: 'worker_development002', pw: "worker002_google_drive_password"}
 test:
-  host: 'host.com'
+  domain: 'host.com'
   owner:
-    email: 'owner_test@host.com'
+    name: 'owner_test'
     pw: "google_drive_password"
   admins:
-    - {email: 'admin@host.com'}
+    - {name: 'admin'}
   workers:
-    - {email: 'worker_test001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker_test002@host.com', pw: "worker002_google_drive_password"}
+    - {name: 'worker_test001', pw: "worker001_google_drive_password"}
+    - {name: 'worker_test002', pw: "worker002_google_drive_password"}
 production:
-  host: 'host.com'
+  domain: 'host.com'
   owner:
-    email: 'owner_production@host.com'
+    name: 'owner_production'
     pw: "google_drive_password"
   admins:
-    - {email: 'admin@host.com'}
+    - {name: 'admin'}
   workers:
-    - {email: 'worker_production001@host.com', pw: "worker001_google_drive_password"}
-    - {email: 'worker_production002@host.com', pw: "worker002_google_drive_password"}
-
+    - {name: 'worker_production001', pw: "worker001_google_drive_password"}
+    - {name: 'worker_production002', pw: "worker002_google_drive_password"}
 ```
 
 <a name='section_Configure_Jobtracker'></a>
 ### Configure Jobtracker
 
 The Jobtracker sits on your Resque and does 2 things:
-* check for Requestors that are due for polling;
+* check for Users that are due for polling;
 * send out notifications when:
   * there are failed jobs on Resque;
   * there are jobs on Resque that have run beyond the max run time.
@@ -215,27 +219,56 @@ below and in the [lib/samples][git_samples] folder:
 
 ``` yml
 development:
-  cycle_freq: 10 #10 secs between Jobtracker sweeps
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
-    - {email: 'admin@host.com'}
+  - {'email': 'admin@host.com'}
 test:
-  cycle_freq: 10 #10 secs between Jobtracker sweeps
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
-    - {email: 'admin@host.com'}
-
+  - {'email': 'admin@host.com'}
 production:
-  cycle_freq: 10 #10 secs between Jobtracker sweeps
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
-    - {email: 'admin@host.com'}
+  - {'email': 'admin@host.com'}
+```
+
+<a name='section_Configure_Resque'></a>
+### Configure Resque
+
+Resque keeps track of Jobs, Workers and logging.
+
+It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
+
+* queue_name - the name of the Resque queue where you would like the Jobtracker and Resque Workers to
+  run. Default is mobilize.
+* max_workers - the total number of simultaneous workers you would like
+  on your queue. Default is 4 for development and test, 36 in
+production, but feel free to adjust depending on your hardware.
+* redis_port - you should probably leave this alone, it specifies the
+  default port for dev and prod and a separate one for testing.
+
+``` yml
+development:
+  queue_name: 'mobilize'
+  max_workers: 4
+  redis_port: 6379
+test:
+  queue_name: 'mobilize'
+  max_workers: 4
+  redis_port: 9736
+production:
+  queue_name: 'mobilize'
+  max_workers: 36
+  redis_port: 6379
 ```
 
 <a name='section_Configure_Mongoid'></a>
@@ -272,36 +305,6 @@ production:
         - 127.0.0.1:27017
 ```
 
-<a name='section_Configure_Resque'></a>
-### Configure Resque
-
-Resque keeps track of Jobs, Workers and logging.
-
-It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
-
-* queue_name - the name of the Resque queue where you would like the Jobtracker and Resque Workers to
-  run. Default is mobilize.
-* max_workers - the total number of simultaneous workers you would like
-  on your queue. Default is 4 for development and test, 36 in
-production, but feel free to adjust depending on your hardware.
-* redis_port - you should probably leave this alone, it specifies the
-  default port for dev and prod and a separate one for testing.
-
-``` yml
-development:
-  queue_name: 'mobilize'
-  max_workers: 4
-  redis_port: 6379
-test:
-  queue_name: 'mobilize'
-  max_workers: 4
-  redis_port: 9736
-production:
-  queue_name: 'mobilize'
-  max_workers: 36
-  redis_port: 6379
-```
-
 <a name='section_Start'></a>
 Start
 -----
@@ -310,8 +313,8 @@ A Mobilize instance can be considered "started" or "running" when you have:
 
 1. Resque workers running on the Mobilize queue;
 2. A Jobtracker running on one of the Resque workers;
-3. One or more Requestors created in your MongoDB;
-4. One or more Jobs created in a Requestor's Runner;
+3. One or more Users created in your MongoDB;
+4. One or more Jobs created in a User's Runner;
 
 <a name='section_Start_Start_resque-web'></a>
 ### Start resque-web
@@ -349,26 +352,26 @@ Otherwise, it takes it from MOBILIZE_ENV parameter, set from irb, as in:
 This affects all parameters as set in the yml files, including the
 database.
 
-<a name='section_Start_Create_Requestor'></a>
-### Create Requestor
+<a name='section_Start_Create_User'></a>
+### Create User
 
-Requestors are people who use the Mobilize service to move data from one
+Users are people who use the Mobilize service to move data from one
 endpoint to another. They each have a Runner, which is a google sheet
 that contains one or more Jobs.
 
-To create a requestor, use the Requestor.find_or_create_by_email
-command in irb (replace the user with your own email, or any email
-google recognizes).
+To create a requestor, use the User.find_or_create_by_name
+command in irb (replace the user with your own name, or any name
+in your domain).
 
 ``` ruby
-> Requestor.find_or_create_by_email("user@host.com")
+> User.find_or_create_by_name("user_name")
 ```
 
 <a name='section_Start_Start_Workers'></a>
 ### Start Workers
 
 Workers are rake tasks that load the Mobilize environment and allow the
-processing of the Jobtracker, Requestors and Jobs.
+processing of the Jobtracker, Users and Jobs.
 
 These will start as many workers as are defined in your resque.yml.
 
@@ -400,14 +403,14 @@ to view them.
 <a name='section_Start_Start_Jobtracker'></a>
 ### Start Jobtracker
 
-Once the Resque workers are running, and you have at least one Requestor
+Once the Resque workers are running, and you have at least one User
 set up, it's time to start the Jobtracker:
 
 ``` ruby
 > Jobtracker.start
 ``` 
 
-The Jobtracker will automatically enqueue any Requestors that have not
+The Jobtracker will automatically enqueue any Users that have not
 been processed in the requestor_refresh period defined in the
 jobtracker.yml, and create their Runners if they do not exist. You can
 see this process on your Resque UI and in the log file.
@@ -418,7 +421,7 @@ see this process on your Resque UI and in the log file.
 Now it's time to go onto the Runner and add a Job to be processed.
 
 To do this, you should log into your Google Drive with either the
-owner's account, an admin account, or the Runner Requestor's account. These
+owner's account, an admin account, or the Runner User's account. These
 will be the accounts with edit permissions to a given Runner.
 
 Navigate to the Jobs tab on the Runner `(denoted by Runner(<requestor
