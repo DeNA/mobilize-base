@@ -15,11 +15,14 @@ module Mobilize
         ENV['PWD']
       end
     end
+    def Base.config_dir
+      ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/"
+    end
     def Base.config(config_name)
       config_dir = begin
-                     "#{::Rails.root}/config/mobilize/"
+                     "#{::Rails.root}/#{Base.config_dir}"
                    rescue
-                     "#{Base.root}/config/mobilize/"
+                     "#{Base.root}/#{Base.config_dir}"
                    end
       yaml_path = "#{config_dir}#{config_name}.yml"
       if ::File.exists?(yaml_path)
@@ -51,7 +54,7 @@ module Mobilize
     end
   end
 end
-mongoid_config_path = "#{Mobilize::Base.root}/config/mobilize/mongoid.yml"
+mongoid_config_path = "#{Mobilize::Base.root}/#{Mobilize::Base.config_dir}mongoid.yml"
 if File.exists?(mongoid_config_path)
   require 'mongo'
   require 'mongoid'
