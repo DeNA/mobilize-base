@@ -87,6 +87,7 @@ module Mobilize
       t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}")
       if t.idx == j.tasks.length
         j.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
+        j.update_attributes(:active=>false) if j.trigger.strip == "once"
         t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
         #check for any dependent jobs, if there are, enqueue them
         r = j.runner
