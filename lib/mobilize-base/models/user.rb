@@ -14,7 +14,7 @@ module Mobilize
 
     def runner
       u = self
-      Runner.find_or_create_by_handler_and_path("gsheet",u.runner_path)
+      Runner.find_or_create_by_path(u.runner_path)
     end
 
     def jobs(jname=nil)

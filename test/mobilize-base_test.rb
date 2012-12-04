@@ -20,42 +20,38 @@ describe "Mobilize" do
 
     puts "build test runner"
     gdrive_slot = Mobilize::Gdrive.owner_email
-    puts "create requestor 'mobilize'"
-    u = Mobilize::User.find_or_create_by_email(email)
-    assert u.email == email
+    puts "create user 'mobilize'"
+    u = Mobilize::User.find_or_create_by_email(gdrive_slot)
+    assert u.email == gdrive_slot
 
     Mobilize::Jobtracker.build_test_runner(u.email)
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
-    puts "Requestor created runner with 'jobs' sheet?"
-    r = u.runner.gsheet(gdrive_slot).to_tsv
-    assert books.length == 1
-
     puts "Jobtracker created runner with 'jobs' sheet?"
-    jobs_sheets = Mobilize::Gsheet.find_all_by_name("#{runner_title}/jobs",email)
-    assert jobs_sheets.length == 1
+    r = u.runner
+    jobs_sheet = r.gsheet(gdrive_slot)
+    tsv = jobs_sheet.to_tsv
+    assert tsv.length == 56 #headers only
 
-    puts "add test_source data"
-    book = books.first
-    test_source_sheet = Mobilize::Gsheet.find_or_create_by_name("#{runner_title}/test_source",email)
+    puts "add base1_task1 input sheet"
+    test_source_sheet = Mobilize::Gsheet.find_or_create_by_path("#{r.path.split("/")[0..-2].join("/")}/base1_task1.in",gdrive_slot)
 
-    test_source_tsv = ::YAML.load_file("#{Mobilize::Base.root}/test/test_source_rows.yml").hash_array_to_tsv
+    test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/base1_task1.yml")*40
+    test_source_tsv = test_source_ha.hash_array_to_tsv
     test_source_sheet.write(test_source_tsv)
 
     puts "add row to jobs sheet, wait 120s"
-    jobs_sheet = jobs_sheets.first
-
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/base_job_rows.yml")
     jobs_sheet.add_or_update_rows(test_job_rows)
 
-    puts "job row added, force enqueued requestor"
-    requestor.enqueue!
+    puts "job row added, force enqueued runner"
+    r.enqueue!
     sleep 120
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
-    test_destination_sheet = Mobilize::Gsheet.find_or_create_by_name("#{runner_title}/test_destination",email)
+    test_target_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
 
-    assert test_destination_sheet.to_tsv == test_source_sheet.to_tsv
+    assert test_target_sheet.to_tsv == test_source_sheet.to_tsv
 
   end
 

@@ -26,7 +26,8 @@ module Mobilize
         book = books.first
       end
       if book.nil?
-        book = Gdrive.root(gdrive_slot).create_spreadsheet(path)
+        #always use owner email to make sure all books are owned by owner account
+        book = Gdrive.root(Gdrive.owner_email).create_spreadsheet(path)
         ("Created book #{path} at #{Time.now.utc.to_s}").oputs
       end
       #always make sure book dataset URL is up to date

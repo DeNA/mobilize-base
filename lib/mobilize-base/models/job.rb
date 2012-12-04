@@ -2,7 +2,6 @@ module Mobilize
   class Job
     include Mongoid::Document
     include Mongoid::Timestamps
-    field :handler, type: String
     field :path, type: String
     field :active, type: Boolean
     field :trigger, type: String
@@ -11,21 +10,32 @@ module Mobilize
 
     index({ path: 1})
 
-    def tasks
+    def name
       j = self
-      Task.where(:path=>/^#{j.path}/).to_a.sort_by{|t| t.path}
+      j.path.split("/").last
     end
 
-    def Job.find_or_create_by_handler_and_path(handler,path)
-      j = Job.where(:handler=>handler, :path=>path).first
-      j = Job.create(:handler=>handler, :path=>path) unless j
+    def tasks
+      j = self
+      Task.where(:path=>/^#{j.path.escape_regex}/).to_a.sort_by{|t| t.path}
+    end
+
+    def Job.find_or_create_by_path(path)
+      j = Job.where(:path=>path).first
+      j = Job.create(:path=>path) unless j
       return j
     end
 
     #convenience methods
     def runner
       j = self
-      return Runner.where(:handler=>j.handler,:path=>j.path.split("/")[0..-3].join("/")).first
+      runner_path = j.path.split("/")[0..-2].join("/")
+      return Runner.where(:path=>runner_path).first
+    end
+
+    def is_working?
+      j = self
+      j.tasks.select{|t| t.is_working?}.compact.length>0
     end
 
     def is_due?

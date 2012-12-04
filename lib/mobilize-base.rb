@@ -57,8 +57,10 @@ if File.exists?(mongoid_config_path)
   require 'mongoid'
   Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
   require "mobilize-base/models/dataset"
-  require "mobilize-base/models/requestor"
+  require "mobilize-base/models/user"
+  require "mobilize-base/models/runner"
   require "mobilize-base/models/job"
+  require "mobilize-base/models/task"
 end
 require 'google_drive'
 require 'resque'

@@ -15,7 +15,7 @@ module Mobilize
 
     def read
       dst = self
-      return dst.handler.humanize.constantize.read_by_path(dst.path)
+      return "Mobilize::#{dst.handler.humanize}".constantize.read_by_path(dst.path)
     end
 
     def Dataset.find_by_handler_and_path(handler,path)
@@ -30,13 +30,14 @@ module Mobilize
 
     def write(string)
       dst = self
-      dst.handler.humanize.constantize.write_by_path(dst.path,string)
+      "Mobilize::#{dst.handler.humanize}".constantize.write_by_path(dst.path,string)
       dst.raw_size = string.length
       dst.save!
       return true
     end
 
     def cache_valid?
+      dst = self
       return true if dst.last_cached_at and (dst.cache_expire_at.nil? or dst.cache_expire_at > Time.now.utc)
     end
 
@@ -44,7 +45,7 @@ module Mobilize
       dst = self
       if cache_valid?
         dst.update_attributes(:last_read_at=>Time.now.utc)
-        return cache_handler.humanize.constantize.read([dst.handler,dst.path].join("://"))
+        return "Mobilize::#{cache_handler.humanize}".constantize.read([dst.handler,dst.path].join("://"))
       else
         raise "Cache invalid or not found for #{cache_handler}://#{dst.path}"
       end
@@ -52,7 +53,7 @@ module Mobilize
 
     def write_cache(string,expire_at=nil,cache_handler="gridfs")
       dst = self
-      cache_handler.humanize.constantize.write([dst.handler,dst.path].join("://"),string)
+      "Mobilize::#{cache_handler.humanize}".constantize.write([dst.handler,dst.path].join("://"),string)
       dst.update_attributes(:last_cached_at=>Time.now.utc,
                             :last_cache_handler=>cache_handler.to_s.downcase,
                             :cache_expire_at=>expire_at,
@@ -61,7 +62,7 @@ module Mobilize
     end
 
     def delete_cache(cache_handler="gridfs")
-      return cache_handler.humanize.constantize.delete(dst.handler, dst.path)
+      return "Mobilize::#{cache_handler.humanize}".constantize.delete(dst.handler, dst.path)
     end
   end
 end

@@ -17,6 +17,18 @@ class String
     raise stderr.read if (stderr.read.length>0 and except==true)
     return stdout.read
   end
+  def escape_regex
+    str = self
+    new_str = str.clone
+    char_string = "[\/^$. |?*+()"
+    char_string.chars.to_a.each{|c|
+    new_str.gsub!(c,"\\#{c}")}
+    new_str
+  end
+  def gridsafe
+    str = self
+    str.downcase.gsub(/[^a-z0-9]/,"")
+  end
   def googlesafe
     v=self
     return "" if v.to_s==""

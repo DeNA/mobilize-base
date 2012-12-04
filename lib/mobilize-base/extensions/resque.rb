@@ -1,7 +1,7 @@
 module Mobilize
   module Resque
     def Resque.config
-      Base.config('resque')[Base.env]
+      Base.config('resque')
     end
 
     def Resque.queue_name
@@ -54,18 +54,13 @@ module Mobilize
 
     #Resque workers and methods to find
     def Resque.find_worker_by_path(path)
-      Resque.workers('working').select{|w| w.job['payload']['args'].first == path}.first
-    end
-
-    def Resque.update_status_by_path(path,msg)
-      args = {'status'=>msg}
-      Resque.set_worker_args_by_path(path,args)
+      Resque.workers('working').select{|w| w.job['payload'] and w.job['payload']['args'].first == path}.first
     end
 
     def Resque.set_worker_args_by_path(path,args)
       #this only works on working workers
       worker = Resque.find_worker_by_path(path)
-      args_string = args.map{|k,v| "#{k}: #{v}, "}.join(";")
+      args_string = args.map{|k,v| "#{k}: #{v}"}.join(";")
       #also fire a log, cap logfiles at 10 MB
       worker_string = worker ? worker.to_s : "no worker"
       info_msg = "[#{worker_string} for #{path}: #{Time.now.utc}] #{args_string}"

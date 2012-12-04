@@ -14,28 +14,39 @@ module Mobilize
 
     def idx
       t = self
-      t.split("/").last.gsub("task","").to_i
+      t.path.split("/").last.gsub("task","").to_i
     end
 
     def stdout_dataset
       t = self
-      Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/out")
+      Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/stdout")
     end
 
     def stderr_dataset
       t = self
-      Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/out")
+      Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/stderr")
     end
 
     def params
       t = self
-      t.param_string.split(",").map{|p| p.strip}
+      t.param_string.split(",").map do |p| 
+        ps = p.strip
+        ps = ps[1..-1] if ps[0] == '"'
+        ps = ps[0..-2] if ps[-1] == '"'
+        ps
+      end
     end
 
     def job
       t = self
-      job_path = t.path.split("/")[0..-3].join("/")
-      Job.find_by_handler_and_path("gsheet", job_path)
+      job_path = t.path.split("/")[0..-2].join("/")
+      Job.where(:path=>job_path).first
+    end
+
+    def Task.find_or_create_by_path(path)
+      t = Task.where(:path=>path).first
+      t = Task.create(:path=>path) unless t
+      return t
     end
 
     def prior
@@ -56,14 +67,14 @@ module Mobilize
       t = Task.where(:path=>id).first
       j = t.job
       t.update_status(%{Starting at #{Time.now.utc}})
-      stdout, stderr = [nil*2]
+      stdout, stderr = [nil,nil]
       begin
-        stdout = t.handler.humanize.constantize.send("#{t.call}_by_task_path",t.path)
+        stdout = "Mobilize::#{t.handler.humanize}".constantize.send("#{t.call}_by_task_path",t.path).to_s
       rescue ScriptError, StandardError => exc
         stderr = [exc.to_s,exc.backtrace.to_s].join("\n")
-        #record the failure in Job so it appears on spec sheets
-        j.update_status("Failed at #{Time.now.utc.to_s}")
-        #raising here will cause the failure to show on Redis
+        #record the failure in Job so it appears on Runner
+        j.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}")
+        t.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}")
         raise exc
       end
       if stdout == false
@@ -73,15 +84,15 @@ module Mobilize
       end
       #write output to cache
       t.stdout_dataset.write_cache(stdout)
+      t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}")
       if t.idx == j.tasks.length
-        j.last_completed_at = Time.now.utc
-        j.status = %{Completed all tasks at #{Time.now.utc}}
-        j.save!
+        j.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
+        t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
         #check for any dependent jobs, if there are, enqueue them
         r = j.runner
         dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger=="after #{j.name}"}
         #put begin/rescue so all dependencies run
-        dep_jobs.each{|dj| begin;dj.enqueue! unless dj.is_working?;rescue;end}
+        dep_jobs.each{|dj| begin;dj.tasks.first.enqueue! unless dj.is_working?;rescue;end}
       else
         #queue up next task
         t.next.enqueue!
@@ -113,7 +124,7 @@ module Mobilize
     def update_status(msg)
       t = self
       t.update_attributes(:status=>msg)
-      Mobilize::Resque.update_status_by_path(t.path,msg)
+      Mobilize::Resque.set_worker_args_by_path(t.path,{'status'=>msg})
       return true
     end
 

@@ -28,7 +28,7 @@ module Mobilize
     end
 
     def Jobtracker.admin_emails
-      Jobtracker.admins.map{|a| a['email']}
+      Jobtracker.admins.map{|a| a['email'] }
     end
 
     def Jobtracker.worker
@@ -49,7 +49,7 @@ module Mobilize
 
     def Jobtracker.update_status(msg)
       #Jobtracker has no persistent database state
-      Resque.update_job_status("jobtracker",msg)
+      Resque.set_worker_args_by_path("jobtracker",{'status'=>msg})
       return true
     end
 
@@ -96,7 +96,7 @@ module Mobilize
     end
 
     def Jobtracker.enqueue!
-      ::Resque::Job.create(Resque.queue_name, Jobtracker, 'jobtracker',{'status'=>'working'})
+      ::Resque::Job.create(Resque.queue_name, Jobtracker, 'jobtracker',{})
     end
 
     def Jobtracker.restart!
@@ -184,13 +184,14 @@ module Mobilize
 
     def Jobtracker.perform(id,*args)
       while Jobtracker.status != 'stopping'
-        requestors = User.all
+        users = User.all
         Jobtracker.run_notifications
-        requestors.each do |r|
-          Jobtracker.update_status("Checking requestor #{r.name}")
+        users.each do |u|
+          r = u.runner
+          Jobtracker.update_status("Checking #{r.path}")
           if r.is_due?
             r.enqueue!
-            Jobtracker.update_status("Enqueued requestor #{r.name}")
+            Jobtracker.update_status("Enqueued #{r.path}")
           end
         end
         sleep 5
@@ -222,7 +223,7 @@ module Mobilize
     def Jobtracker.set_test_env
       ENV['MOBILIZE_ENV']='test'
       ::Resque.redis="localhost:9736"
-      mongoid_config_path = "#{Base.root}/config/mongoid.yml"
+      mongoid_config_path = "#{Base.root}/config/mobilize/mongoid.yml"
       Mongoid.load!(mongoid_config_path, Base.env)
     end
 

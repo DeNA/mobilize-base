@@ -18,7 +18,7 @@ module GoogleDrive
     def delete_sheet1
       sheet = self
       #delete sheet1
-      sheet1 = sheet.spreadsheet.worksheet_by_title("Sheet1")
+      sheet1 = sheet.spreadsheet.worksheet_by_title("Sheet1") || sheet.spreadsheet.worksheet_by_title("Sheet 1")
       if sheet1
         sheet1.delete
         return true
@@ -48,6 +48,8 @@ module GoogleDrive
       #write the top left of sheet
       #with the contents of merge_sheet
       sheet = self
+      sheet.reload
+      merge_sheet.reload
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
       merge_rows = merge_sheet.num_rows
@@ -72,6 +74,7 @@ module GoogleDrive
           batch_start += (batch_length+1)
         end
       end
+      sheet.save
     end
 
     def write(tsv)

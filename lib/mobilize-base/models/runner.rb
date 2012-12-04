@@ -1,11 +1,11 @@
 module Mobilize
-  module Runner
+  class Runner
     include Mongoid::Document
     include Mongoid::Timestamps
-    field :handler, type: String
     field :path, type: String
     field :active, type: Boolean
     field :status, type: String
+    field :last_run, type: Time
 
     index({ path: 1})
 
@@ -34,9 +34,9 @@ module Mobilize
     def Runner.perform(id,*args)
       r = Runner.find_by_path(id)
       #get gdrive slot for read
-      gdrive_slot = Gdrive.slot_worker(r.worker)
+      gdrive_slot = Gdrive.slot_worker_by_path(r.path)
       unless gdrive_slot
-        r.update_status("no gdrive slot available for #{r.path}")
+        r.update_status("no gdrive slot available")
         return false
       end
       #make sure any updates to activity are processed first
@@ -47,11 +47,11 @@ module Mobilize
       #queue up the jobs that are due and active
       r.jobs.each do |j|
         begin
-          if j.active and j.is_due?
+          if j.is_due?
             j.tasks.first.enqueue!
           end
         rescue ScriptError, StandardError => exc
-          j.update_status("Failed to enqueue #{j.path} at #{Time.now.utc} with #{exc.to_s}")
+          j.update_status("Failed to enqueue with #{exc.to_s}")
           j.update_attributes(:active=>false)
         end
       end
@@ -64,8 +64,8 @@ module Mobilize
       Dataset.find_or_create_by_handler_and_path("gsheet",r.path)
     end
 
-    def Runner.find_or_create_by_handler_and_path(handler,path)
-      Runner.where(:handler=>handler,:path=>path).first || Runner.create(:handler=>handler,:path=>path,:active=>true)
+    def Runner.find_or_create_by_path(path)
+      Runner.where(:path=>path).first || Runner.create(:path=>path,:active=>true)
     end
 
     def read_cache
@@ -76,7 +76,7 @@ module Mobilize
     def gsheet(gdrive_slot)
       r = self
       jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)
-      jobs_sheet.add_headers(Runner.headers)
+      jobs_sheet.add_headers(r.headers)
       jobs_sheet.delete_sheet1
       return jobs_sheet
     end
@@ -98,30 +98,30 @@ module Mobilize
         #update top line params
         j.update_attributes(:active => rj['active'],
                             :trigger => rj['trigger'])
-        if j.is_due?
-          Runner.task_count.times do |t_idx|
-            task_string = rj["task#{t_idx.to_s}"]
-            break if task_string.length==0
-            t = Task.find_or_create_by_path("#{j.path}/task#{t_idx}")
-            #parse command string, update task with it
-            t_handler, call, param_string = [""*3]
-            task_string.split(" ").ie do |spls|
-              t_handler, call, param_string = [spls.first.split("."), spls[1..-1].strip]
-            end
-            t.update_attributes(:call=>call, :handler=>t_handler, :param_string=>param_string)
+        (1..5).to_a.each do |t_idx|
+          task_string = rj["task#{t_idx.to_s}"]
+          break if task_string.to_s.length==0
+          t = Task.find_or_create_by_path("#{j.path}/task#{t_idx.to_s}")
+          #parse command string, update task with it
+          t_handler, call, param_string = [""*3]
+          task_string.split(" ").ie do |spls|
+            t_handler = spls.first.split(".").first
+            call = spls.first.split(".").last
+            param_string = spls[1..-1].join(" ").strip
           end
-          j.update_status("Updated tasks at #{Time.now.utc}")
+          t.update_attributes(:call=>call, :handler=>t_handler, :param_string=>param_string)
         end
+        r.update_status("Updated #{j.path} tasks at #{Time.now.utc}")
         #add this job to list of read ones
         done_jobs << j
       end
       #delete user jobs that are not included in Runner
       (r.jobs.map{|j| j.path} - done_jobs.map{|j| j.path}).each do |rj_path|
-        j = Job.find_find_by_path(rj_path)
+        j = Job.where(:path=>rj_path).first
         j.delete if j
-        r.update_status("Deleted job:#{r.name}=>#{j.name}")
+        r.update_status("Deleted job:#{rj_path}")
       end
-      r.update_status(r.name + " jobs read at #{Time.now.utc}")
+      r.update_status("jobs read at #{Time.now.utc}")
       return true
     end
 
@@ -130,13 +130,13 @@ module Mobilize
       jobs_gsheet = r.gsheet(gdrive_slot)
       upd_rows = r.jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status} }
       jobs_gsheet.add_or_update_rows(upd_rows)
-      r.update_status("#{r.gsheet_name} updated")
+      r.update_status("gsheet updated")
       return true
     end
 
     def jobs(jname=nil)
       r = self
-      js = Job.find_all_by_user_id(r.id.to_s)
+      js = Job.where(:path=>/^#{r.path.escape_regex}/).to_a
       if jname
         return js.sel{|j| j.name == jname}.first
       else
@@ -144,16 +144,22 @@ module Mobilize
       end
     end
 
+    def user
+      r = self
+      user_name = r.path.split(" - ").second.split("(").first.split("/").first
+      User.where(:email=>[user_name,Gdrive.domain].join("@")).first
+    end
+
     def update_status(msg)
       r = self
       r.update_attributes(:status=>msg)
-      Mobilize::Resque.update_job_status(r.id.to_s,msg)
+      Mobilize::Resque.set_worker_args_by_path(r.path,{'status'=>msg})
       return true
     end
 
     def is_working?
       r = self
-      Mobilize::Resque.active_mongo_ids.include?(r.id.to_s)
+      Mobilize::Resque.active_paths.include?(r.path)
     end
 
     def is_due?

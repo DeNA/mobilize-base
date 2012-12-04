@@ -1,24 +1,21 @@
 development:
-  #time between Jobtracker sweeps
-  cycle_freq: 10
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
 test:
-  #time between Jobtracker sweeps
-  cycle_freq: 10
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
 production:
-  #time between Jobtracker sweeps
-  cycle_freq: 10
+  cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
-  requestor_refresh_freq: 300 #5 min between requestor checks
+  runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
