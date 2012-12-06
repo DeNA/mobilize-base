@@ -1,21 +1,21 @@
 development:
   sessions:
     default:
-      database: mobilize-development
+      database: mobilize_development
       persist_in_safe_mode: true
       hosts:
         - 127.0.0.1:27017
 test:
   sessions:
     default:
-      database: mobilize-test
+      database: mobilize_test
       persist_in_safe_mode: true
       hosts:
         - 127.0.0.1:27017
 production:
   sessions:
     default:
-      database: mobilize-production
+      database: mobilize_production
       persist_in_safe_mode: true
       hosts:
         - 127.0.0.1:27017
