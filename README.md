@@ -227,6 +227,7 @@ development:
   notification_freq: 3600 #1 hour between failure/timeout notifications
   runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
+  extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
 test:
@@ -234,6 +235,7 @@ test:
   notification_freq: 3600 #1 hour between failure/timeout notifications
   runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
+  extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
 production:
@@ -241,6 +243,7 @@ production:
   notification_freq: 3600 #1 hour between failure/timeout notifications
   runner_read_freq: 300 #5 min between runner reads
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
+  extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
   - {'email': 'admin@host.com'}
 ```

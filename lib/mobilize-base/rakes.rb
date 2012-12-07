@@ -6,10 +6,11 @@ namespace :mobilize do
   task :work do
     require 'resque'
     begin
-      #require all mobilize gems in order of release
       require 'mobilize-base'
-      require 'mobilize-ssh'
-      require 'mobilize-hadoop'
+      #require specified mobilize gems
+      Base.config('jobtracker')['extensions'].each do |e|
+        require e
+      end
     rescue Exception=>exc
     end
 
