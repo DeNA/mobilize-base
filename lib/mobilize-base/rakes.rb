@@ -2,7 +2,6 @@
 # will give you the resque tasks
 
 namespace :mobilize do
-
   desc "Start a Resque worker"
   task :work do
     require 'resque'
@@ -10,6 +9,7 @@ namespace :mobilize do
       #require all mobilize gems in order of release
       require 'mobilize-base'
       require 'mobilize-ssh'
+      require 'mobilize-hadoop'
     rescue Exception=>exc
     end
 
@@ -23,6 +23,14 @@ namespace :mobilize do
 
     worker.work(ENV['INTERVAL'] || 5) # interval, will block
   end
+
+  task :create_indexes do
+    require 'mobilize-base'
+    ["Dataset","Job","Runner","Task","User"].each do |m|
+      "Mobilize::#{m}".constantize.create_indexes
+    end
+  end
+
 end
 namespace :mobilize_base do
   desc "Set up config and log folders and files"
