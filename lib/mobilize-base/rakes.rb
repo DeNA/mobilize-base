@@ -8,7 +8,7 @@ namespace :mobilize do
     begin
       require 'mobilize-base'
       #require specified mobilize gems
-      Base.config('jobtracker')['extensions'].each do |e|
+      Mobilize::Base.config('jobtracker')['extensions'].each do |e|
         require e
       end
     rescue Exception=>exc
@@ -24,14 +24,6 @@ namespace :mobilize do
 
     worker.work(ENV['INTERVAL'] || 5) # interval, will block
   end
-
-  task :create_indexes do
-    require 'mobilize-base'
-    ["Dataset","Job","Runner","Task","User"].each do |m|
-      "Mobilize::#{m}".constantize.create_indexes
-    end
-  end
-
 end
 namespace :mobilize_base do
   desc "Set up config and log folders and files"
@@ -55,6 +47,13 @@ namespace :mobilize_base do
         puts "creating #{config_dir}#{fname}"
         `cp #{sample_dir}#{fname} #{full_config_dir}#{fname}`
       end
+    end
+  end
+  desc "create indexes for all base modelsin mongodb"
+  task :create_indexes do
+    require 'mobilize-base'
+    ["Dataset","Job","Runner","Task","User"].each do |m|
+      "Mobilize::#{m}".constantize.create_indexes
     end
   end
 end
