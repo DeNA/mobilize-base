@@ -2,11 +2,10 @@
 # will give you the resque tasks
 
 namespace :mobilize do
+  require 'mobilize-base'
   desc "Start a Resque worker"
   task :work do
-    require 'resque'
     begin
-      require 'mobilize-base'
       #require specified mobilize gems
       Mobilize::Base.config('jobtracker')['extensions'].each do |e|
         require e
@@ -23,6 +22,14 @@ namespace :mobilize do
     puts "Starting worker #{worker}"
 
     worker.work(ENV['INTERVAL'] || 5) # interval, will block
+  end
+  desc "Kill idle workers not in sync with repo"
+  task :kill_idle_stale_workers do
+    Mobilize::Jobtracker.kill_idle_stale_workers
+  end
+  desc "Make sure workers are prepped"
+  task :prep_workers do
+    Mobilize::Jobtracker.prep_workers
   end
 end
 namespace :mobilize_base do
