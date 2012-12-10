@@ -70,7 +70,7 @@ if File.exists?(mongoid_config_path)
 end
 require 'google_drive'
 require 'resque'
-require "mobilize-base/extensions/resque"
+require "mobilize-base/handlers/resque"
 #specify appropriate redis port per resque.yml
 Resque.redis = "127.0.0.1:#{Mobilize::Resque.config['redis_port']}"
 require 'popen4'
