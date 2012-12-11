@@ -214,9 +214,17 @@ module Mobilize
                       "touch #{revision_path}".bash unless File.exists?(revision_path)
                       revision_string = "ls -l #{revision_path}".bash
                       revision_rows = revision_string.split("\n").map{|lss| lss.strip.split(" ")}
-                      mod_times = revision_rows.select{|lsr| lsr.length == 8}.map{|lsr| lsr[5..6].join(" ")}
-                      mod_times.min
-                    end
+                      mod_time = revision_rows.map do |lsr| 
+                        if lsr.length == 8
+                          #ubuntu
+                          lsr[5..6].join(" ")
+                        elsif lsr.length == 9
+                          #osx
+                          lsr[5..7].join(" ")
+                        end
+                      end.first
+                      mod_time
+                    end.to_s.strip
       Time.parse(deploy_time)
     end
 
