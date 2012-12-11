@@ -75,6 +75,10 @@ module Mobilize
       Resque.kill_idle_workers
     end
 
+    def Jobtracker.kill_idle_and_stale_workers
+      Resque.kill_idle_and_stale_workers
+    end
+
     def Jobtracker.prep_workers
       Resque.prep_workers
     end
