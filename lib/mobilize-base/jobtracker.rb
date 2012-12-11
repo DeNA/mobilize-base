@@ -206,15 +206,17 @@ module Mobilize
 
     def Jobtracker.deployed_at
       #assumes deploy is as of last commit, or as of last deploy time
-      #as given by the least recently updated file in the root folder
+      #as given by the REVISION file in the root folder
       deploy_time = begin
-                     %{git log -1 --format="%cd"}.bash
-                   rescue
-                     ls_string = "ls -l #{ENV['PWD']}/*".bash
-                     ls_rows = ls_string.split("\n").map{|lss| lss.strip.split(" ")}
-                     mod_times = ls_rows.select{|lsr| lsr.length == 8}.map{|lsr| lsr[5..6].join(" ")}
-                     mod_times.min
-                   end
+                      %{git log -1 --format="%cd"}.bash
+                    rescue
+                      revision_path = "#{ENV['PWD']}/REVISION"
+                      "touch #{revision_path}".bash unless File.exists?(revision_path)
+                      revision_string = "ls -l #{revision_path}".bash
+                      revision_rows = revision_string.split("\n").map{|lss| lss.strip.split(" ")}
+                      mod_times = revision_rows.select{|lsr| lsr.length == 8}.map{|lsr| lsr[5..6].join(" ")}
+                      mod_times.min
+                    end
       Time.parse(deploy_time)
     end
 

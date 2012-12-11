@@ -11,4 +11,5 @@ config
 log
 tmp
 .DS_Store
+REVISION
 test/dump.rdb
