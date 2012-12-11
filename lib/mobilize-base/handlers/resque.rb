@@ -17,7 +17,6 @@ module Mobilize
     end
 
     def Resque.workers(state="all")
-      raise "invalid state #{state}" unless ['all','idle','working','timeout'].include?(state)
       workers = ::Resque.workers.select{|w| w.queues.first == Resque.queue_name}
       return workers if state == 'all'
       working_workers = workers.select{|w| w.job['queue']== Resque.queue_name}
@@ -28,6 +27,7 @@ module Mobilize
       return stale_workers if state == 'stale'
       timeout_workers = workers.select{|w| w.job['payload'] and w.job['payload']['class']!='Jobtracker' and w.job['runat'] < (Time.now.utc - Jobtracker.max_run_time)}
       return timeout_workers if state == 'timeout'
+      raise "invalid state #{state}"
     end
 
     def Resque.failures
@@ -36,7 +36,6 @@ module Mobilize
 
     #active state refers to jobs that are either queued or working
     def Resque.jobs(state="active")
-      raise "invalid state #{state}" unless ['all','queued','working','active','timeout','failed'].include?(state)
       working_jobs =  Resque.workers('working').map{|w| w.job['payload']}
       return working_jobs if state == 'working'
       queued_jobs = ::Resque.peek(Resque.queue_name,0,0).to_a
@@ -47,6 +46,7 @@ module Mobilize
       timeout_jobs = Resque.workers("timeout").map{|w| w.job['payload']}
       return timeout_jobs if state == 'timeout'
       return working_jobs + queued_jobs + failed_jobs if state == 'all'
+      raise "invalid state #{state}"
     end
 
     def Resque.active_paths
