@@ -27,10 +27,11 @@ Table Of Contents
   * [Google Drive](#section_Configure_Google_Drive)
   * [Jobtracker](#section_Configure_Jobtracker)
   * [Resque](#section_Configure_Resque)
+  * [Resque-Web](#section_Configure_Resque-Web)
   * [Gridfs](#section_Configure_Gridfs)
   * [Mongoid](#section_Configure_Mongoid)
 * [Start](#section_Start)
-  * [Start resque-web](#section_Start_Start_resque-web)
+  * [Start Resque-Web](#section_Start_Start_Resque-Web)
   * [Set Environment](#section_Start_Set_Environment)
   * [Create User](#section_Start_Create_User)
   * [Start Workers](#section_Start_Start_Workers)
@@ -262,21 +263,41 @@ It needs the below parameters, which can be found in the [lib/samples][git_sampl
 production, but feel free to adjust depending on your hardware.
 * redis_port - you should probably leave this alone, it specifies the
   default port for dev and prod and a separate one for testing.
+* web_port - this specifies the port under which resque-web operates
 
 ``` yml
 development:
   queue_name: 'mobilize'
   max_workers: 4
   redis_port: 6379
+  web_port: 8282
 test:
   queue_name: 'mobilize'
   max_workers: 4
   redis_port: 9736
+  web_port: 8282
 production:
   queue_name: 'mobilize'
   max_workers: 36
   redis_port: 6379
+  web_port: 8282
 ```
+
+<a name='section_Configure_Resque-Web'></a>
+### Configure Resque-Web
+
+Please change your default username and password in the resque_web.rb
+file in your config folder, reproduced below:
+
+``` ruby
+#comment out the below if you want no authentication on your web portal (not recommended)
+Resque::Server.use(Rack::Auth::Basic) do |user, password|
+  [user, password] == ['admin', 'changeyourpassword']
+end
+```
+
+This file is passed as a config file argument to
+mobilize_base:resque_web task, as detailed in [Start Resque-Web](#section_Start_Start_Resque-Web).
 
 <a name='section_Configure_Gridfs'></a>
 ### Configure Gridfs
@@ -350,22 +371,17 @@ A Mobilize instance can be considered "started" or "running" when you have:
 <a name='section_Start_Start_resque-web'></a>
 ### Start resque-web
 
-To start resque-web, which is a kickass UI layer built in Sinatra,
-you'll need to install the resque gem explicitly, as in
+Mobilize ships with its own rake task to start resque web -- you can do
+the following:
 
-``` ruby
-gem install resque
-```
 
-then, you can do 
+  $ MOBILIZE_ENV=<environment> rake mobilize_base:resque_web
 
-  $ resque-web
+This will start a resque_web instance with the port specified in your
+resque.yml and the config/auth scheme specified in your resque_web.rb. 
 
-and it'll start an instance on 127.0.0.1:5678
-
-You'll want to keep an eye on this as it tracks your workers in real
-time and allows you to keep track of failed jobs. More detail on the
-[Resque Standalone section][resque-web].
+More detail on the
+[Resque-Web Standalone section][resque-web].
 
 <a name='section_Start_Set_Environment'></a>
 ### Set Environment
