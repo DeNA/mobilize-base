@@ -30,16 +30,7 @@ module Mobilize
     def runner_path
       u = self
       prefix = "Runner_"
-      suffix = ""
-      if Base.env == 'development'
-        suffix = "(dev)"
-      elsif Base.env == 'test'
-        suffix = "(test)"
-      elsif Base.env == 'production'
-        suffix = ""
-      else
-        raise "Invalid environment"
-      end
+      suffix = (Base.env == 'production' ? "" : "(#{Base.env})")
       title = [prefix,u.name,suffix,"/jobs"].join
       return title
     end
