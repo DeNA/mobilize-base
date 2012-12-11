@@ -141,7 +141,7 @@ module Mobilize
       return true
     end
 
-    def Resque.kill_idle_stale_workers
+    def Resque.kill_idle_and_stale_workers
       idle_pids = Resque.workers('idle').select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}
       stale_pids = Resque.workers('stale').select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}
       idle_stale_pids = (idle_pids & stale_pids)
