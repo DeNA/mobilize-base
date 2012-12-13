@@ -1,6 +1,3 @@
-# require 'resque/tasks'
-# will give you the resque tasks
-
 namespace :mobilize_base do
   desc "Start a Resque worker"
   task :work do
@@ -23,17 +20,22 @@ namespace :mobilize_base do
 
     worker.work(ENV['INTERVAL'] || 5) # interval, will block
   end
+  desc "Kill all Resque workers"
+  task :kill_workers do
+    require 'mobilize-base'
+    Mobilize::Jobtracker.kill_workers
+  end
   desc "Kill idle workers not in sync with repo"
   task :kill_idle_and_stale_workers do
     require 'mobilize-base'
     Mobilize::Jobtracker.kill_idle_and_stale_workers
   end
-  desc "Make sure workers are prepped"
+  desc "Make sure there are the correct # of workers, kill if too many"
   task :prep_workers do
     require 'mobilize-base'
     Mobilize::Jobtracker.prep_workers
   end
-  desc "kill all old resque web, start new one with env params"
+  desc "kill all old resque web processes, start new one with resque_web.rb extension file"
   task :resque_web do
     require 'mobilize-base'
     port = Mobilize::Base.config('resque')['web_port']
@@ -52,9 +54,7 @@ namespace :mobilize_base do
       "Mobilize::#{m}".constantize.create_indexes
     end
   end
-end
-namespace :mobilize do
-  desc "Set up config and log folders and files"
+  desc "Set up config and log folders and files, populate from samples"
   task :setup do
     config_dir = (ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/")
     log_dir = (ENV['MOBILIZE_LOG_DIR'] ||= "log/")
