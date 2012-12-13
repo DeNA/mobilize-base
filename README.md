@@ -390,7 +390,7 @@ Mobilize takes the environment from your Rails.env if you're running
 Rails, or assumes "development." You can specify "development", "test",
 or "production," as per the yml files.
 
-Otherwise, it takes it from MOBILIZE_ENV parameter, set from irb, as in:
+Otherwise, it takes it from MOBILIZE_ENV parameter, as in:
 
 ``` ruby
 > ENV['MOBILIZE_ENV'] = 'production'

@@ -50,9 +50,20 @@ describe "Mobilize" do
     sleep 120
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
-    test_target_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
+    test_target_sheet_1 = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
 
-    assert test_target_sheet.to_tsv == test_source_sheet.to_tsv
+    assert test_target_sheet_1.to_tsv == test_source_sheet.to_tsv
+
+    puts "delete both output sheets, set first job to active=true"
+    test_target_sheet_1.delete
+
+    jobs_sheet.add_or_update_rows({'name'=>'base1','active'=>true})
+    r.enqueue!
+    sleep 90
+    
+    test_target_sheet_2 = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
+    puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
+    assert test_target_sheet_2.to_tsv == test_source_sheet.to_tsv
 
   end
 

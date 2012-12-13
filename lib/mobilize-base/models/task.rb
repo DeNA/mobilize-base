@@ -72,8 +72,9 @@ module Mobilize
         stdout = "Mobilize::#{t.handler.humanize}".constantize.send("#{t.call}_by_task_path",t.path).to_s
       rescue ScriptError, StandardError => exc
         stderr = [exc.to_s,exc.backtrace.to_s].join("\n")
-        #record the failure in Job so it appears on Runner
-        j.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}")
+        #record the failure in Job so it appears on Runner, turn it off
+        #so it doesn't run again
+        j.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}", :active=>false)
         t.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}")
         raise exc
       end

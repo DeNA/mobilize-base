@@ -128,7 +128,8 @@ module Mobilize
     def update_gsheet(gdrive_slot)
       r = self
       jobs_gsheet = r.gsheet(gdrive_slot)
-      upd_rows = r.jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status} }
+      upd_jobs = r.jobs.select{|j| j.updated_at > j.runner.last_run}
+      upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}
       jobs_gsheet.add_or_update_rows(upd_rows)
       r.update_status("gsheet updated")
       return true
