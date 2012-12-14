@@ -1,6 +1,7 @@
 module GoogleDrive
   class ClientLoginFetcher
     def request_raw(method, url, data, extra_header, auth)
+      clf = self
       #this is patched to handle server errors due to http chaos
       uri = URI.parse(url)
       response = nil
@@ -14,22 +15,32 @@ module GoogleDrive
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         #set 600  to allow for large downloads
         http.read_timeout = 600
-        response = self.http_call(http, method, uri, data, extra_header, auth)
-        if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
-          if response.body.downcase.index("rate limit") or response.body.downcase.index("captcha")
-            if sleep_time
-              sleep_time = sleep_time * attempts
+        response = begin
+                     clf.http_call(http, method, uri, data, extra_header, auth)
+                   rescue
+                     #timeouts etc.
+                     nil
+                   end
+        if response.nil?
+          attempts +=1
+        else
+          if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
+            if response.body.downcase.index("rate limit") or response.body.downcase.index("captcha")
+              if sleep_time
+                sleep_time = sleep_time * attempts
+              else
+                sleep_time = (rand*100).to_i
+              end
             else
-              sleep_time = (rand*100).to_i
+              sleep_time = 10
             end
-          else
-            sleep_time = 10
+            attempts += 1
+            puts "Sleeping for #{sleep_time.to_s} due to #{response.body}"
+            sleep sleep_time
           end
-          attempts += 1
-          puts "Sleeping for #{sleep_time.to_s} due to #{response.body}"
-          sleep sleep_time
         end
       end
+      raise "No response after 5 attempts" if response.nil?
       raise response.body if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
       return response
     end

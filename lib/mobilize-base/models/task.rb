@@ -7,8 +7,10 @@ module Mobilize
     field :call, type: String
     field :param_string, type: Array
     field :status, type: String
-    field :last_completed_at, type: Time
-    field :last_run_at, type: Time
+    field :completed_at, type: Time
+    field :started_at, type: Time
+    field :failed_at, type: Time
+    field :status_at, type: Time
 
     index({ path: 1})
 
@@ -27,9 +29,14 @@ module Mobilize
       Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/stderr")
     end
 
+    def log_dataset
+      t = self
+      Dataset.find_or_create_by_handler_and_path("gridfs","#{t.path}/log")
+    end
+
     def params
       t = self
-      t.param_string.split(",").map do |p| 
+      t.param_string.split(",").map do |p|
         ps = p.strip
         ps = ps[1..-1] if ['"',"'"].include?(ps[0])
         ps = ps[0..-2] if ['"',"'"].include?(ps[-1])
@@ -69,13 +76,16 @@ module Mobilize
       t.update_status(%{Starting at #{Time.now.utc}})
       stdout, stderr = [nil,nil]
       begin
-        stdout = "Mobilize::#{t.handler.humanize}".constantize.send("#{t.call}_by_task_path",t.path).to_s
+        stdout,log = "Mobilize::#{t.handler.humanize}".constantize.send("#{t.call}_by_task_path",t.path).to_s
+        #write to log if method returns an array w 2 members
+        t.log_dataset.write_cache(log) if log
       rescue ScriptError, StandardError => exc
         stderr = [exc.to_s,exc.backtrace.to_s].join("\n")
         #record the failure in Job so it appears on Runner, turn it off
         #so it doesn't run again
-        j.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}", :active=>false)
-        t.update_attributes(:status=>"Failed at #{Time.now.utc.to_s}")
+        j.update_attributes(:active=>false)
+        t.update_attributes(:failed_at=>Time.now.utc)
+        t.update_status("Failed at #{Time.now.utc.to_s}")
         raise exc
       end
       if stdout == false
@@ -87,12 +97,13 @@ module Mobilize
       t.stdout_dataset.write_cache(stdout)
       t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}")
       if t.idx == j.tasks.length
-        j.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
-        j.update_attributes(:active=>false) if j.trigger.strip == "once"
-        t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}",:last_completed_at=>Time.now.utc)
+        #job has completed
+        j.update_attributes(:active=>false) if j.trigger.strip.downcase == "once"
+        t.update_attributes(:completed_at=>Time.now.utc)
+        t.update_status("Completed at #{Time.now.utc.to_s}")
         #check for any dependent jobs, if there are, enqueue them
         r = j.runner
-        dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger=="after #{j.name}"}
+        dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger.strip.downcase == "after #{j.name}"}
         #put begin/rescue so all dependencies run
         dep_jobs.each{|dj| begin;dj.tasks.first.enqueue! unless dj.is_working?;rescue;end}
       else
@@ -104,6 +115,7 @@ module Mobilize
 
     def enqueue!
       t = self
+      t.update_attributes(:started_at=>Time.now.utc)
       ::Resque::Job.create("mobilize",Task,t.path,{})
       return true
     end
@@ -125,7 +137,7 @@ module Mobilize
 
     def update_status(msg)
       t = self
-      t.update_attributes(:status=>msg)
+      t.update_attributes(:status=>msg,:status_at=>Time.now.utc)
       Mobilize::Resque.set_worker_args_by_path(t.path,{'status'=>msg})
       return true
     end

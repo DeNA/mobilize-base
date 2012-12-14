@@ -5,7 +5,9 @@ module Mobilize
     field :path, type: String
     field :active, type: Boolean
     field :status, type: String
-    field :last_run, type: Time
+    field :started_at, type: Time
+    field :status_at, type: Time
+    field :completed_at, type: Time
 
     index({ path: 1})
 
@@ -13,9 +15,9 @@ module Mobilize
       %w{name active trigger status task1 task2 task3 task4 task5}
     end
 
-    def last_cached_at
+    def cached_at
       r = self
-      Dataset.find_or_create_by_path(r.path).last_cached_at
+      Dataset.find_or_create_by_path(r.path).cached_at
     end
 
     def worker
@@ -51,12 +53,12 @@ module Mobilize
             j.tasks.first.enqueue!
           end
         rescue ScriptError, StandardError => exc
-          j.update_status("Failed to enqueue with #{exc.to_s}")
+          r.update_status("Failed to enqueue #{j.path} with #{exc.to_s}")
           j.update_attributes(:active=>false)
         end
       end
       r.update_gsheet(gdrive_slot)
-      r.update_attributes(:last_run=>Time.now.utc)
+      r.update_attributes(:completed_at=>Time.now.utc)
     end
 
     def dataset
@@ -77,7 +79,7 @@ module Mobilize
       r = self
       jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)
       jobs_sheet.add_headers(r.headers)
-      jobs_sheet.delete_sheet1
+      begin;jobs_sheet.delete_sheet1;rescue;end #don't care if sheet1 deletion fails
       return jobs_sheet
     end
 
@@ -128,7 +130,11 @@ module Mobilize
     def update_gsheet(gdrive_slot)
       r = self
       jobs_gsheet = r.gsheet(gdrive_slot)
-      upd_jobs = r.jobs.select{|j| j.updated_at > j.runner.last_run}
+      upd_jobs = r.jobs.select do |j|
+                                 j.completed_at.nil? ||
+                                 j.completed_at > j.runner.completed_at ||
+                                 (j.failed_at and j.failed_at > j.runner.completed_at)
+                               end
       upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}
       jobs_gsheet.add_or_update_rows(upd_rows)
       r.update_status("gsheet updated")
@@ -153,7 +159,7 @@ module Mobilize
 
     def update_status(msg)
       r = self
-      r.update_attributes(:status=>msg)
+      r.update_attributes(:status=>msg, :status_at=>Time.now.utc)
       Mobilize::Resque.set_worker_args_by_path(r.path,{'status'=>msg})
       return true
     end
@@ -166,12 +172,13 @@ module Mobilize
     def is_due?
       r = self.reload
       return false if r.is_working?
-      last_due_time = Time.now.utc - Jobtracker.runner_read_freq
-      return true if r.last_run.nil? or r.last_run < last_due_time
+      prev_due_time = Time.now.utc - Jobtracker.runner_read_freq
+      return true if r.started_at.nil? or r.started_at < prev_due_time
     end
 
     def enqueue!
       r = self
+      r.update_attributes(:started_at=>Time.now.utc)
       ::Resque::Job.create("mobilize",Runner,r.path,{})
       return true
     end

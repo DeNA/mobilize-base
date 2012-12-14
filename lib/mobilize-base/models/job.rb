@@ -5,8 +5,6 @@ module Mobilize
     field :path, type: String
     field :active, type: Boolean
     field :trigger, type: String
-    field :status, type: String
-    field :last_completed_at, type: Time
 
     index({ path: 1})
 
@@ -26,6 +24,32 @@ module Mobilize
       return j
     end
 
+    def status
+      #last task status
+      j = self
+      j.active_task.status
+    end
+
+    def active_task
+      j = self
+      #latest started at or first
+      j.tasks.select{|t| t.started_at}.sort_by{|t| t.started_at}.last || j.tasks.first
+    end
+
+    def completed_at
+      j = self
+      j.tasks.last.completed_at
+    end
+
+    def failed_at
+      j = self
+      j.tasks.last.failed_at
+    end
+
+    def status_at
+      j.active_task.status_at
+    end
+
     #convenience methods
     def runner
       j = self
@@ -41,7 +65,7 @@ module Mobilize
     def is_due?
       j = self
       return false if j.is_working? or j.active == false or j.trigger.to_s.starts_with?("after")
-      last_run = j.last_completed_at
+      last_run = j.completed_at
       #check trigger
       trigger = j.trigger
       return true if trigger == 'once'
