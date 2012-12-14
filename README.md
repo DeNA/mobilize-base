@@ -493,10 +493,12 @@ name>))` and enter values under each header:
   * Tasks have this syntax: <handler>.<call> <params>.
     * handler specifies the file that should receive the task
     * the call specifies the method within the file. The method should
-be called `"<Handler>.<call>_by_task_path"`
+be called `"<handler>.<call>_by_task_path"`
     * the params the method accepts, which are custom to each
-task. These should be a comma-delimited list, with each param in
-quotes.
+task. These should be of the for `<key1>: <value1>, <key2>: <value2>`, where
+`<key>` is an unquoted string and `<value>` is a quoted string, an
+integer, an array (delimited by square braces), or a hash (delimited by
+curly braces).
     * For mobilize-base, the following tasks are available:
       * gsheet.read `source: <input_gsheet_full_path>`, which reads the sheet. 
         * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses

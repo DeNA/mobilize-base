@@ -39,12 +39,13 @@ module Mobilize
       #evaluates param_string to ruby hash
       #using YAML parser
       #TODO: eliminate ridiculousness
-      YAML.load(t.param_string.gsub(":\"",
-                                    ": \"").gsub(":[",
-                                                 ": [").gsub(":{",
-                                                             ": {").gsub(/(:[0-9])/,
-                                                                          'taskparamsgsub\1').gsub('taskparamsgsub:',
-                                                                                                   ': '))
+      begin
+        YAML.load(t.param_string)
+        raise "Must resolve to Hash" unless result.class==Hash
+      rescue
+        sub_param_string = t.param_string.gsub(":\"",": \"").gsub(":'",": '").gsub(":[",": [").gsub(":{",": {").gsub(/(:[0-9])/,'taskparamsgsub\1').gsub('taskparamsgsub:',': ')
+        YAML.load("{#{sub_param_string}}")
+      end
     end
 
     def job

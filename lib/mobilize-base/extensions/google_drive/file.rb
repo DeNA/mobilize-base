@@ -54,7 +54,11 @@ module GoogleDrive
           raise "Invalid role #{role}"
         end
       else
-        f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})
+        begin
+          f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})
+        rescue => exc
+          raise exc unless exc.to_s.index("user already has access")
+        end
       end
       return true
     end

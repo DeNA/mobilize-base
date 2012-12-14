@@ -27,7 +27,7 @@ module Mobilize
       gdrive_slot = Gdrive.slot_worker_by_path(t.path)
       return false unless gdrive_slot
       t = Task.where(:path=>task_path)
-      gfile_path = t.params[:file]
+      gfile_path = t.params['file']
       Gfile.find_by_path(gfile_path,gdrive_slot).read
     end
   end
