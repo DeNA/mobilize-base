@@ -38,7 +38,13 @@ module Mobilize
       t = self
       #evaluates param_string to ruby hash
       #using YAML parser
-      YAML.load(t.param_string)
+      #TODO: eliminate ridiculousness
+      YAML.load(t.param_string.gsub(":\"",
+                                    ": \"").gsub(":[",
+                                                 ": [").gsub(":{",
+                                                             ": {").gsub(/(:[0-9])/,
+                                                                          'taskparamsgsub\1').gsub('taskparamsgsub:',
+                                                                                                   ': '))
     end
 
     def job
