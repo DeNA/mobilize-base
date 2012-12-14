@@ -37,7 +37,7 @@ module Mobilize
       gdrive_slot = Gdrive.slot_worker_by_path(task_path)
       return false unless gdrive_slot
       t = Task.where(:path=>task_path).first
-      gsheet_path = t.params.first
+      gsheet_path = t.params[:source]
       Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
     end
 
@@ -46,8 +46,8 @@ module Mobilize
       #return false if there are no emails available
       return false unless gdrive_slot
       t = Task.where(:path=>task_path).first
-      source = t.params.first
-      target_path = t.params.second
+      source = t.params[:source]
+      target_path = t.params[:target]
       source_job_name, source_task_name = if source.index("/")
                                             source.split("/")
                                           else

@@ -36,12 +36,9 @@ module Mobilize
 
     def params
       t = self
-      t.param_string.split(",").map do |p|
-        ps = p.strip
-        ps = ps[1..-1] if ['"',"'"].include?(ps[0])
-        ps = ps[0..-2] if ['"',"'"].include?(ps[-1])
-        ps
-      end
+      #evaluates param_string to ruby hash
+      #using YAML parser
+      YAML.load(t.param_string)
     end
 
     def job

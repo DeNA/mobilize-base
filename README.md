@@ -498,17 +498,17 @@ be called `"<Handler>.<call>_by_task_path"`
 task. These should be a comma-delimited list, with each param in
 quotes.
     * For mobilize-base, the following tasks are available:
-      * gsheet.read `<input_gsheet_full_path>`, which reads the sheet. 
-        * The gsheet_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
+      * gsheet.read `source: <input_gsheet_full_path>`, which reads the sheet. 
+        * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
 "Requestor_mobilize(test)/base1_task1.in".
-      * gsheet.write `<task_relative_path>`,`<output_gsheet_path>`,
-which writes the specified task output to the output_gsheet. 
-        * The task_path should be of the form `<task_column>` or
+      * gsheet.write `source: <task_relative_path>`,`target: <target_gsheet_path>`,
+which writes the specified task output to the target_gsheet. 
+        * The task_relative_path should be of the form `<task_column>` or
 `<job_name/task_column>`. The test uses "base1/task1" for the first test
 and simply "task1" for the second test. Both of these take the output
 from the first task.
         * The test uses "Requestor_mobilize(test)/base1.out" and
-"Requestor_mobilize(test)/base2.out" for output sheets.
+"Requestor_mobilize(test)/base2.out" for target sheets.
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test
