@@ -54,6 +54,15 @@ module Mobilize
       return false
     end
 
+    def Gdrive.unslot_worker_by_path(path)
+      begin
+        Mobilize::Resque.set_worker_args_by_path(path,{'gdrive_slot'=>nil})
+        return true
+      rescue
+        return false
+      end
+    end
+
     def Gdrive.root(gdrive_slot=nil)
       pw = Gdrive.password(gdrive_slot)
       GoogleDrive.login(gdrive_slot,pw)
