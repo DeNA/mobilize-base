@@ -41,6 +41,7 @@ module Mobilize
         r.update_status("no gdrive slot available")
         return false
       end
+      r.update_attributes(:started_at=>Time.now.utc)
       #make sure any updates to activity are processed first
       #as in when someone runs a "once" job that has completed
       r.update_gsheet(gdrive_slot)
@@ -178,7 +179,6 @@ module Mobilize
 
     def enqueue!
       r = self
-      r.update_attributes(:started_at=>Time.now.utc)
       ::Resque::Job.create("mobilize",Runner,r.path,{})
       return true
     end

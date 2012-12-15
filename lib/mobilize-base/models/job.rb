@@ -43,7 +43,7 @@ module Mobilize
 
     def failed_at
       j = self
-      j.tasks.last.failed_at
+      j.active_task.failed_at
     end
 
     def status_at

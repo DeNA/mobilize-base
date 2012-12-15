@@ -77,6 +77,7 @@ module Mobilize
     def Task.perform(id,*args)
       t = Task.where(:path=>id).first
       j = t.job
+      t.update_attributes(:started_at=>Time.now.utc)
       t.update_status(%{Starting at #{Time.now.utc}})
       stdout, stderr = [nil,nil]
       begin
@@ -99,12 +100,11 @@ module Mobilize
       end
       #write output to cache
       t.stdout_dataset.write_cache(stdout)
-      t.update_attributes(:status=>"Completed at #{Time.now.utc.to_s}")
+      t.update_attributes(:completed_at=>Time.now.utc)
+      t.update_status("Completed at #{Time.now.utc.to_s}")
       if t.idx == j.tasks.length
         #job has completed
         j.update_attributes(:active=>false) if j.trigger.strip.downcase == "once"
-        t.update_attributes(:completed_at=>Time.now.utc)
-        t.update_status("Completed at #{Time.now.utc.to_s}")
         #check for any dependent jobs, if there are, enqueue them
         r = j.runner
         dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger.strip.downcase == "after #{j.name}"}
@@ -119,7 +119,6 @@ module Mobilize
 
     def enqueue!
       t = self
-      t.update_attributes(:started_at=>Time.now.utc)
       ::Resque::Job.create("mobilize",Task,t.path,{})
       return true
     end
