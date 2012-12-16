@@ -22,12 +22,12 @@ module Mobilize
       Gdrive.files(gdrive_slot,{"title"=>path,"title-exact"=>"true"}).first
     end
 
-    def Gfile.read_by_task_path(task_path)
+    def Gfile.read_by_stage_path(stage_path)
       #reserve gdrive_slot account for read
-      gdrive_slot = Gdrive.slot_worker_by_path(t.path)
+      gdrive_slot = Gdrive.slot_worker_by_path(s.path)
       return false unless gdrive_slot
-      t = Task.where(:path=>task_path)
-      gfile_path = t.params['file']
+      s = Stage.where(:path=>stage_path)
+      gfile_path = s.params['file']
       Gfile.find_by_path(gfile_path,gdrive_slot).read
     end
   end

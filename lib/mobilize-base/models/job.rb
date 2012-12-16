@@ -13,9 +13,9 @@ module Mobilize
       j.path.split("/").last
     end
 
-    def tasks
+    def stages
       j = self
-      Task.where(:path=>/^#{j.path.escape_regex}/).to_a.sort_by{|t| t.path}
+      Stage.where(:path=>/^#{j.path.escape_regex}/).to_a.sort_by{|s| s.path}
     end
 
     def Job.find_or_create_by_path(path)
@@ -25,29 +25,30 @@ module Mobilize
     end
 
     def status
-      #last task status
+      #last stage status
       j = self
-      j.active_task.status
+      j.active_stage.status if j.active_stage
     end
 
-    def active_task
+    def active_stage
       j = self
       #latest started at or first
-      j.tasks.select{|t| t.started_at}.sort_by{|t| t.started_at}.last || j.tasks.first
+      j.stages.select{|s| s.started_at}.sort_by{|s| s.started_at}.last || j.stages.first
     end
 
     def completed_at
       j = self
-      j.tasks.last.completed_at
+      j.stages.last.completed_at if j.stages.last
     end
 
     def failed_at
       j = self
-      j.active_task.failed_at
+      j.active_stage.failed_at if j.active_stage
     end
 
     def status_at
-      j.active_task.status_at
+      j = self
+      j.active_stage.status_at if j.active_stage
     end
 
     #convenience methods
@@ -59,7 +60,7 @@ module Mobilize
 
     def is_working?
       j = self
-      j.tasks.select{|t| t.is_working?}.compact.length>0
+      j.stages.select{|s| s.is_working?}.compact.length>0
     end
 
     def is_due?

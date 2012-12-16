@@ -120,7 +120,7 @@ same one that contains your Rakefile)
 Inside the Rakefile in your project's root folder, make sure you have:
 
 ``` ruby
-require 'mobilize-base/rakes'
+require 'mobilize-base/tasks'
 ```
 
 This defines rake tasks essential to run the environment.
@@ -489,26 +489,26 @@ name>))` and enter values under each header:
 
 * status	Mobilize writes this field with the last status returned by the job
 
-* task1..task5 List of tasks to be performed by the job. 
-  * Tasks have this syntax: <handler>.<call> <params>.
-    * handler specifies the file that should receive the task
+* stage1..stage5 List of stages to be performed by the job. 
+  * Stages have this syntax: <handler>.<call> <params>.
+    * handler specifies the file that should receive the stage
     * the call specifies the method within the file. The method should
-be called `"<handler>.<call>_by_task_path"`
+be called `"<handler>.<call>_by_stage_path"`
     * the params the method accepts, which are custom to each
-task. These should be of the for `<key1>: <value1>, <key2>: <value2>`, where
+stage. These should be of the for `<key1>: <value1>, <key2>: <value2>`, where
 `<key>` is an unquoted string and `<value>` is a quoted string, an
 integer, an array (delimited by square braces), or a hash (delimited by
 curly braces).
-    * For mobilize-base, the following tasks are available:
+    * For mobilize-base, the following stages are available:
       * gsheet.read `source: <input_gsheet_full_path>`, which reads the sheet. 
         * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
-"Requestor_mobilize(test)/base1_task1.in".
-      * gsheet.write `source: <task_relative_path>`,`target: <target_gsheet_path>`,
-which writes the specified task output to the target_gsheet. 
-        * The task_relative_path should be of the form `<task_column>` or
-`<job_name/task_column>`. The test uses "base1/task1" for the first test
-and simply "task1" for the second test. Both of these take the output
-from the first task.
+"Requestor_mobilize(test)/base1_stage1.in".
+      * gsheet.write `source: <stage_relative_path>`,`target: <target_gsheet_path>`,
+which writes the specified stage output to the target_gsheet. 
+        * The stage_relative_path should be of the form `<stage_column>` or
+`<job_name/stage_column>`. The test uses "base1/stage1" for the first test
+and simply "stage1" for the second test. Both of these take the output
+from the first stage.
         * The test uses "Requestor_mobilize(test)/base1.out" and
 "Requestor_mobilize(test)/base2.out" for target sheets.
 

@@ -32,12 +32,12 @@ describe "Mobilize" do
     r = u.runner
     jobs_sheet = r.gsheet(gdrive_slot)
     tsv = jobs_sheet.to_tsv
-    assert tsv.length == 56 #headers only
+    assert tsv.length == 61 #headers only
 
-    puts "add base1_task1 input sheet"
-    test_source_sheet = Mobilize::Gsheet.find_or_create_by_path("#{r.path.split("/")[0..-2].join("/")}/base1_task1.in",gdrive_slot)
+    puts "add base1_stage1 input sheet"
+    test_source_sheet = Mobilize::Gsheet.find_or_create_by_path("#{r.path.split("/")[0..-2].join("/")}/base1_stage1.in",gdrive_slot)
 
-    test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/base1_task1.yml")*40
+    test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/base1_stage1.yml")*40
     test_source_tsv = test_source_ha.hash_array_to_tsv
     test_source_sheet.write(test_source_tsv)
 

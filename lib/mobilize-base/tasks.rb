@@ -35,6 +35,16 @@ namespace :mobilize_base do
     require 'mobilize-base'
     Mobilize::Jobtracker.prep_workers
   end
+  desc "Stop Jobtracker"
+  task :stop do
+    require 'mobilize-base'
+    Mobilize::Jobtracker.stop!
+  end
+  desc "Start Jobtracker"
+  task :start do
+    require 'mobilize-base'
+    Mobilize::Jobtracker.start
+  end
   desc "kill all old resque web processes, start new one with resque_web.rb extension file"
   task :resque_web do
     require 'mobilize-base'

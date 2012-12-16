@@ -17,7 +17,7 @@ require "bundler/gem_tasks"
 # Setup
 #
 $LOAD_PATH.unshift 'lib'
-require 'mobilize-base/rakes'
+require 'mobilize-base/tasks'
 
 #
 # Tests

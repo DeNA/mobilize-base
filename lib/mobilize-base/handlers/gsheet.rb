@@ -32,32 +32,32 @@ module Mobilize
       return sheet
     end
 
-    def Gsheet.read_by_task_path(task_path)
+    def Gsheet.read_by_stage_path(stage_path)
       #reserve gdrive_slot account for read
-      gdrive_slot = Gdrive.slot_worker_by_path(task_path)
+      gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
       return false unless gdrive_slot
-      t = Task.where(:path=>task_path).first
-      gsheet_path = t.params['source']
+      s = Stage.where(:path=>stage_path).first
+      gsheet_path = s.params['source']
       Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
     end
 
-    def Gsheet.write_by_task_path(task_path)
-      gdrive_slot = Gdrive.slot_worker_by_path(task_path)
+    def Gsheet.write_by_stage_path(stage_path)
+      gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
       #return false if there are no emails available
       return false unless gdrive_slot
-      t = Task.where(:path=>task_path).first
-      source = t.params['source']
-      target_path = t.params['target']
-      source_job_name, source_task_name = if source.index("/")
+      s = Stage.where(:path=>stage_path).first
+      source = s.params['source']
+      target_path = s.params['target']
+      source_job_name, source_stage_name = if source.index("/")
                                             source.split("/")
                                           else
                                             [nil, source]
                                           end
-      source_task_path = "#{t.job.runner.path}/#{source_job_name || t.job.name}/#{source_task_name}"
-      source_task = Task.where(:path=>source_task_path).first
-      tsv = source_task.stdout_dataset.read_cache
+      source_stage_path = "#{s.job.runner.path}/#{source_job_name || s.job.name}/#{source_stage_name}"
+      source_stage = Stage.where(:path=>source_stage_path).first
+      tsv = source_stage.stdout_dataset.read_cache
       sheet_name = target_path.split("/").last
-      temp_path = [task_path.gridsafe,sheet_name].join("/")
+      temp_path = [stage_path.gridsafe,sheet_name].join("/")
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
       temp_sheet.write(tsv)
       temp_sheet.check_and_fix(tsv)

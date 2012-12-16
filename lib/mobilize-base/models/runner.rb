@@ -12,7 +12,7 @@ module Mobilize
     index({ path: 1})
 
     def headers
-      %w{name active trigger status task1 task2 task3 task4 task5}
+      %w{name active trigger status stage1 stage2 stage3 stage4 stage5}
     end
 
     def cached_at
@@ -51,7 +51,7 @@ module Mobilize
       r.jobs.each do |j|
         begin
           if j.is_due?
-            j.tasks.first.enqueue!
+            j.stages.first.enqueue!
           end
         rescue ScriptError, StandardError => exc
           r.update_status("Failed to enqueue #{j.path} with #{exc.to_s}")
@@ -96,25 +96,25 @@ module Mobilize
       #parse out the jobs and update the Job collection
       gsheet_jobs.each_with_index do |rj,rj_i|
         #skip non-jobs or jobs without required values
-        next if (rj['name'].to_s.first == "#" or ['name','active','trigger','task1'].select{|c| rj[c].to_s.strip==""}.length>0)
+        next if (rj['name'].to_s.first == "#" or ['name','active','trigger','stage1'].select{|c| rj[c].to_s.strip==""}.length>0)
         j = Job.find_or_create_by_path("#{r.path}/#{rj['name']}")
         #update top line params
         j.update_attributes(:active => rj['active'],
                             :trigger => rj['trigger'])
-        (1..5).to_a.each do |t_idx|
-          task_string = rj["task#{t_idx.to_s}"]
-          break if task_string.to_s.length==0
-          t = Task.find_or_create_by_path("#{j.path}/task#{t_idx.to_s}")
-          #parse command string, update task with it
-          t_handler, call, param_string = [""*3]
-          task_string.split(" ").ie do |spls|
-            t_handler = spls.first.split(".").first
+        (1..5).to_a.each do |s_idx|
+          stage_string = rj["stage#{s_idx.to_s}"]
+          break if stage_string.to_s.length==0
+          s = Stage.find_or_create_by_path("#{j.path}/stage#{s_idx.to_s}")
+          #parse command string, update stage with it
+          s_handler, call, param_string = [""*3]
+          stage_string.split(" ").ie do |spls|
+            s_handler = spls.first.split(".").first
             call = spls.first.split(".").last
             param_string = spls[1..-1].join(" ").strip
           end
-          t.update_attributes(:call=>call, :handler=>t_handler, :param_string=>param_string)
+          s.update_attributes(:call=>call, :handler=>s_handler, :param_string=>param_string)
         end
-        r.update_status("Updated #{j.path} tasks at #{Time.now.utc}")
+        r.update_status("Updated #{j.path} stages at #{Time.now.utc}")
         #add this job to list of read ones
         done_jobs << j
       end
@@ -131,11 +131,7 @@ module Mobilize
     def update_gsheet(gdrive_slot)
       r = self
       jobs_gsheet = r.gsheet(gdrive_slot)
-      upd_jobs = r.jobs.select do |j|
-                                 j.completed_at.nil? ||
-                                 j.completed_at > j.runner.completed_at ||
-                                 (j.failed_at and j.failed_at > j.runner.completed_at)
-                               end
+      upd_jobs = r.jobs.select{|j| j.status_at and j.status_at > j.runner.completed_at}
       upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}
       jobs_gsheet.add_or_update_rows(upd_rows)
       r.update_status("gsheet updated")

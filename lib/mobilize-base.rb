@@ -66,7 +66,7 @@ if File.exists?(mongoid_config_path)
   require "mobilize-base/models/user"
   require "mobilize-base/models/runner"
   require "mobilize-base/models/job"
-  require "mobilize-base/models/task"
+  require "mobilize-base/models/stage"
 end
 require 'google_drive'
 require 'resque'
