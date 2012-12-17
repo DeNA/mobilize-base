@@ -137,8 +137,9 @@ module GoogleDrive
             if loc_v != rem_v
               if ['true','false'].include?(loc_v.downcase)
                 #google sheet upcases true and false. ignore
-              elsif loc_v.starts_with?('rp') and rem_v.starts_with?('Rp')
-                # some other math bs
+              elsif loc_v.to_s.downcase.gsub("-","").gsub(" ","")==rem_v.to_s.downcase.gsub("-","").gsub(" ","")
+                #supported currency, silently converted whether it's an actual currency or not
+                #put a backtick on it.
                 sheet[row_i+1,col_i+1] = %{'#{loc_v}}
                 re_col_vs << {'row_i'=>row_i+1,'col_i'=>col_i+1,'col_v'=>%{'#{loc_v}}}
               elsif (loc_v.to_s.count('e')==1 or loc_v.to_s.count('e')==0) and

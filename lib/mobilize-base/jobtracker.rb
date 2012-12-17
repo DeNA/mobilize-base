@@ -190,7 +190,9 @@ module Mobilize
       while Jobtracker.status != 'stopping'
         users = User.all
         Jobtracker.run_notifications
-        users.each do |u|
+        #run throush all users randomly
+        #so none are privileged on JT restarts
+        users.sort_by{rand}.each do |u|
           r = u.runner
           Jobtracker.update_status("Checking #{r.path}")
           if r.is_due?
