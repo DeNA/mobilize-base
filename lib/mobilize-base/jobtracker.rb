@@ -89,7 +89,7 @@ module Mobilize
 
     def Jobtracker.start
       if Jobtracker.status!='stopped'
-        raise "Jobtracker still #{Jobtracker.status}"
+        Jobtracker.update_status("Jobtracker still #{Jobtracker.status}")
       else
         #make sure that workers are running and at the right number
         #Resque.prep_workers
