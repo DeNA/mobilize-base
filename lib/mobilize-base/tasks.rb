@@ -8,6 +8,7 @@ namespace :mobilize_base do
         require e
       end
     rescue Exception=>exc
+      #do nothing
     end
 
     begin
@@ -29,6 +30,11 @@ namespace :mobilize_base do
   task :kill_idle_and_stale_workers do
     require 'mobilize-base'
     Mobilize::Jobtracker.kill_idle_and_stale_workers
+  end
+    desc "Kill idle workers"
+    task :kill_idle_workers do
+    require 'mobilize-base'
+    Mobilize::Jobtracker.kill_idle_workers
   end
   desc "Make sure there are the correct # of workers, kill if too many"
   task :prep_workers do
