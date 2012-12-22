@@ -4,6 +4,7 @@ module Mobilize
     include Mongoid::Timestamps
     field :handler, type: String
     field :path, type: String
+    field :http_url, type: String
     field :raw_size, type: Fixnum
     field :last_cached_at, type: Time
     field :last_cache_handler, type: String

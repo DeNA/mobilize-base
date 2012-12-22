@@ -8,10 +8,10 @@ module Mobilize
       dst = Dataset.find_or_create_by_handler_and_path('gbook',path)
       #there should only be one book with each path, otherwise we have fail
       book = nil
-      if books.length>1 and dst.url.to_s.length>0
+      if books.length>1 and dst.http_url.to_s.length>0
         #some idiot process created a duplicate book.
         #Fix by renaming all but one with dst entry's key
-        dkey = dst.url.split("key=").last
+        dkey = dst.http_url.split("key=").last
         books.each do |b|
           bkey = b.resource_id.split(":").last
           if bkey == dkey
@@ -30,9 +30,9 @@ module Mobilize
         book = Gdrive.root(Gdrive.owner_email).create_spreadsheet(path)
         ("Created book #{path} at #{Time.now.utc.to_s}; Access at #{book.human_url}").oputs
       end
-      #always make sure book dataset URL is up to date
+      #always make sure book dataset http URL is up to date
       #and that book has admin acl
-      dst.update_attributes(:url=>book.human_url)
+      dst.update_attributes(:http_url=>book.human_url)
       book.add_admin_acl
       return book
     end
