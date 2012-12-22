@@ -38,13 +38,16 @@ module Mobilize
       return false unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
       gsheet_path = s.params['source']
-      Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
+      out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
+      #use Gridfs to cache result
+      out_url = "gridfs://#{s.path}/out"
+      Dataset.write_to_url(out_url,out_tsv)
     end
 
     def Gsheet.write_by_stage_path(stage_path)
       gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
-      #return false if there are no emails available
-      return false unless gdrive_slot
+      #return blank response if there are no slots available
+      return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
       source = s.params['source']
       target_path = s.params['target']
@@ -55,7 +58,7 @@ module Mobilize
                                           end
       source_stage_path = "#{s.job.runner.path}/#{source_job_name || s.job.name}/#{source_stage_name}"
       source_stage = Stage.where(:path=>source_stage_path).first
-      tsv = source_stage.stdout_dataset.read_cache
+      tsv = source_stage.out_dst.read
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
@@ -65,8 +68,11 @@ module Mobilize
       target_sheet.merge(temp_sheet)
       #delete the temp sheet's book
       temp_sheet.spreadsheet.delete
-      "Write successful for #{target_path}".oputs
-      return true
+      status = "Write successful for #{target_path}"
+      s.update_status(status)
+      #use Gridfs to cache result
+      out_url = "gridfs://#{s.path}/out"
+      Dataset.write_to_url(out_url,status)
     end
   end
 end

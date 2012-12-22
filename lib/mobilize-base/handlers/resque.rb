@@ -51,12 +51,12 @@ module Mobilize
 
     def Resque.active_paths
       #first argument of the payload is the runner / stage path unless the worker is Jobtracker
-      Resque.jobs('active').map{|j| j['args'].first unless (j.nil? or j['class']=='Jobtracker')}.compact
+      Resque.jobs('active').compact.map{|j| j['args'].first unless j['class']=='Jobtracker'}.compact
     end
 
     #Resque workers and methods to find
     def Resque.find_worker_by_path(path)
-      Resque.workers('working').select{|w| w.job['payload'] and w.job['payload']['args'].first == path}.first
+      Resque.workers('working').select{|w| w.job and w.job['payload'] and w.job['payload']['args'].first == path}.first
     end
 
     def Resque.set_worker_args_by_path(path,args)

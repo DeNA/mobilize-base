@@ -7,6 +7,7 @@ module Mobilize
     field :call, type: String
     field :param_string, type: Array
     field :status, type: String
+    field :out_url, type: String
     field :completed_at, type: Time
     field :started_at, type: Time
     field :failed_at, type: Time
@@ -19,19 +20,12 @@ module Mobilize
       s.path.split("/").last.gsub("stage","").to_i
     end
 
-    def stdout_dataset
+    def out_dst
+      #this gives a dataset that points to the output
+      #allowing you to determine its size
+      #before committing to a read or write
       s = self
-      Dataset.find_or_create_by_handler_and_path("gridfs","#{s.path}/stdout")
-    end
-
-    def stderr_dataset
-      s = self
-      Dataset.find_or_create_by_handler_and_path("gridfs","#{s.path}/stderr")
-    end
-
-    def log_dataset
-      s = self
-      Dataset.find_or_create_by_handler_and_path("gridfs","#{s.path}/log")
+      Dataset.find_by_url(s.out_url) if s.out_url
     end
 
     def params
@@ -79,27 +73,21 @@ module Mobilize
       j = s.job
       s.update_attributes(:started_at=>Time.now.utc)
       s.update_status(%{Starting at #{Time.now.utc}})
-      stdout, stderr = [nil,nil]
       begin
-        stdout,log = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path).to_s
-        #write to log if method returns an array w 2 members
-        s.log_dataset.write_cache(log) if log
+        #get response by running method
+        s.out_url = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+        s.save!
+        unless s.out_url
+          #re-queue self if no response
+          s.enqueue!
+          return false
+        end
       rescue ScriptError, StandardError => exc
-        stderr = [exc.to_s,exc.backtrace.to_s].join("\n")
-        #record the failure in Job so it appears on Runner, turn it off
-        #so it doesn't run again
         j.update_attributes(:active=>false)
         s.update_attributes(:failed_at=>Time.now.utc)
         s.update_status("Failed at #{Time.now.utc.to_s}")
         raise exc
       end
-      if stdout == false
-        #re-queue self if output is false
-        s.enqueue!
-        return false
-      end
-      #write output to cache
-      s.stdout_dataset.write_cache(stdout)
       s.update_attributes(:completed_at=>Time.now.utc)
       s.update_status("Completed at #{Time.now.utc.to_s}")
       if s.idx == j.stages.length

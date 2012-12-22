@@ -4,7 +4,6 @@ module Mobilize
     include Mongoid::Timestamps
     field :handler, type: String
     field :path, type: String
-    field :url, type: String
     field :raw_size, type: Fixnum
     field :last_cached_at, type: Time
     field :last_cache_handler, type: String
@@ -18,6 +17,16 @@ module Mobilize
       return "Mobilize::#{dst.handler.humanize}".constantize.read_by_path(dst.path)
     end
 
+    def Dataset.find_by_url(url)
+      handler,path = url.split("://")
+      Dataset.find_by_handler_and_path(handler,path)
+    end
+
+    def Dataset.find_or_create_by_url(url)
+      handler,path = url.split("://")
+      Dataset.find_or_create_by_handler_and_path(handler,path)
+    end
+
     def Dataset.find_by_handler_and_path(handler,path)
       Dataset.where(handler: handler, path: path).first
     end
@@ -28,41 +37,30 @@ module Mobilize
       return dst
     end
 
+    def Dataset.write_to_url(url,string)
+      dst = Dataset.find_or_create_by_url(url)
+      dst.write(string)
+      url
+    end
+
+    def read
+      dst = self
+      dst.update_attributes(:last_read_at=>Time.now.utc)
+      "Mobilize::#{dst.handler.humanize}".constantize.read_by_dataset_path(dst.path)
+    end
+
     def write(string)
       dst = self
-      "Mobilize::#{dst.handler.humanize}".constantize.write_by_path(dst.path,string)
+      "Mobilize::#{dst.handler.humanize}".constantize.write_by_dataset_path(dst.path,string)
       dst.raw_size = string.length
       dst.save!
       return true
     end
 
-    def cache_valid?
+    def delete
       dst = self
-      return true if dst.last_cached_at and (dst.cache_expire_at.nil? or dst.cache_expire_at > Time.now.utc)
-    end
-
-    def read_cache(cache_handler="gridfs")
-      dst = self
-      if cache_valid?
-        dst.update_attributes(:last_read_at=>Time.now.utc)
-        return "Mobilize::#{cache_handler.humanize}".constantize.read([dst.handler,dst.path].join("://"))
-      else
-        raise "Cache invalid or not found for #{cache_handler}://#{dst.path}"
-      end
-    end
-
-    def write_cache(string,expire_at=nil,cache_handler="gridfs")
-      dst = self
-      "Mobilize::#{cache_handler.humanize}".constantize.write([dst.handler,dst.path].join("://"),string)
-      dst.update_attributes(:last_cached_at=>Time.now.utc,
-                            :last_cache_handler=>cache_handler.to_s.downcase,
-                            :cache_expire_at=>expire_at,
-                            :size=>string.length)
+      "Mobilize::#{dst.handler.humanize}".constantize.delete_by_dataset_path(dst.path)
       return true
-    end
-
-    def delete_cache(cache_handler="gridfs")
-      return "Mobilize::#{cache_handler.humanize}".constantize.delete(dst.handler, dst.path)
     end
   end
 end

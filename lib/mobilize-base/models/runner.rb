@@ -71,9 +71,9 @@ module Mobilize
       Runner.where(:path=>path).first || Runner.create(:path=>path,:active=>true)
     end
 
-    def read_cache
+    def cache
       r = self
-      r.dataset.read_cache
+      Dataset.find_or_create_by_url("gridfs://#{r.path}")
     end
 
     def gsheet(gdrive_slot)
@@ -88,7 +88,7 @@ module Mobilize
       r = self
       gsheet_tsv = r.gsheet(gdrive_slot).to_tsv
       #cache in DB
-      r.dataset.write_cache(gsheet_tsv)
+      r.cache.write(gsheet_tsv)
       #turn it into a hash array
       gsheet_jobs = gsheet_tsv.tsv_to_hash_array
       #go through each job, update relevant job with its params

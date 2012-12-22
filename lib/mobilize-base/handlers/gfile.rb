@@ -28,7 +28,10 @@ module Mobilize
       return false unless gdrive_slot
       s = Stage.where(:path=>stage_path)
       gfile_path = s.params['file']
-      Gfile.find_by_path(gfile_path,gdrive_slot).read
+      out_tsv = Gfile.find_by_path(gfile_path,gdrive_slot).read
+      #use Gridfs to cache result
+      out_url = "gridfs://#{s.path}/out"
+      Dataset.write_to_url(out_url,out_tsv)
     end
   end
 end

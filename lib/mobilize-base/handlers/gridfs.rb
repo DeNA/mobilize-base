@@ -11,29 +11,29 @@ module Mobilize
       return ::Mongo::GridFileSystem.new(::Mongo::Connection.new(host,port).db(database_name))
     end
 
-    def Gridfs.read(path)
+    def Gridfs.read_by_dataset_path(dst_path)
       begin
-        zs=Gridfs.grid.open(path.gridsafe,'r').read
+        zs=Gridfs.grid.open(dst_path,'r').read
         return ::Zlib::Inflate.inflate(zs)
       rescue
         return nil
       end
     end
 
-    def Gridfs.write(path,string)
+    def Gridfs.write_by_dataset_path(dst_path,string)
       zs = ::Zlib::Deflate.deflate(string)
       raise "compressed string too large for Gridfs write" if zs.length > Gridfs.config['max_compressed_write_size']
-      curr_zs = Gridfs.read(path.gridsafe).to_s
+      curr_zs = Gridfs.read_by_dataset_path(dst_path).to_s
       #write a new version when there is a change
       if curr_zs != zs
-        Gridfs.grid.open(path.gridsafe,'w',:versions => Gridfs.config['max_versions']){|f| f.write(zs)}
+        Gridfs.grid.open(dst_path,'w',:versions => Gridfs.config['max_versions']){|f| f.write(zs)}
       end
       return true
     end
 
-    def Gridfs.delete(path)
+    def Gridfs.delete(dst_path)
       begin
-        Gridfs.grid.delete(path.gridsafe)
+        Gridfs.grid.delete(dst_path)
         return true
       rescue
         return nil

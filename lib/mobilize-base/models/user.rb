@@ -24,7 +24,7 @@ module Mobilize
 
     def jobs(jname=nil)
       u = self
-      return u.runners.map{|r| r.jobs(jname)}.flatten
+      return u.runner.jobs
     end
 
     def runner_path
