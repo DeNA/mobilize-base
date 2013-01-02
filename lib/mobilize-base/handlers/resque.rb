@@ -136,12 +136,12 @@ module Mobilize
 
     def Resque.kill_idle_workers(count=nil)
       idle_pids = Resque.workers('idle').select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}
-      if idle_pids.nil? or count.to_i > idle_pids.length or count == 0
+      if count.to_i > idle_pids.length or count == 0
         return false
       elsif count
-        "kill #{idle_pids[0..count-1].join(" ")}".bash
+        "kill #{idle_pids[0..count-1].join(" ")}".bash(false)
       else
-        "kill #{idle_pids.join(" ")}".bash
+        "kill #{idle_pids.join(" ")}".bash(false)
       end
       return true
     end
@@ -153,7 +153,7 @@ module Mobilize
       if idle_stale_pids.length == 0
         return false
       else
-        "kill #{idle_stale_pids.join(" ")}".bash
+        "kill #{idle_stale_pids.join(" ")}".bash(false)
       end
       return true
     end
