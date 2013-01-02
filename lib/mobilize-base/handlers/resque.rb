@@ -120,7 +120,7 @@ module Mobilize
         end
         #add notified flag to redis
         f['notified'] = true
-        ::Resque.redis.lset(:failed, f_i, Resque.encode(f))
+        ::Resque.redis.lset(:failed, f_i, ::Resque.encode(f))
       end
       return fjobs
     end
@@ -136,7 +136,7 @@ module Mobilize
 
     def Resque.kill_idle_workers(count=nil)
       idle_pids = Resque.workers('idle').select{|w| w.job=={}}.map{|w| w.to_s.split(":").second}
-      if count.to_i > idle_pids.length or count == 0
+      if idle_pids.nil? or count.to_i > idle_pids.length or count == 0
         return false
       elsif count
         "kill #{idle_pids[0..count-1].join(" ")}".bash
