@@ -106,7 +106,9 @@ module Mobilize
     def Resque.failure_report
       fjobs = {}
       excs = Hash.new(0)
-      Resque.failures.each do |f|
+      Resque.failures.each_with_index do |f,f_i|
+        #skip if already notified
+        next if f['notified']
         sname = f['payload']['args'].first
         excs = f['error']
         if fjobs[sname].nil?
@@ -116,6 +118,9 @@ module Mobilize
         else
           fjobs[sname][excs] += 1
         end
+        #add notified flag to redis
+        f['notified'] = true
+        ::Resque.redis.lset(:failed, f_i, Resque.encode(f))
       end
       return fjobs
     end

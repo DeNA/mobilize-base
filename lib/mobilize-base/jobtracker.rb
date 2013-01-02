@@ -163,12 +163,14 @@ module Mobilize
       if Jobtracker.notif_due?
         notifs = []
         if Jobtracker.failures.length>0
-          n = {}
           jfcs = Resque.failure_report
-          n['subj'] = "#{jfcs.keys.length.to_s} failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
-          #one row per exception type, with the job name
-          n['body'] = jfcs.map{|key,val| val.map{|b,name| [key," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
-          notifs << n
+          unless jfcs=={} #no new failures
+            n = {}
+            n['subj'] = "#{jfcs.keys.length.to_s} new failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
+            #one row per exception type, with the job name
+            n['body'] = jfcs.map{|key,val| val.map{|b,name| [key," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
+            notifs << n
+          end
         end
         lws = Jobtracker.max_run_time_workers
         if lws.length>0
