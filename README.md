@@ -602,7 +602,7 @@ crewmembers.
 [mongoid]: http://mongoid.org/en/mongoid/index.html
 [resque_redis]: https://github.com/defunkt/resque#section_Installing_Redis
 [mongodb_quickstart]: http://www.mongodb.org/display/DOCS/Quickstart
-[git_samples]: https://github.ngmoco.com/Ngpipes/mobilize-base/tree/master/lib/samples
+[git_samples]: https://github.com/ngmoco/mobilize-base/tree/master/lib/samples
 [rvm]: https://rvm.io/
 [resque-web]: https://github.com/defunkt/resque#standalone
 [mobilize-ssh]: https://github.com/ngmoco/mobilize-ssh
