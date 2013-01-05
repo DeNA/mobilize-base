@@ -96,7 +96,7 @@ Mobilize-Base contains all of the gems it needs to run.
 add this to your Gemfile:
 
 ``` ruby
-gem "mobilize-base", "~>1.0"
+gem "mobilize-base"
 ```
 
 or do

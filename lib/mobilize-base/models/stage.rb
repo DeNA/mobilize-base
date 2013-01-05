@@ -68,6 +68,19 @@ module Mobilize
       return j.stages[s.idx]
     end
 
+    def source_dst(source_path)
+      #gets dataset based on path given in source parameter
+      s = self
+      source_job_name, source_stage_name = if source_path.index("/")
+                                            source_path.split("/")
+                                          else
+                                            [nil, source_path]
+                                          end
+      source_stage_path = "#{s.job.runner.path}/#{source_job_name || s.job.name}/#{source_stage_name}"
+      source_stage = Stage.where(:path=>source_stage_path).first
+      source_stage.out_dst
+    end
+
     def Stage.perform(id,*args)
       s = Stage.where(:path=>id).first
       j = s.job
