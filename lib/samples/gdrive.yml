@@ -1,30 +1,37 @@
+---
 development:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_development'
-    pw: "google_drive_password"
+    name: owner_development
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_development001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_development002', pw: "worker002_google_drive_password"}
+    - name: worker_development001 
+      pw: worker001_google_drive_password
+    - name: worker_development002, 
+      pw: worker002_google_drive_password
 test:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_test'
-    pw: "google_drive_password"
+    name: owner_test
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_test001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_test002', pw: "worker002_google_drive_password"}
+    - name: worker_test001 
+      pw: worker001_google_drive_password
+    - name: worker_test002 
+      pw: worker002_google_drive_password
 production:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_production'
-    pw: "google_drive_password"
+    name: owner_production
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_production001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_production002', pw: "worker002_google_drive_password"}
+    - name: worker_production001 
+      pw: worker001_google_drive_password
+    - name: worker_production002
+      pw: worker002_google_drive_password

@@ -1,3 +1,4 @@
+---
 development:
   max_versions: 10 #number of versions of cache to keep in gridfs
   max_compressed_write_size: 1000000000 #~1GB

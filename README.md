@@ -175,36 +175,43 @@ reading/writing, which is called a gdrive_slot.__
 Sample gdrive.yml:
 
 ``` yml
+---
 development:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_development'
-    pw: "google_drive_password"
+    name: owner_development
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_development001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_development002', pw: "worker002_google_drive_password"}
+    - name: worker_development001 
+      pw: worker001_google_drive_password
+    - name: worker_development002, 
+      pw: worker002_google_drive_password
 test:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_test'
-    pw: "google_drive_password"
+    name: owner_test
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_test001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_test002', pw: "worker002_google_drive_password"}
+    - name: worker_test001 
+      pw: worker001_google_drive_password
+    - name: worker_test002 
+      pw: worker002_google_drive_password
 production:
-  domain: 'host.com'
+  domain: host.com
   owner:
-    name: 'owner_production'
-    pw: "google_drive_password"
+    name: owner_production
+    pw: google_drive_password
   admins:
-    - {name: 'admin'}
+    - name: admin
   workers:
-    - {name: 'worker_production001', pw: "worker001_google_drive_password"}
-    - {name: 'worker_production002', pw: "worker002_google_drive_password"}
+    - name: worker_production001 
+      pw: worker001_google_drive_password
+    - name: worker_production002
+      pw: worker002_google_drive_password
 ```
 
 <a name='section_Configure_Jobtracker'></a>
@@ -223,6 +230,7 @@ To this end, it needs these parameters, for which there is a sample
 below and in the [lib/samples][git_samples] folder:
 
 ``` yml
+---
 development:
   cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
@@ -230,7 +238,7 @@ development:
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
-  - {'email': 'admin@host.com'}
+  - email: admin@host.com
 test:
   cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
@@ -238,7 +246,7 @@ test:
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
-  - {'email': 'admin@host.com'}
+  - email: admin@host.com
 production:
   cycle_freq: 10 #time between Jobtracker sweeps
   notification_freq: 3600 #1 hour between failure/timeout notifications
@@ -246,7 +254,7 @@ production:
   max_run_time: 14400 # if a job runs for 4h+, notification will be sent
   extensions: [] #additional Mobilize modules to load workers with
   admins: #emails to send notifications to
-  - {'email': 'admin@host.com'}
+  - email: admin@host.com
 ```
 
 <a name='section_Configure_Resque'></a>
@@ -266,18 +274,19 @@ production, but feel free to adjust depending on your hardware.
 * web_port - this specifies the port under which resque-web operates
 
 ``` yml
+---
 development:
-  queue_name: 'mobilize'
+  queue_name: mobilize
   max_workers: 4
   redis_port: 6379
   web_port: 8282
 test:
-  queue_name: 'mobilize'
+  queue_name: mobilize
   max_workers: 4
   redis_port: 9736
   web_port: 8282
 production:
-  queue_name: 'mobilize'
+  queue_name: mobilize
   max_workers: 36
   redis_port: 6379
   web_port: 8282
@@ -312,6 +321,7 @@ restore Runners from cache if necessary.
 allow. If you try to write more than this, an exception will be thrown.
 
 ``` yml
+---
 development:
   max_versions: 10 #number of versions of cache to keep in gridfs
   max_compressed_write_size: 1000000000 #~1GB
@@ -334,6 +344,7 @@ It needs the below parameters, which can be found in the [lib/samples][git_sampl
 You shouldn't need to change anything in this file.
 
 ``` yml
+---
 development:
   sessions:
     default:
