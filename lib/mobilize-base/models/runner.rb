@@ -25,10 +25,6 @@ module Mobilize
       Mobilize::Resque.find_worker_by_path(r.path)
     end
 
-    def Runner.find_by_email(email)
-      Runner.where(:email=>email).first
-    end
-
     def Runner.find_by_path(path)
       Runner.where(:path=>path).first
     end

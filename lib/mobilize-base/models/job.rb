@@ -15,7 +15,8 @@ module Mobilize
 
     def stages
       j = self
-      Stage.where(:path=>/^#{j.path.escape_regex}/).to_a.sort_by{|s| s.path}
+      #starts with the job path, followed by a slash
+      Stage.where(:path=>/^#{j.path.escape_regex}\//).to_a.sort_by{|s| s.path}
     end
 
     def Job.find_or_create_by_path(path)
