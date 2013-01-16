@@ -12,6 +12,10 @@ module Mobilize
       [Gdrive.config['owner']['name'],Gdrive.domain].join("@")
     end
 
+    def Gdrive.owner_name
+      Gdrive.config['owner']['name']
+    end
+
     def Gdrive.password(email)
       if email == Gdrive.owner_email
         Gdrive.config['owner']['pw']

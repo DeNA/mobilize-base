@@ -40,8 +40,14 @@ module GoogleDrive
       end
     end
 
-    def read
-      self.download_to_string
+    def read(username)
+      f = self
+      entry = f.acl_entry("#{username}@#{Mobilize::Gdrive.domain}")
+      if entry and ['reader','writer','owner'].include?(entry.role)
+        f.download_to_string
+      else
+        raise "User #{username} is not allowed to read #{f.title}"
+      end
     end
 
     def update_acl(email,role="writer")

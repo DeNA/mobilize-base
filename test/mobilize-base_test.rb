@@ -31,7 +31,7 @@ describe "Mobilize" do
     puts "Jobtracker created runner with 'jobs' sheet?"
     r = u.runner
     jobs_sheet = r.gsheet(gdrive_slot)
-    tsv = jobs_sheet.to_tsv
+    tsv = jobs_sheet.read(Mobilize::Gdrive.owner_name)
     assert tsv.length == 61 #headers only
 
     puts "add base1_stage1 input sheet"
@@ -39,7 +39,7 @@ describe "Mobilize" do
 
     test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/base1_stage1.yml")*40
     test_source_tsv = test_source_ha.hash_array_to_tsv
-    test_source_sheet.write(test_source_tsv)
+    test_source_sheet.write(test_source_tsv,Mobilize::Gdrive.owner_name)
 
     puts "add row to jobs sheet, wait 150s"
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/base_job_rows.yml")

@@ -41,7 +41,7 @@ module Mobilize
       out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,out_tsv)
+      Dataset.write_to_url(out_url,out_tsv,s.job.runner.user.name)
     end
 
     def Gsheet.write_by_stage_path(stage_path)
@@ -49,23 +49,24 @@ module Mobilize
       #return blank response if there are no slots available
       return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
+      username = s.job.runner.user.name
       target_path = s.params['target']
       source_dst = s.source_dsts(gdrive_slot).first
-      tsv = source_dst.read
+      tsv = source_dst.read(username)
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
-      temp_sheet.write(tsv)
+      temp_sheet.write(tsv,Gdrive.owner_name)
       temp_sheet.check_and_fix(tsv)
       target_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
-      target_sheet.merge(temp_sheet)
+      target_sheet.merge(temp_sheet,username)
       #delete the temp sheet's book
       temp_sheet.spreadsheet.delete
       status = "Write successful for #{target_path}"
       s.update_status(status)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,status)
+      Dataset.write_to_url(out_url,status,username)
     end
   end
 end

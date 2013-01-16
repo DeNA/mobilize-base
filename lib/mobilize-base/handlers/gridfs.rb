@@ -23,7 +23,7 @@ module Mobilize
     def Gridfs.write_by_dataset_path(dst_path,string,username)
       zs = ::Zlib::Deflate.deflate(string)
       raise "compressed string too large for Gridfs write" if zs.length > Gridfs.config['max_compressed_write_size']
-      curr_zs = Gridfs.read_by_dataset_path(dst_path).to_s
+      curr_zs = Gridfs.read_by_dataset_path(dst_path,username).to_s
       #write a new version when there is a change
       if curr_zs != zs
         Gridfs.grid.open(dst_path,'w',:versions => Gridfs.config['max_versions']){|f| f.write(zs)}

@@ -65,7 +65,10 @@ namespace :mobilize_base do
     resque_web_extension_path = "#{full_config_dir}resque_web.rb"
     #kill any resque-web for now
     `ps aux | grep resque-web | awk '{print $2}' | xargs kill`
-    command = "bundle exec resque-web -p #{port.to_s} #{resque_web_extension_path}"
+    resque_redis_port_args = if Mobilize::Base.env == 'test'
+                               " -r localhost:#{Mobilize::Base.config('resque')['redis_port']}"
+                             end.to_s
+    command = "bundle exec resque-web -p #{port.to_s} #{resque_web_extension_path} #{resque_redis_port_args}"
     `#{command}`
   end
   desc "create indexes for all base models in mongodb"
