@@ -77,7 +77,14 @@ module GoogleDrive
       sheet.save
     end
 
-    def write(tsv)
+    def read(username)
+      sheet = self
+      if sheet.spreadsheet.editors
+
+      end
+    end
+
+    def write(tsv,username)
       sheet = self
       tsvrows = tsv.split("\n")
       #no rows, no write

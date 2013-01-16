@@ -129,22 +129,22 @@ module Mobilize
         else
           if source_path.index("/")
             #slashes mean sheets
-            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).to_tsv
+            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).read(r.user.name)
           else
             #check sheets in runner
             r = s.job.runner
             runner_sheet = r.gbook.worksheet_by_title(source_path)
             out_tsv = if runner_sheet
-                        runner_sheet.to_tsv
+                        runner_sheet.read(r.user.name)
                       else
                         #check for gfile. will fail if there isn't one.
-                        Gfile.find_by_path(source_path).read
+                        Gfile.find_by_path(source_path).read(r.user.name)
                       end
           end
           #use Gridfs to cache gdrive results
           file_name = source_path.split("/").last
           out_url = "gridfs://#{s.path}/#{file_name}"
-          Dataset.write_to_url(out_url,out_tsv)
+          Dataset.write_to_url(out_url,out_tsv,r.user.name)
           dsts << Dataset.find_by_url(out_url)
         end
       end 

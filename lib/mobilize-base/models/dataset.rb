@@ -38,29 +38,23 @@ module Mobilize
       return dst
     end
 
-    def Dataset.write_to_url(url,string)
+    def Dataset.write_to_url(url,string,username)
       dst = Dataset.find_or_create_by_url(url)
-      dst.write(string)
+      dst.write(string,username)
       url
     end
 
-    def read
+    def read(username)
       dst = self
       dst.update_attributes(:last_read_at=>Time.now.utc)
-      "Mobilize::#{dst.handler.humanize}".constantize.read_by_dataset_path(dst.path)
+      "Mobilize::#{dst.handler.humanize}".constantize.read_by_dataset_path(dst.path,username)
     end
 
-    def write(string)
+    def write(string,username)
       dst = self
-      "Mobilize::#{dst.handler.humanize}".constantize.write_by_dataset_path(dst.path,string)
+      "Mobilize::#{dst.handler.humanize}".constantize.write_by_dataset_path(dst.path,string,username)
       dst.raw_size = string.length
       dst.save!
-      return true
-    end
-
-    def delete
-      dst = self
-      "Mobilize::#{dst.handler.humanize}".constantize.delete_by_dataset_path(dst.path)
       return true
     end
   end
