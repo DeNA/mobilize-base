@@ -40,6 +40,10 @@ module GoogleDrive
       end
     end
 
+    def read
+      self.download_to_string
+    end
+
     def update_acl(email,role="writer")
       f = self
       #need these flags for HTTP retries
@@ -70,15 +74,11 @@ module GoogleDrive
       f = self
       f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope == email}.first
     end
-
     def entry_hash
       f = self
       dfe_xml = f.document_feed_entry.to_xml
-      begin
-        Hash.from_xml(dfe_xml)[:entry]
-      rescue
-        {}
-      end
+      result = Nokogiri::XML(dfe_xml)
+      { result.root.name.to_sym => Hash.xml_node_to_hash(result.root)}[:entry]
     end
   end
 end

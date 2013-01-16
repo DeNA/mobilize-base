@@ -68,19 +68,6 @@ module Mobilize
       return j.stages[s.idx]
     end
 
-    def source_dst(source_path)
-      #gets dataset based on path given in source parameter
-      s = self
-      source_job_name, source_stage_name = if source_path.index("/")
-                                            source_path.split("/")
-                                          else
-                                            [nil, source_path]
-                                          end
-      source_stage_path = "#{s.job.runner.path}/#{source_job_name || s.job.name}/#{source_stage_name}"
-      source_stage = Stage.where(:path=>source_stage_path).first
-      source_stage.out_dst
-    end
-
     def Stage.perform(id,*args)
       s = Stage.where(:path=>id).first
       j = s.job
@@ -116,6 +103,51 @@ module Mobilize
         s.next.enqueue!
       end
       return true
+    end
+
+    def source_dsts(gdrive_slot)
+      #returns an array of Datasets corresponding to 
+      #gridfs caches for stage outputs, gsheets and gfiles
+      #or dataset pointers for other handlers
+      s = self
+      params = s.params
+      source_paths = if params['sources']
+                       params['sources']
+                     elsif params['source']
+                       [params['source']]
+                     end
+      dsts = []
+      source_paths.each do |source_path|
+        if source_path.index(/^stage[1-5]$/)
+          source_stage_path = "#{s.job.runner.path}/#{s.job.name}/#{source_path}"
+          source_stage = Stage.where(:path=>source_stage_path).first
+          dsts << source_stage.out_dst
+        elsif source_path.index("://")
+          #find or create by url
+          dsts << Dataset.find_or_create_by_url(source_path)
+        else
+          if source_path.index("/")
+            #slashes mean sheets
+            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).to_tsv
+          else
+            #check sheets in runner
+            r = s.job.runner
+            runner_sheet = r.gbook.worksheet_by_title(source_path)
+            out_tsv = if runner_sheet
+                        runner_sheet.to_tsv
+                      else
+                        #check for gfile. will fail if there isn't one.
+                        Gfile.find_by_path(source_path).read
+                      end
+          end
+          #use Gridfs to cache gdrive results
+          file_name = source_path.split("/").last
+          out_url = "gridfs://#{s.path}/#{file_name}"
+          Dataset.write_to_url(out_url,out_tsv)
+          dsts << Dataset.find_by_url(out_url)
+        end
+      end 
+      return dsts
     end
 
     def enqueue!

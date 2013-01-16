@@ -72,6 +72,12 @@ module Mobilize
       Dataset.find_or_create_by_url("gridfs://#{r.path}")
     end
 
+    def gbook(gdrive_slot)
+      r = self
+      title = r.path.split("/").first
+      Gbook.find_all_by_path(title,gdrive_slot).first
+    end
+
     def gsheet(gdrive_slot)
       r = self
       jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)

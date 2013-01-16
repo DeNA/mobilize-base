@@ -501,7 +501,7 @@ name>))` and enter values under each header:
 * status	Mobilize writes this field with the last status returned by the job
 
 * stage1..stage5 List of stages to be performed by the job. 
-  * Stages have this syntax: <handler>.<call> <params>.
+  * Stages have this syntax: `<handler>.<call> <params>`.
     * handler specifies the file that should receive the stage
     * the call specifies the method within the file. The method should
 be called `"<handler>.<call>_by_stage_path"`
@@ -514,14 +514,14 @@ curly braces).
       * gsheet.read `source: <input_gsheet_full_path>`, which reads the sheet. 
         * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
 "Requestor_mobilize(test)/base1_stage1.in".
-      * gsheet.write `source: <stage_relative_path>`,`target: <target_gsheet_path>`,
+      * gsheet.write `source: <stage_name>`,`target: <target_gsheet_path>`,
 which writes the specified stage output to the target_gsheet. 
-        * The stage_relative_path should be of the form `<stage_column>` or
-`<job_name/stage_column>`. The test uses "base1/stage1" for the first test
-and simply "stage1" for the second test. Both of these take the output
-from the first stage.
+        * The stage_name should be of the form `<stage_column>`. The test uses "stage1" for the first test
+and "Runner_mobilize(test)/base1.out" for the second test. The first
+takes the output from the first stage and the second reads it straight
+from the referenced sheet.
         * The test uses "Requestor_mobilize(test)/base1.out" and
-"Requestor_mobilize(test)/base2.out" for target sheets.
+"Runner_mobilize(test)/base2.out" for target sheets.
 
 <a name='section_Start_Run_Test'></a>
 ### Run Test

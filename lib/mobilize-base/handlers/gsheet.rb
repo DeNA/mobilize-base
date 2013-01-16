@@ -49,9 +49,8 @@ module Mobilize
       #return blank response if there are no slots available
       return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
-      source_path = s.params['source']
       target_path = s.params['target']
-      source_dst = s.source_dst(source_path)
+      source_dst = s.source_dsts(gdrive_slot).first
       tsv = source_dst.read
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
