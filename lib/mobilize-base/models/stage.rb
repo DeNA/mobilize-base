@@ -116,6 +116,7 @@ module Mobilize
                      elsif params['source']
                        [params['source']]
                      end
+      return [] if (source_paths.class!=Array or source_paths.length==0)
       dsts = []
       source_paths.each do |source_path|
         if source_path.index(/^stage[1-5]$/)
