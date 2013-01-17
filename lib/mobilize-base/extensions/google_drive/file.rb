@@ -40,13 +40,13 @@ module GoogleDrive
       end
     end
 
-    def read(username)
+    def read(user)
       f = self
-      entry = f.acl_entry("#{username}@#{Mobilize::Gdrive.domain}")
+      entry = f.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       if entry and ['reader','writer','owner'].include?(entry.role)
         f.download_to_string
       else
-        raise "User #{username} is not allowed to read #{f.title}"
+        raise "User #{user} is not allowed to read #{f.title}"
       end
     end
 

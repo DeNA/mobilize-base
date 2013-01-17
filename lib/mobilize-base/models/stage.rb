@@ -116,7 +116,7 @@ module Mobilize
                      elsif params['source']
                        [params['source']]
                      end
-      username = s.job.runner.user.name
+      user = s.job.runner.user.name
       return [] if (source_paths.class!=Array or source_paths.length==0)
       dsts = []
       source_paths.each do |source_path|
@@ -130,22 +130,22 @@ module Mobilize
         else
           if source_path.index("/")
             #slashes mean sheets
-            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).read(username)
+            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).read(user)
           else
             #check sheets in runner
             r = s.job.runner
             runner_sheet = r.gbook.worksheet_by_title(source_path)
             out_tsv = if runner_sheet
-                        runner_sheet.read(username)
+                        runner_sheet.read(user)
                       else
                         #check for gfile. will fail if there isn't one.
-                        Gfile.find_by_path(source_path).read(username)
+                        Gfile.find_by_path(source_path).read(user)
                       end
           end
           #use Gridfs to cache gdrive results
           file_name = source_path.split("/").last
           out_url = "gridfs://#{s.path}/#{file_name}"
-          Dataset.write_to_url(out_url,out_tsv,username)
+          Dataset.write_to_url(out_url,out_tsv,user)
           dsts << Dataset.find_by_url(out_url)
         end
       end 

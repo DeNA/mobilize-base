@@ -44,14 +44,14 @@ module GoogleDrive
       sheet.save
     end
 
-    def merge(merge_sheet,username)
+    def merge(merge_sheet,user)
       #write the top left of sheet
       #with the contents of merge_sheet
       sheet = self
       sheet.reload
-      entry = merge_sheet.spreadsheet.acl_entry("#{username}@#{Mobilize::Gdrive.domain}")
+      entry = merge_sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       unless entry and ['writer','owner'].include?(entry.role)
-        raise "User #{username} is not allowed to write to #{merge_sheet.spreadsheet.title}"
+        raise "User #{user} is not allowed to write to #{merge_sheet.spreadsheet.title}"
       end
       merge_sheet.reload
       curr_rows = sheet.num_rows
@@ -81,21 +81,21 @@ module GoogleDrive
       sheet.save
     end
 
-    def read(username)
+    def read(user)
       sheet = self
-      entry = sheet.spreadsheet.acl_entry("#{username}@#{Mobilize::Gdrive.domain}")
+      entry = sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       if entry and ['reader','writer','owner'].include?(entry.role)
         sheet.to_tsv
       else
-        raise "User #{username} is not allowed to read #{sheet.spreadsheet.title}"
+        raise "User #{user} is not allowed to read #{sheet.spreadsheet.title}"
       end
     end
 
-    def write(tsv,username)
+    def write(tsv,user)
       sheet = self
-      entry = sheet.spreadsheet.acl_entry("#{username}@#{Mobilize::Gdrive.domain}")
+      entry = sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       unless entry and ['writer','owner'].include?(entry.role)
-        raise "User #{username} is not allowed to write to #{sheet.spreadsheet.title}"
+        raise "User #{user} is not allowed to write to #{sheet.spreadsheet.title}"
       end
       tsvrows = tsv.split("\n")
       #no rows, no write
