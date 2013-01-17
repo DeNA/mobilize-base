@@ -37,11 +37,12 @@ module Mobilize
       gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
       return false unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
+      username = s.job.runner.user.name
       gsheet_path = s.params['source']
-      out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).to_tsv
+      out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).read(username)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,out_tsv,s.job.runner.user.name)
+      Dataset.write_to_url(out_url,out_tsv,Gdrive.owner_name)
     end
 
     def Gsheet.write_by_stage_path(stage_path)
@@ -66,7 +67,7 @@ module Mobilize
       s.update_status(status)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,status,username)
+      Dataset.write_to_url(out_url,status,Gdrive.owner_name)
     end
   end
 end
