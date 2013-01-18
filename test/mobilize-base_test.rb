@@ -57,7 +57,7 @@ describe "Mobilize" do
 
     jobs_sheet.add_or_update_rows([{'name'=>'base1','active'=>true}])
     sleep 120
-    
+
     test_target_sheet_2 = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     assert test_target_sheet_2.to_tsv == test_source_sheet.to_tsv
