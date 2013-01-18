@@ -145,7 +145,7 @@ module Mobilize
           #use Gridfs to cache gdrive results
           file_name = source_path.split("/").last
           out_url = "gridfs://#{s.path}/#{file_name}"
-          Dataset.write_to_url(out_url,out_tsv,user)
+          Dataset.write_by_url(out_url,out_tsv,user)
           dsts << Dataset.find_by_url(out_url)
         end
       end 

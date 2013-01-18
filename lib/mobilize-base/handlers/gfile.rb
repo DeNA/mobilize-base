@@ -27,7 +27,7 @@ module Mobilize
       out_tsv = Gfile.find_by_path(gfile_path,gdrive_slot).read
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,out_tsv,s.job.runner.user.name)
+      Dataset.write_by_url(out_url,out_tsv,s.job.runner.user.name)
     end
 
     def Gfile.find_by_path(path)

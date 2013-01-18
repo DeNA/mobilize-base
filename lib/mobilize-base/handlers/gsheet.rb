@@ -42,7 +42,7 @@ module Mobilize
       out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).read(user)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,out_tsv,Gdrive.owner_name)
+      Dataset.write_by_url(out_url,out_tsv,Gdrive.owner_name)
     end
 
     def Gsheet.write_by_stage_path(stage_path)
@@ -67,7 +67,7 @@ module Mobilize
       s.update_status(status)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
-      Dataset.write_to_url(out_url,status,Gdrive.owner_name)
+      Dataset.write_by_url(out_url,status,Gdrive.owner_name)
     end
   end
 end

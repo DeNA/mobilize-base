@@ -38,7 +38,7 @@ module Mobilize
       return dst
     end
 
-    def Dataset.write_to_url(url,string,user)
+    def Dataset.write_by_url(url,string,user)
       dst = Dataset.find_or_create_by_url(url)
       dst.write(string,user)
       url
