@@ -20,6 +20,11 @@ module Mobilize
       Dataset.find_or_create_by_path(r.path).cached_at
     end
 
+    def title
+      r = self
+      r.path.split("/").first
+    end
+
     def worker
       r = self
       Mobilize::Resque.find_worker_by_path(r.path)

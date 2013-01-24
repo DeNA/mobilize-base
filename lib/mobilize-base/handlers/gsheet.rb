@@ -52,6 +52,7 @@ module Mobilize
       s = Stage.where(:path=>stage_path).first
       user = s.job.runner.user.name
       target_path = s.params['target']
+      target_path = "#{s.job.runner.title}/#{target_path}" unless target_path.index("/")
       source_dst = s.source_dsts(gdrive_slot).first
       tsv = source_dst.read(user)
       sheet_name = target_path.split("/").last
