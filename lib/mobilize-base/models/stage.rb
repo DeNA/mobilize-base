@@ -30,17 +30,9 @@ module Mobilize
 
     def params
       s = self
-      #evaluates param_string to ruby hash
-      #using YAML parser
-      #TODO: eliminate ridiculousness
-      begin
-        YAML.load(s.param_string)
-        raise "Must resolve to Hash" unless result.class==Hash
-      rescue
-        #replace parens w space parens, double space parens w single space
-        sub_param_string = s.param_string.gsub(":",": ").gsub(":  ",": ")
-        YAML.load("{#{sub_param_string}}")
-      end
+      p = YAML.easy_load(s.param_string)
+      raise "Must resolve to Hash" unless p.class==Hash
+      return p
     end
 
     def job

@@ -3,6 +3,7 @@ require "mobilize-base/extensions/array"
 require "mobilize-base/extensions/hash"
 require "mobilize-base/extensions/object"
 require "mobilize-base/extensions/string"
+require "mobilize-base/extensions/yaml"
 #this is the base of the mobilize object, any methods that should be
 #made available application-wide go over here
 #these also define base variables for Rails
