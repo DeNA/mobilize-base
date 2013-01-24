@@ -2,15 +2,13 @@ namespace :mobilize_base do
   desc "Start a Resque worker"
   task :work do
     require 'mobilize-base'
-    begin
-      #require specified mobilize gems
-      Mobilize::Base.config('jobtracker')['extensions'].each do |e|
+    Mobilize::Base.config('jobtracker')['extensions'].each do |e|
+      begin
         require e
+      rescue Exception=>exc
+        #do nothing
       end
-    rescue Exception=>exc
-      #do nothing
     end
-
     begin
       worker = Resque::Worker.new(Mobilize::Resque.config['queue_name'])
     rescue Resque::NoQueueError
