@@ -134,7 +134,7 @@ module Mobilize
           else
             #check sheets in runner
             r = s.job.runner
-            runner_sheet = r.gbook.worksheet_by_title(source_path)
+            runner_sheet = r.gbook(gdrive_slot).worksheet_by_title(source_path)
             out_tsv = if runner_sheet
                         runner_sheet.read(user)
                       else
