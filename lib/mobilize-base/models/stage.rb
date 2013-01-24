@@ -37,7 +37,8 @@ module Mobilize
         YAML.load(s.param_string)
         raise "Must resolve to Hash" unless result.class==Hash
       rescue
-        sub_param_string = s.param_string.gsub(":\"",": \"").gsub(":'",": '").gsub(":[",": [").gsub(":{",": {").gsub(/(:[0-9])/,'stageparamsgsub\1').gsub('stageparamsgsub:',': ')
+        #replace parens w space parens, double space parens w single space
+        sub_param_string = s.param_string.gsub(":",": ").gsub(":  ",": ")
         YAML.load("{#{sub_param_string}}")
       end
     end

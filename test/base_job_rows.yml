@@ -2,11 +2,11 @@
   active: true
   trigger: once
   status: ""
-  stage1: gsheet.read source:"Runner_mobilize(test)/base1_stage1.in"
-  stage2: gsheet.write source:"stage1", target:"Runner_mobilize(test)/base1.out"
+  stage1: gsheet.read source:base1_stage1.in
+  stage2: gsheet.write source:stage1, target:base1.out
 
 - name: base2
   active: true
   trigger: after base1
   status: ""
-  stage1: gsheet.write source:"Runner_mobilize(test)/base1.out", target:"Runner_mobilize(test)/base2.out"
+  stage1: gsheet.write source:base1.out, target:base2.out
