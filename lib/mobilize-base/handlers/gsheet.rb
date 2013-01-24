@@ -38,8 +38,8 @@ module Mobilize
       return false unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
       user = s.job.runner.user.name
-      gsheet_path = s.params['source']
-      out_tsv = Gsheet.find_by_path(gsheet_path,gdrive_slot).read(user)
+      source_dst = s.source_dsts(gdrive_slot).first
+      out_tsv = source_dst.read(user)
       #use Gridfs to cache result
       out_url = "gridfs://#{s.path}/out"
       Dataset.write_by_url(out_url,out_tsv,Gdrive.owner_name)
