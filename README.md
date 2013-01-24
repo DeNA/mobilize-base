@@ -512,8 +512,9 @@ integer, an array (delimited by square braces), or a hash (delimited by
 curly braces).
     * For mobilize-base, the following stages are available:
       * gsheet.read `source: <input_gsheet_path>`, which reads the sheet. 
-        * The gsheet_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses
-"Requestor_mobilize(test)/base1_stage1.in".
+        * The gsheet_path should be of the form
+`<gbook_name>/<gsheet_name>` or just `<gsheet_name>` if the target is in
+the Runner itself. The test uses "base1_stage1.in".
       * gsheet.write `source: <stage_name>`,`target: <target_gsheet_path>`,
 which writes the specified stage output to the target_gsheet. 
         * The stage_name should be of the form `<stage_column>`. The test uses "stage1" for the first test
