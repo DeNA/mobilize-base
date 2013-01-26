@@ -60,6 +60,11 @@ module GoogleDrive
         elsif entry.role != role and ['reader','writer','owner'].include?(role)
           entry.role=role
           f.acl.update_role(entry,entry.role)
+          if entry.role != role
+            #for whatever reason
+            f.acl.delete(entry)
+            f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})
+          end
         elsif !['reader','writer','owner'].include?(role)
           raise "Invalid role #{role}"
         end

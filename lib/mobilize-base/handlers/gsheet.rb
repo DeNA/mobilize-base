@@ -50,18 +50,25 @@ module Mobilize
       #return blank response if there are no slots available
       return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
-      user = s.job.runner.user.name
+      user = s.job.runner.user
       target_path = s.params['target']
       target_path = "#{s.job.runner.title}/#{target_path}" unless target_path.index("/")
       source_dst = s.source_dsts(gdrive_slot).first
-      tsv = source_dst.read(user)
+      tsv = source_dst.read(user.name)
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
       temp_sheet.write(tsv,Gdrive.owner_name)
       temp_sheet.check_and_fix(tsv)
-      target_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
-      target_sheet.merge(temp_sheet,user)
+      target_sheet = Gsheet.find_by_path(target_path,gdrive_slot)
+      unless target_sheet
+        #only give the user edit permissions if they're the ones
+        #creating it
+        target_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
+        target_sheet.spreadsheet.update_acl(user.email,"writer") unless target_sheet.acl_entry(user.email).role=="owner"
+        target_sheet.delete_sheet1
+      end
+      target_sheet.merge(temp_sheet,user.name)
       #delete the temp sheet's book
       temp_sheet.spreadsheet.delete
       status = "Write successful for #{target_path}"

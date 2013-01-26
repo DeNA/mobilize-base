@@ -49,9 +49,9 @@ module GoogleDrive
       #with the contents of merge_sheet
       sheet = self
       sheet.reload
-      entry = merge_sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
+      entry = sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       unless entry and ['writer','owner'].include?(entry.role)
-        raise "User #{user} is not allowed to write to #{merge_sheet.spreadsheet.title}"
+        raise "User #{user} is not allowed to write to #{sheet.spreadsheet.title}"
       end
       merge_sheet.reload
       curr_rows = sheet.num_rows
