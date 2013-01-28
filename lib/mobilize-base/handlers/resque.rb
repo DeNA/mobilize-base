@@ -56,7 +56,7 @@ module Mobilize
 
     #Resque workers and methods to find
     def Resque.find_worker_by_path(path)
-      Resque.workers('working').select{|w| w.job and w.job['payload'] and w.job['payload']['args'].first == path}.first
+      Resque.workers('working').select{|w| w.job.ie{|j| j and j['payload'] and j['payload']['args'].first == path}}.first
     end
 
     def Resque.set_worker_args_by_path(path,args)

@@ -65,7 +65,7 @@ module Mobilize
         #only give the user edit permissions if they're the ones
         #creating it
         target_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
-        target_sheet.spreadsheet.update_acl(user.email,"writer") unless target_sheet.spreadsheet.acl_entry(user.email).role=="owner"
+        target_sheet.spreadsheet.update_acl(user.email,"writer") unless target_sheet.spreadsheet.acl_entry(user.email).ie{|e| e and e.role=="owner"}
         target_sheet.delete_sheet1
       end
       target_sheet.merge(temp_sheet,user.name)

@@ -47,7 +47,7 @@ module Mobilize
 
     #email management - used to make sure not too many emails get used at the same time
     def Gdrive.slot_worker_by_path(path)
-      working_slots = Mobilize::Resque.jobs('working').map{|j| j['gdrive_slot'] if j['gdrive_slot']}.compact
+      working_slots = Mobilize::Resque.jobs('working').map{|j| j['gdrive_slot'] if (j and j['gdrive_slot'])}.compact
       Gdrive.workers.sort_by{rand}.each do |w|
         unless working_slots.include?([w['name'],Gdrive.domain].join("@"))
           Mobilize::Resque.set_worker_args_by_path(path,{'gdrive_slot'=>[w['name'],Gdrive.domain].join("@")})

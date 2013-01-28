@@ -91,7 +91,7 @@ module Mobilize
         #only give the user edit permissions if they're the ones
         #creating it
         jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)
-        unless jobs_sheet.spreadsheet.acl_entry(r.user.email).role=="owner"
+        unless jobs_sheet.spreadsheet.acl_entry(r.user.email).ie{|e| e and e.role=="owner"}
           jobs_sheet.spreadsheet.update_acl(r.user.email,"writer")
         end
       end
