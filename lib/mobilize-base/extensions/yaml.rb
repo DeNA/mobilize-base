@@ -12,7 +12,7 @@ module YAML
         result_hash[k] = if v.class==String
                            v.gsub(": //","://")
                          elsif v.class==Array
-                           v.map{|av| av.gsub(": //","://")}
+                           v.map{|av| av.to_s.gsub(": //","://")}
                          else
                            v
                          end
