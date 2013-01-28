@@ -9,7 +9,13 @@ module YAML
       #make sure urls have their colon spaces fixed
       result_hash={}
       easy_hash.each do |k,v|
-        result_hash[k] = v.gsub(": //","://")
+        result_hash[k] = if v.class==String
+                           v.gsub(": //","://")
+                         elsif v.class==Array
+                           v.map{|av| av.gsub(": //","://")}
+                         else
+                           v
+                         end
       end
       return result_hash
     end
