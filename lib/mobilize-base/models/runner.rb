@@ -119,8 +119,15 @@ module Mobilize
                             :trigger => rj['trigger'])
         (1..5).to_a.each do |s_idx|
           stage_string = rj["stage#{s_idx.to_s}"]
-          break if stage_string.to_s.length==0
-          s = Stage.find_or_create_by_path("#{j.path}/stage#{s_idx.to_s}")
+          s = Stage.find_by_path("#{j.path}/stage#{s_idx.to_s}")
+          if stage_string.to_s.length==0
+            #delete this stage; user has blanked it
+            s.delete if s
+            break
+          elsif s.nil?
+            #create this stage
+            s = Stage.find_or_create_by_path("#{j.path}/stage#{s_idx.to_s}")
+          end
           #parse command string, update stage with it
           s_handler, call, param_string = [""*3]
           stage_string.split(" ").ie do |spls|

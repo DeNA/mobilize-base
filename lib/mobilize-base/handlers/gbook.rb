@@ -3,14 +3,13 @@ module Mobilize
     def Gbook.find_all_by_path(path,gdrive_slot)
       Gdrive.books(gdrive_slot,{"title"=>path,"title-exact"=>"true"})
     end
-    def Gbook.find_or_create_by_path(path,gdrive_slot)
-      books = Gdrive.books(gdrive_slot,{"title"=>path,"title-exact"=>"true"})
+    def Gbook.find_by_path(path,gdrive_slot)
+      books = Gbook.find_all_by_path(path,gdrive_slot)
       dst = Dataset.find_or_create_by_handler_and_path('gbook',path)
-      #there should only be one book with each path, otherwise we have fail
       book = nil
       if books.length>1 and dst.http_url.to_s.length>0
-        #some idiot process created a duplicate book.
-        #Fix by renaming all but one with dst entry's key
+        #some idiot process or malicious user created a duplicate book.
+        #Fix by deleting all but the one with dst entry's key
         dkey = dst.http_url.split("key=").last
         books.each do |b|
           bkey = b.resource_id.split(":").last
@@ -23,8 +22,15 @@ module Mobilize
           end
         end
       else
+        #If it's a new dst or if there are multiple books
+        #take the first
         book = books.first
       end
+      return book
+    end
+    def Gbook.find_or_create_by_path(path,gdrive_slot)
+      book = Gbook.find_by_path(path,gdrive_slot)
+      dst = Dataset.find_or_create_by_handler_and_path('gbook',path)
       if book.nil?
         #always use owner email to make sure all books are owned by owner account
         book = Gdrive.root(Gdrive.owner_email).create_spreadsheet(path)

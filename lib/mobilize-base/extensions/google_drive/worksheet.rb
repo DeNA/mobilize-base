@@ -153,7 +153,7 @@ module GoogleDrive
           else
             rem_v = rem_table[row_i][col_i]
             if loc_v != rem_v
-              if ['true','false'].include?(loc_v.downcase)
+              if ['true','false'].include?(loc_v.to_s.downcase)
                 #google sheet upcases true and false. ignore
               elsif loc_v.to_s.downcase.gsub("-","").gsub(" ","")==rem_v.to_s.downcase.gsub("-","").gsub(" ","")
                 #supported currency, silently converted whether it's an actual currency or not

@@ -47,6 +47,11 @@ module Mobilize
       return s
     end
 
+    def Stage.find_by_path(path)
+      s = Stage.where(:path=>path).first
+      return s
+    end
+
     def prior
       s = self
       j = s.job

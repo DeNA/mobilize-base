@@ -16,7 +16,7 @@ module Mobilize
 
     def Gsheet.find_by_path(path,gdrive_slot)
       book_path,sheet_name = path.split("/")
-      book = Gdrive.books(gdrive_slot,{"title"=>book_path,"title-exact"=>"true"}).first
+      book = Gbook.find_by_path(book_path,gdrive_slot)
       return book.worksheet_by_title(sheet_name) if book
     end
 
