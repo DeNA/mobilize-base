@@ -25,15 +25,8 @@ module GoogleDrive
           attempts +=1
         else
           if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
-            if response.body.downcase.index("rate limit") or response.body.downcase.index("captcha")
-              if sleep_time
-                sleep_time = sleep_time * attempts
-              else
-                sleep_time = (rand*100).to_i
-              end
-            else
-              sleep_time = 10
-            end
+            #wait 10 seconds times number of attempts squared in case of error
+            sleep_time = 10 * (attempts*attempts)
             attempts += 1
             puts "Sleeping for #{sleep_time.to_s} due to #{response.body}"
             sleep sleep_time
