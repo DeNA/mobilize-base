@@ -45,7 +45,7 @@ module Mobilize
       r.update_attributes(:started_at=>Time.now.utc)
       #make sure any updates to activity are processed first
       #as in when someone runs a "once" job that has completed
-      r.update_gsheet(gdrive_slot)
+      r.update_gsheet(gdrive_slot) 
       #read the jobs in the gsheet and update models with news
       r.read_gsheet(gdrive_slot)
       #queue up the jobs that are due and active
@@ -153,6 +153,8 @@ module Mobilize
 
     def update_gsheet(gdrive_slot)
       r = self
+      #there's nothing to update if runner has never had a completed at
+      return false unless r.completed_at
       jobs_gsheet = r.gsheet(gdrive_slot)
       upd_jobs = r.jobs.select{|j| j.status_at and j.status_at > j.runner.completed_at}
       upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}

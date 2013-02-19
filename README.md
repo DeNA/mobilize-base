@@ -25,6 +25,7 @@ Table Of Contents
   * [Default Folders and Files](#section_Install_Folders_and_Files)
 * [Configure](#section_Configure)
   * [Google Drive](#section_Configure_Google_Drive)
+  * [Google Sheets](#section_Configure_Google_Sheets)
   * [Jobtracker](#section_Configure_Jobtracker)
   * [Resque](#section_Configure_Resque)
   * [Resque-Web](#section_Configure_Resque-Web)
@@ -212,6 +213,47 @@ production:
       pw: worker001_google_drive_password
     - name: worker_production002
       pw: worker002_google_drive_password
+```
+
+<a name='section_Configure_Google_Sheets'></a>
+### Configure Google Sheets
+
+gsheet.yml needs:
+* max_cells, which is the number of cells a sheet is allowed to have
+  written to it at one time. Default is 400k cells, which is the max per
+  book. Google Drive will throw its own exception if
+  you try to write more than that.
+* Because Google Docs ties date formatting to the Locale for the
+  spreadsheet, there are 2 date format parameters:
+  * read_date_format, which is the format that should be read FROM google
+    sheets for date columns.
+  * sheet_date_format, which is the format that the google sheet is in.
+  * A date column is defined as one where the column header = "date" or "Date", or ends with "_date" or "Date".
+  * The defaults are set to US locale for sheet_date_format, because in 'Murica (US) we
+    use %m/%d/%Y for some reason, and to %Y-%m-%d format for
+    reading, which is more standard and sorts well as a string. If your
+    locale is NOT 'Murica you will want to change these.
+
+Sample gsheet.yml
+
+``` yml
+---
+development:
+  max_cells: 400000
+  read_date_format: "%Y-%m-%d"
+  sheet_date_format: "%m/%d/%Y"
+test:
+  max_cells: 400000
+  read_date_format: "%Y-%m-%d"
+  sheet_date_format: "%m/%d/%Y"
+staging:
+  max_cells: 400000
+  read_date_format: "%Y-%m-%d"
+  sheet_date_format: "%m/%d/%Y"
+production:
+  max_cells: 400000
+  read_date_format: "%Y-%m-%d"
+  sheet_date_format: "%m/%d/%Y"
 ```
 
 <a name='section_Configure_Jobtracker'></a>

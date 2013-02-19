@@ -118,7 +118,7 @@ class String
       row = h.map do |k,v|
               if k.to_s.downcase=="date" or
                 k.to_s.downcase.ends_with?("_date") or
-                k.to_s.downcase.ends_with?("Date")
+                k.to_s.ends_with?("Date")
                 begin
                   Date.strptime(v,from_date_format).strftime(to_date_format)
                 rescue

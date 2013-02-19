@@ -8,9 +8,8 @@ module GoogleDrive
       #look for blank cols to indicate end of row
       row_last_i = (header.index("") || header.length)-1
       out_tsv = rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
-      out_tsv.tsv_convert_dates(out_tsv,
-                                Gsheet.config['sheet_date_format'],
-                                Gsheet.config['read_date_format'])
+      out_tsv.tsv_convert_dates(Mobilize::Gsheet.config['sheet_date_format'],
+                                Mobilize::Gsheet.config['read_date_format'])
 
     end
     def add_headers(headers)
