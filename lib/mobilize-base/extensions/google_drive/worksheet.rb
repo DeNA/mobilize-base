@@ -7,7 +7,11 @@ module GoogleDrive
       return nil unless header and header.first.to_s.length>0
       #look for blank cols to indicate end of row
       row_last_i = (header.index("") || header.length)-1
-      rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
+      out_tsv = rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
+      out_tsv.tsv_convert_dates(out_tsv,
+                                Gsheet.config['sheet_date_format'],
+                                Gsheet.config['read_date_format'])
+
     end
     def add_headers(headers)
       headers.each_with_index do |h,h_i|

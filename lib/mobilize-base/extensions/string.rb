@@ -105,4 +105,32 @@ class String
     end
     return row_hash_arr
   end
+  def tsv_header_array(delim="\t")
+    str = self
+    #up to right before first line break, or whole thing
+    str[0..(str.index("\n") || 0)-1].split(delim)
+  end
+  def tsv_convert_dates(from_date_format,to_date_format)
+    str = self
+    hash_array = str.tsv_to_hash_array
+    headers = str.tsv_header_array.join("\t")
+    rows = hash_array.map do |h|
+      row = h.map do |k,v|
+              if k.to_s.downcase=="date" or
+                k.to_s.downcase.ends_with?("_date") or
+                k.to_s.downcase.ends_with?("Date")
+                begin
+                  Date.strptime(v,from_date_format).strftime(to_date_format)
+                rescue
+                  v
+                end
+              else
+                v
+              end
+      end
+      row.join("\t")
+    end
+    rows = [headers] + rows
+    rows.join("\n")
+  end
 end
