@@ -41,10 +41,10 @@ describe "Mobilize" do
     test_source_tsv = test_source_ha.hash_array_to_tsv
     test_source_sheet.write(test_source_tsv,user_name)
 
-    puts "add row to jobs sheet, wait 180s"
+    puts "add row to jobs sheet, wait 300s"
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/base_job_rows.yml")
     jobs_sheet.add_or_update_rows(test_job_rows)
-    sleep 180
+    sleep 300
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     test_target_sheet_1 = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1.out",gdrive_slot)
@@ -52,11 +52,11 @@ describe "Mobilize" do
 
     assert test_target_sheet_1.read(user_name) == test_source_sheet.read(user_name)
 
-    puts "delete both output sheets, set first job to active=true, wait 120s"
+    puts "delete both output sheets, set first job to active=true, wait 300s"
     [test_target_sheet_1,test_target_sheet_2].each{|s| s.delete}
 
     jobs_sheet.add_or_update_rows([{'name'=>'base1','active'=>true}])
-    sleep 180
+    sleep 300
 
     test_target_sheet_2 = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base2.out",gdrive_slot)
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
