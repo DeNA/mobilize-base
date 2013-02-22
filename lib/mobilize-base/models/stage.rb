@@ -89,8 +89,6 @@ module Mobilize
       s.update_attributes(:completed_at=>Time.now.utc)
       s.update_status("Completed at #{Time.now.utc.to_s}")
       if s.idx == j.stages.length
-        #job has completed
-        j.update_attributes(:active=>false) if j.trigger.strip.downcase == "once"
         #check for any dependent jobs, if there are, enqueue them
         r = j.runner
         dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger.strip.downcase == "after #{j.name}"}

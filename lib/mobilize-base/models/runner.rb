@@ -52,6 +52,7 @@ module Mobilize
       r.jobs.each do |j|
         begin
           if j.is_due?
+            j.update_attributes(:active=>false) if j.trigger=='once'
             j.stages.first.enqueue!
           end
         rescue ScriptError, StandardError => exc
