@@ -7,7 +7,7 @@ module Mobilize
     field :call, type: String
     field :param_string, type: Array
     field :status, type: String
-    field :out_url, type: String
+    field :response, type: Hash
     field :completed_at, type: Time
     field :started_at, type: Time
     field :failed_at, type: Time
@@ -25,7 +25,7 @@ module Mobilize
       #allowing you to determine its size
       #before committing to a read or write
       s = self
-      Dataset.find_by_url(s.out_url) if s.out_url
+      Dataset.find_by_url(s.response['out_url']) if s.response and s.response['out_url']
     end
 
     def params
@@ -73,9 +73,9 @@ module Mobilize
       s.update_status(%{Starting at #{Time.now.utc}})
       begin
         #get response by running method
-        s.out_url = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+        s.response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
         s.save!
-        unless s.out_url
+        unless s.response['status']=='complete'
           #re-queue self if no response
           s.enqueue!
           return false
@@ -84,6 +84,7 @@ module Mobilize
         j.update_attributes(:active=>false)
         s.update_attributes(:failed_at=>Time.now.utc)
         s.update_status("Failed at #{Time.now.utc.to_s}")
+
         raise exc
       end
       s.update_attributes(:completed_at=>Time.now.utc)
