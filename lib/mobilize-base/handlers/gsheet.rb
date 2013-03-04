@@ -57,8 +57,18 @@ module Mobilize
       tsv = source_dst.read(user.name)
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
+      #find and delete temp sheet, if any
+      temp_sheet = Gsheet.find_by_path(temp_path,gdrive_slot)
+      temp_sheet.delete if temp_sheet
+      #write data to temp sheet
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
-      temp_sheet.write(tsv,Gdrive.owner_name)
+      #this step has a tendency to fail; if it does,
+      #don't fail the stage, mark it as false
+      begin
+        temp_sheet.write(tsv,Gdrive.owner_name)
+      rescue
+        return nil
+      end
       temp_sheet.check_and_fix(tsv)
       target_sheet = Gsheet.find_by_path(target_path,gdrive_slot)
       unless target_sheet
@@ -68,7 +78,13 @@ module Mobilize
         target_sheet.spreadsheet.update_acl(user.email,"writer") unless target_sheet.spreadsheet.acl_entry(user.email).ie{|e| e and e.role=="owner"}
         target_sheet.delete_sheet1
       end
-      target_sheet.merge(temp_sheet,user.name)
+      #this step has a tendency to fail; if it does,
+      #don't fail the stage, mark it as false
+      begin
+        target_sheet.merge(temp_sheet,user.name)
+      rescue
+        return nil
+      end
       #delete the temp sheet's book
       temp_sheet.spreadsheet.delete
       status = "Write successful for #{target_path}"
