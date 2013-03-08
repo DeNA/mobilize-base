@@ -10,7 +10,6 @@ module GoogleDrive
       out_tsv = rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
       out_tsv.tsv_convert_dates(Mobilize::Gsheet.config['sheet_date_format'],
                                 Mobilize::Gsheet.config['read_date_format'])
-
     end
     def add_headers(headers)
       headers.each_with_index do |h,h_i|

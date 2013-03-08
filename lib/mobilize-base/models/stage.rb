@@ -91,7 +91,7 @@ module Mobilize
           s.complete(response)
         elsif s.params['retries'].to_i < s.retries.to_i
           #retry
-          s.update_attributes(:retries => s.retries.to_i + 1, :response=>response)
+          s.update_attributes(:retries => s.retries.to_i + 1, :response => response)
           s.enqueue!
         else
           s.fail(response)
@@ -135,11 +135,17 @@ module Mobilize
       true
     end
 
-    def fail(response)
+    def fail(response,gdrive_slot=nil)
+      gdrive_slot||=Gdrive.owner_email
       s = self
       s.job.update_attributes(:active=>false)
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
-      s.update_status("Failed at #{Time.now.utc.to_s}")
+      runner_path = s.job.runner.path
+      stage_name = "#{s.job.name}_stage#{s.idx.to_s}"
+      target_path =  (runner_path.split("/")[0..-2] + [stage_name]).join("/")
+      status_msg = "Failed at #{Time.now.utc.to_s}"
+      Gsheet.write(target_path,response['err_url'],gdrive_slot)
+      s.update_status(status_msg)
       true
     end
 

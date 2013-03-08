@@ -44,33 +44,22 @@ module Mobilize
       return sheet
     end
 
-    def Gsheet.read_by_stage_path(stage_path)
-      #reserve gdrive_slot account for read
-      gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
-      return nil unless gdrive_slot
-      s = Stage.where(:path=>stage_path).first
-      user = s.job.runner.user.name
-      begin
-        source_dst = s.source_dsts(gdrive_slot).first
-        stdout = source_dst.read(user)
-      rescue => exc
-        stderr = [exc.to_s,"\n",exc.backtrace].join
-      end
-      out_url = "gridfs://#{s.path}/out"
-      err_url = "gridfs://#{s.path}/err"
-      #write data to urls
-      out_url = Dataset.write_by_url(out_url,stdout.to_s,Gdrive.owner_name)
-      err_url = Dataset.write_by_url(err_url,stderr.to_s,Gdrive.owner_name)
-      #return urls and signal
-      return {'out_url' => out_url, 'err_url' => err_url, 'signal' => signal}
-    end
-
     def Gsheet.write_temp(stage,gdrive_slot,tsv)
       target_path = stage.params['target']
       sheet_name = target_path.split("/").last
       temp_path = [stage_path.gridsafe,sheet_name].join("/")
+      #find and delete temp sheet, if any
+      temp_sheet = Gsheet.find_by_path(temp_path,gdrive_slot)
+      temp_sheet.delete if temp_sheet
+      #write data to temp sheet
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
-      temp_sheet.write(tsv,Gdrive.owner_name)
+      #this step has a tendency to fail; if it does,
+      #don't fail the stage, mark it as false
+      begin
+        temp_sheet.write(tsv,Gdrive.owner_name)
+      rescue
+        return nil
+      end
       temp_sheet.check_and_fix(tsv)
       temp_sheet
     end
@@ -120,8 +109,6 @@ module Mobilize
         Dataset.write_by_url(err_url,exc.to_s,Gdrive.owner_name)
         signal = 500
       end
-      out_url = "gridfs://#{stage_path}/out"
-      err_url = "gridfs://#{stage_path}/err"
       #return urls from write
       out_url = Dataset.write_by_url(out_url,stdout.to_s,Gdrive.owner_name)
       err_url = Dataset.write_by_url(err_url,stderr.to_s,Gdrive.owner_name)
