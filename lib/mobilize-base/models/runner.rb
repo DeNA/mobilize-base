@@ -53,7 +53,9 @@ module Mobilize
         begin
           if j.is_due?
             j.update_attributes(:active=>false) if j.trigger=='once'
-            j.stages.first.enqueue!
+            s = j.stages.first
+            s.update_attributes(:retries=>0)
+            s.enqueue!
           end
         rescue ScriptError, StandardError => exc
           r.update_status("Failed to enqueue #{j.path} with #{exc.to_s}")

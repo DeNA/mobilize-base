@@ -80,5 +80,18 @@ module Mobilize
     def Gdrive.books(gdrive_slot=nil,params={})
       Gdrive.files(gdrive_slot,params).select{|f| f.class==GoogleDrive::Spreadsheet}
     end
+
+    #email management - used to make sure not too many emails get used at the same time
+    def Gdrive.slot_worker_by_path(path)
+      working_slots = Mobilize::Resque.jobs.map{|j| begin j['args'][1]['gdrive_slot'];rescue;nil;end}.compact.uniq
+      Gdrive.workers.sort_by{rand}.each do |w|
+        unless working_slots.include?([w['name'],Gdrive.domain].join("@"))
+          Mobilize::Resque.set_worker_args_by_path(path,{'gdrive_slot'=>[w['name'],Gdrive.domain].join("@")})
+          return [w['name'],Gdrive.domain].join("@")
+        end
+      end
+      #return false if none are available
+      return false
+    end
   end
 end

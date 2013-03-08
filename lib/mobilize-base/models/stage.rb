@@ -8,6 +8,7 @@ module Mobilize
     field :param_string, type: Array
     field :status, type: String
     field :response, type: Hash
+    field :retries, type: Fixnum
     field :completed_at, type: Time
     field :started_at, type: Time
     field :failed_at, type: Time
@@ -26,6 +27,14 @@ module Mobilize
       #before committing to a read or write
       s = self
       Dataset.find_by_url(s.response['out_url']) if s.response and s.response['out_url']
+    end
+
+    def err_dst
+      #this gives a dataset that points to the output
+      #allowing you to determine its size
+      #before committing to a read or write
+      s = self
+      Dataset.find_by_url(s.response['err_url']) if s.response and s.response['err_url']
     end
 
     def params
@@ -68,85 +77,70 @@ module Mobilize
 
     def Stage.perform(id,*args)
       s = Stage.where(:path=>id).first
-      j = s.job
       s.update_attributes(:started_at=>Time.now.utc)
       s.update_status(%{Starting at #{Time.now.utc}})
       begin
         #get response by running method
-        s.response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
-        s.save!
-        unless s.response['status']=='complete'
+        response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+        unless response
           #re-queue self if no response
           s.enqueue!
           return false
         end
+        if response['signal'] == 0
+          s.complete(response)
+        elsif s.params['retries'].to_i < s.retries.to_i
+          #retry
+          s.update_attributes(:retries => s.retries.to_i + 1, :response=>response)
+          s.enqueue!
+        else
+          s.fail(response)
+        end
       rescue ScriptError, StandardError => exc
-        j.update_attributes(:active=>false)
-        s.update_attributes(:failed_at=>Time.now.utc)
-        s.update_status("Failed at #{Time.now.utc.to_s}")
-
-        raise exc
-      end
-      s.update_attributes(:completed_at=>Time.now.utc)
-      s.update_status("Completed at #{Time.now.utc.to_s}")
-      if s.idx == j.stages.length
-        #check for any dependent jobs, if there are, enqueue them
-        r = j.runner
-        dep_jobs = r.jobs.select{|dj| dj.active==true and dj.trigger.strip.downcase == "after #{j.name}"}
-        #put begin/rescue so all dependencies run
-        dep_jobs.each{|dj| begin;dj.stages.first.enqueue! unless dj.is_working?;rescue;end}
-      else
-        #queue up next stage
-        s.next.enqueue!
+        s.fail(exc)
       end
       return true
     end
 
-    def source_dsts(gdrive_slot)
-      #returns an array of Datasets corresponding to 
-      #gridfs caches for stage outputs, gsheets and gfiles
-      #or dataset pointers for other handlers
+    def complete(response)
       s = self
-      params = s.params
-      source_paths = if params['sources']
-                       params['sources']
-                     elsif params['source']
-                       [params['source']]
-                     end
-      user = s.job.runner.user.name
-      return [] if (source_paths.class!=Array or source_paths.length==0)
-      dsts = []
-      source_paths.each do |source_path|
-        if source_path.index(/^stage[1-5]$/)
-          source_stage_path = "#{s.job.runner.path}/#{s.job.name}/#{source_path}"
-          source_stage = Stage.where(:path=>source_stage_path).first
-          dsts << source_stage.out_dst
-        elsif source_path.index("://")
-          #find or create by url
-          dsts << Dataset.find_or_create_by_url(source_path)
-        else
-          if source_path.index("/")
-            #slashes mean sheets
-            out_tsv = Gsheet.find_by_path(source_path,gdrive_slot).read(user)
-          else
-            #check sheets in runner
-            r = s.job.runner
-            runner_sheet = r.gbook(gdrive_slot).worksheet_by_title(source_path)
-            out_tsv = if runner_sheet
-                        runner_sheet.read(user)
-                      else
-                        #check for gfile. will fail if there isn't one.
-                        Gfile.find_by_path(source_path).read(user)
+      s.update_attributes(:completed_at=>Time.now.utc)
+      s.update_status("Completed at #{Time.now.utc.to_s}")
+      j = s.job
+      if s.idx == j.stages.length
+        #check for any dependent jobs, if there are, enqueue them
+        r = j.runner
+        dep_jobs = r.jobs.select do |dj|
+                                   dj.active==true and
+                                     dj.trigger.strip.downcase == "after #{j.name}"
+                                 end
+        #put begin/rescue so all dependencies run
+        dep_jobs.each do |dj|
+                        begin
+                          unless dj.is_working?
+                            dj.stages.first.update_attributes(:retries=>0)
+                            dj.stages.first.enqueue!
+                          end
+                        rescue
+                          #job won't run if error, log it a failure
+                          response = {"err_txt" => "Unable to enqueue first stage of #{dj.path}"}
+                          dj.stages.first.fail(response)
+                        end
                       end
-          end
-          #use Gridfs to cache gdrive results
-          file_name = source_path.split("/").last
-          out_url = "gridfs://#{s.path}/#{file_name}"
-          Dataset.write_by_url(out_url,out_tsv,user)
-          dsts << Dataset.find_by_url(out_url)
-        end
-      end 
-      return dsts
+      else
+        #queue up next stage
+        s.next.update_attributes(:retries=>0)
+        s.next.enqueue!
+      end
+      true
+    end
+
+    def fail(response)
+      s = self
+      s.job.update_attributes(:active=>false)
+      s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
+      s.update_status("Failed at #{Time.now.utc.to_s}")
+      true
     end
 
     def enqueue!
@@ -180,6 +174,54 @@ module Mobilize
     def is_working?
       s = self
       Mobilize::Resque.active_paths.include?(s.path)
+    end
+
+    def target_url
+      s = self
+      params = s.params
+      target_path = params['target']
+      handler,path = target_path.split("://")
+      #if the user has specified a url for a target
+      #that is not this stage's handler, disallow
+      if handler and path and handler != s.handler
+        raise "incompatible target handler #{handler} for #{s.handler} stage"
+      else
+        path = target_path
+      end
+      s.handler.downcase.capitalize.constantize.url(path)
+    end
+
+    def source_urls
+      #returns an array of Datasets corresponding to 
+      #gridfs caches for stage outputs, gsheets and gfiles
+      #or dataset pointers for other handlers
+      s = self
+      params = s.params
+      source_paths = if params['sources']
+                       params['sources']
+                     elsif params['source']
+                       [params['source']]
+                     end
+      return [] if (source_paths.class!=Array or source_paths.length==0)
+      urls = []
+      source_paths.each do |source_path|
+        if source_path.index(/^stage[1-5]$/)
+          #stage arguments return the stage's output dst url
+          source_stage_path = "#{s.job.runner.path}/#{s.job.name}/#{source_path}"
+          source_stage = Stage.where(:path=>source_stage_path).first
+          urls << source_stage.out_dst.url
+        elsif source_path.index("://")
+          handler,path = source_path.split("://")
+          begin
+            urls << handler.downcase.capitalize.constantize.url(path)
+          rescue => exc
+            raise "Could not get url for #{source_path} with error: #{exc.to_s}"
+          end
+        else
+          urls << s.handler.capitalize.constantize.url(source_path)
+        end
+      end
+      return urls
     end
   end
 end

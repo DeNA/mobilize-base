@@ -47,7 +47,7 @@ module GoogleDrive
       sheet.save
     end
 
-    def merge(merge_sheet,user)
+    def merge(merge_sheet,user,crop)
       #write the top left of sheet
       #with the contents of merge_sheet
       sheet = self
@@ -62,11 +62,14 @@ module GoogleDrive
       merge_rows = merge_sheet.num_rows
       merge_cols = merge_sheet.num_cols
       #make sure sheet is at least as big as necessary
-      if merge_rows > curr_rows
+      #or as small as necessary if crop is specified
+      if merge_rows > curr_rows or
+        (merge_rows < curr_rows and crop==true)
         sheet.max_rows = merge_rows
         sheet.save
       end
-      if merge_cols > curr_cols
+      if merge_cols > curr_cols or
+        (merge_cols < curr_cols and crop==true)
         sheet.max_cols = merge_cols
         sheet.save
       end
@@ -124,13 +127,13 @@ module GoogleDrive
         tsvrows[batch_start..batch_end].each_with_index do |row,row_i|
           rowcols = row.split("\t")
           rowcols.each_with_index do |col_v,col_i|
-            sheet[row_i+batch_start+1,col_i+1]= %{#{col_v}}
+            sheet[row_i + batch_start + 1, col_i + 1]= %{#{col_v}}
           end
         end
         sheet.save
         batch_start += (batch_length + 1)
-        rows_written+=batch_length
-        if batch_start>tsvrows.length+1
+        rows_written += batch_length
+        if batch_start>tsvrows.length + 1
          break
         end
       end
