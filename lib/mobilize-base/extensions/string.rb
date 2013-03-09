@@ -32,6 +32,7 @@ class String
   def googlesafe
     v=self
     return "" if v.to_s==""
+    return v if v.to_s.strip==""
     #normalize numbers by removing '$', '%', ',', ' '
     vnorm = v.to_s.norm_num
     vdigits = vnorm.split(".").last.length

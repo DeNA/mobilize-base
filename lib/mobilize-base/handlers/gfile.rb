@@ -1,5 +1,34 @@
 module Mobilize
   module Gfile
+
+    def Gfile.url(path,*args)
+      return "gfile://#{path}"
+    end
+
+    def Gfile.read_by_dataset_path(dst_path,user_name,*args)
+      #expects gdrive slot as first arg, otherwise chooses random
+      gdrive_slot = args
+      worker_emails = Gdrive.worker_emails.sort_by{rand}
+      gdrive_slot = worker_emails.first unless worker_emails.include?(gdrive_slot)
+      file = Gfile.find_by_path(dst_path)
+      file.read(user_name) if file
+    end
+
+    def Gfile.write_by_dataset_path(dst_path,string,user_name,*args)
+      #ignores *args as all files must be created and owned by owner
+      file = Gfile.find_by_path(dst_path)
+      file.delete if file
+      owner_root = Gdrive.root(Gdrive.owner_email)
+      file = owner_root.upload_from_string(string,
+                                    dst_path,
+                                    :content_type=>"test/plain",
+                                    :convert=>false)
+      file.add_admin_acl
+      u = User.where(:name=>user_name).first
+      file.update_acl(u.email)
+      true
+    end
+
     def Gfile.add_admin_acl_by_path(path)
       file = Gfile.find_by_path(path)
       file.add_admin_acl
@@ -16,18 +45,6 @@ module Mobilize
       file = Gfile.find_by_path(path,target_email)
       raise "File #{path} not found" unless file
       file.update_acl(gdrive_slot,role)
-    end
-
-    def Gfile.read_by_stage_path(stage_path)
-      #reserve gdrive_slot account for read
-      gdrive_slot = Gdrive.slot_worker_by_path(s.path)
-      return false unless gdrive_slot
-      s = Stage.where(:path=>stage_path)
-      gfile_path = s.params['file']
-      out_tsv = Gfile.find_by_path(gfile_path,gdrive_slot).read
-      #use Gridfs to cache result
-      out_url = "gridfs://#{s.path}/out"
-      Dataset.write_by_url(out_url,out_tsv,s.job.runner.user.name)
     end
 
     def Gfile.find_by_path(path)
@@ -55,8 +72,10 @@ module Mobilize
       end
       #always make sure dataset http URL is up to date
       #and that it has admin acl
-      dst.update_attributes(:http_url=>file.human_url)
-      file.add_admin_acl
+      if file
+        dst.update_attributes(:http_url=>file.human_url)
+        file.add_admin_acl
+      end
       return file
     end
   end

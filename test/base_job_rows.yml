@@ -2,8 +2,7 @@
   active: true
   trigger: once
   status: ""
-  stage1: gsheet.read source:base1_stage1.in
-  stage2: gsheet.write source:stage1, target:base1.out
+  stage1: gsheet.write source:"gfile://test_base_1.tsv", target:base1.out
 
 - name: base2
   active: true

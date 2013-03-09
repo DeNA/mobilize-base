@@ -88,14 +88,15 @@ module Mobilize
 
     def gsheet(gdrive_slot)
       r = self
+      u = r.user
       jobs_sheet = Gsheet.find_by_path(r.path,gdrive_slot)
       #make sure the user has a runner with a jobs sheet and has write privileges on the spreadsheet
-      unless (jobs_sheet and jobs_sheet.spreadsheet.acl_entry(r.user.email).ie{|e| e and e.role=="writer"})
+      unless (jobs_sheet and jobs_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="writer"})
         #only give the user edit permissions if they're the ones
         #creating it
         jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)
-        unless jobs_sheet.spreadsheet.acl_entry(r.user.email).ie{|e| e and e.role=="owner"}
-          jobs_sheet.spreadsheet.update_acl(r.user.email,"writer")
+        unless jobs_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="owner"}
+          jobs_sheet.spreadsheet.update_acl(u.email,"writer")
         end
       end
       jobs_sheet.add_headers(r.headers)

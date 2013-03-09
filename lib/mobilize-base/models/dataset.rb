@@ -13,9 +13,18 @@ module Mobilize
 
     index({ handler: 1, path: 1}, { unique: true})
 
-    def read
+    def read(user_name,*args)
       dst = self
-      return "Mobilize::#{dst.handler.humanize}".constantize.read_by_path(dst.path)
+      dst.update_attributes(:last_read_at=>Time.now.utc)
+      "Mobilize::#{dst.handler.humanize}".constantize.read_by_dataset_path(dst.path,user_name,*args)
+    end
+
+    def write(string,user_name,*args)
+      dst = self
+      "Mobilize::#{dst.handler.humanize}".constantize.write_by_dataset_path(dst.path,string,user_name,*args)
+      dst.raw_size = string.length
+      dst.save!
+      return true
     end
 
     def Dataset.find_by_url(url)
@@ -38,24 +47,15 @@ module Mobilize
       return dst
     end
 
-    def Dataset.write_by_url(url,string,user)
+    def Dataset.read_by_url(url,user_name,*args)
+      dst = Dataset.find_by_url(url)
+      dst.read(user_name,*args) if dst
+    end
+
+    def Dataset.write_by_url(url,string,user_name,*args)
       dst = Dataset.find_or_create_by_url(url)
-      dst.write(string,user)
+      dst.write(string,user_name,*args)
       url
-    end
-
-    def read(user)
-      dst = self
-      dst.update_attributes(:last_read_at=>Time.now.utc)
-      "Mobilize::#{dst.handler.humanize}".constantize.read_by_dataset_path(dst.path,user)
-    end
-
-    def write(string,user)
-      dst = self
-      "Mobilize::#{dst.handler.humanize}".constantize.write_by_dataset_path(dst.path,string,user)
-      dst.raw_size = string.length
-      dst.save!
-      return true
     end
   end
 end

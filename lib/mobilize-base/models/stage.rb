@@ -79,25 +79,21 @@ module Mobilize
       s = Stage.where(:path=>id).first
       s.update_attributes(:started_at=>Time.now.utc)
       s.update_status(%{Starting at #{Time.now.utc}})
-      begin
-        #get response by running method
-        response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
-        unless response
-          #re-queue self if no response
-          s.enqueue!
-          return false
-        end
-        if response['signal'] == 0
-          s.complete(response)
-        elsif s.params['retries'].to_i < s.retries.to_i
-          #retry
-          s.update_attributes(:retries => s.retries.to_i + 1, :response => response)
-          s.enqueue!
-        else
-          s.fail(response)
-        end
-      rescue ScriptError, StandardError => exc
-        s.fail(exc)
+      #get response by running method
+      response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+      unless response
+        #re-queue self if no response
+        s.enqueue!
+        return false
+      end
+      if response['signal'] == 0
+        s.complete(response)
+      elsif s.params['retries'].to_i < s.retries.to_i
+        #retry
+        s.update_attributes(:retries => s.retries.to_i + 1, :response => response)
+        s.enqueue!
+      else
+        s.fail(response)
       end
       return true
     end
@@ -123,7 +119,7 @@ module Mobilize
                           end
                         rescue
                           #job won't run if error, log it a failure
-                          response = {"err_txt" => "Unable to enqueue first stage of #{dj.path}"}
+                          response = {"err_str" => "Unable to enqueue first stage of #{dj.path}"}
                           dj.stages.first.fail(response)
                         end
                       end
@@ -136,17 +132,33 @@ module Mobilize
     end
 
     def fail(response,gdrive_slot=nil)
-      gdrive_slot||=Gdrive.owner_email
+      #get random worker if one is not provided
+      gdrive_slot ||= Gdrive.worker_emails.sort_by{rand}.first
       s = self
-      s.job.update_attributes(:active=>false)
+      j = s.job
+      r = j.runner
+      u = r.user
+      j.update_attributes(:active=>false)
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
-      runner_path = s.job.runner.path
-      stage_name = "#{s.job.name}_stage#{s.idx.to_s}"
-      target_path =  (runner_path.split("/")[0..-2] + [stage_name]).join("/")
+      stage_name = "#{j.name}_stage#{s.idx.to_s}.err"
+      target_path =  (r.path.split("/")[0..-2] + [stage_name]).join("/")
       status_msg = "Failed at #{Time.now.utc.to_s}"
-      Gsheet.write(target_path,response['err_url'],gdrive_slot)
+      #read err txt, add err sheet, write to it
+      err_sheet = Gsheet.find_by_path(target_path,gdrive_slot)
+      err_sheet.delete if err_sheet
+      err_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
+      err_txt = if response['err_url']
+                  Dataset.read_by_url(response['err_url'],u.name)
+                elsif response['err_str']
+                  response['err_str']
+                end
+      err_txt = ["response","\n",err_txt].join
+      err_sheet.write(err_txt,u.name)
+      #exception will be first row below "response" header
+      exc_to_s,backtrace = err_txt.split("\n").ie{|ea| [ea[1], ea[2..-1]]}
       s.update_status(status_msg)
-      true
+      #raise the exception so it bubbles up to resque
+      raise Exception,exc_to_s,backtrace
     end
 
     def enqueue!
@@ -194,7 +206,8 @@ module Mobilize
       else
         path = target_path
       end
-      s.handler.downcase.capitalize.constantize.url(path)
+      user_name = s.job.runner.user.name
+      "Mobilize::#{s.handler.downcase.capitalize}".constantize.url(path,user_name)
     end
 
     def source_urls
@@ -203,6 +216,9 @@ module Mobilize
       #or dataset pointers for other handlers
       s = self
       params = s.params
+      job = s.job
+      runner = job.runner
+      user = runner.user
       source_paths = if params['sources']
                        params['sources']
                      elsif params['source']
@@ -213,18 +229,18 @@ module Mobilize
       source_paths.each do |source_path|
         if source_path.index(/^stage[1-5]$/)
           #stage arguments return the stage's output dst url
-          source_stage_path = "#{s.job.runner.path}/#{s.job.name}/#{source_path}"
+          source_stage_path = "#{runner.path}/#{job.name}/#{source_path}"
           source_stage = Stage.where(:path=>source_stage_path).first
-          urls << source_stage.out_dst.url
+          urls << source_stage.response['out_url']
         elsif source_path.index("://")
           handler,path = source_path.split("://")
           begin
-            urls << handler.downcase.capitalize.constantize.url(path)
+            urls << "Mobilize::#{handler.downcase.capitalize}".constantize.url(path,user.name)
           rescue => exc
             raise "Could not get url for #{source_path} with error: #{exc.to_s}"
           end
         else
-          urls << s.handler.capitalize.constantize.url(source_path)
+          urls << "Mobilize::#{s.handler.capitalize}".constantize.url(source_path,user.name)
         end
       end
       return urls

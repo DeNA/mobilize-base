@@ -46,20 +46,21 @@ module GoogleDrive
       sheet.save
     end
 
-    def merge(merge_sheet,user,crop)
+    def merge(merge_sheet,user_name,crop)
       #write the top left of sheet
       #with the contents of merge_sheet
       sheet = self
       sheet.reload
-      entry = sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
+      entry = sheet.spreadsheet.acl_entry("#{user_name}@#{Mobilize::Gdrive.domain}")
       unless entry and ['writer','owner'].include?(entry.role)
-        raise "User #{user} is not allowed to write to #{sheet.spreadsheet.title}"
+        raise "User #{user_name} is not allowed to write to #{sheet.spreadsheet.title}"
       end
       merge_sheet.reload
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
       merge_rows = merge_sheet.num_rows
       merge_cols = merge_sheet.num_cols
+      raise "zero sized merge sheet" if merge_rows == 0 or merge_cols == 0
       #make sure sheet is at least as big as necessary
       #or as small as necessary if crop is specified
       if merge_rows > curr_rows or
@@ -96,7 +97,7 @@ module GoogleDrive
       end
     end
 
-    def write(tsv,user)
+    def write(tsv,user,crop=true)
       sheet = self
       entry = sheet.spreadsheet.acl_entry("#{user}@#{Mobilize::Gdrive.domain}")
       unless entry and ['writer','owner'].include?(entry.role)
@@ -112,11 +113,14 @@ module GoogleDrive
       curr_rows = sheet.num_rows
       curr_cols = sheet.num_cols
       #make sure sheet is at least as big as necessary
-      if tsvrows.length != curr_rows
+      #or small as necessary if crop
+      if tsvrows.length > curr_rows or
+        (tsvrows.length < curr_rows and crop==true)
         sheet.max_rows = tsvrows.length
         sheet.save
       end
-      if headers.length != curr_cols
+      if headers.length > curr_cols or
+        (tsvrows.length < curr_rows and crop==true)
         sheet.max_cols = headers.length
         sheet.save
       end
@@ -143,6 +147,7 @@ module GoogleDrive
       sheet.reload
       #loading remote data for checksum
       rem_tsv = sheet.to_tsv
+      return true if rem_tsv.to_s.length==0
       rem_table = rem_tsv.split("\n").map{|r| r.split("\t").map{|v| v.googlesafe}}
       loc_table = tsv.split("\n").map{|r| r.split("\t").map{|v| v.googlesafe}}
       re_col_vs = []
