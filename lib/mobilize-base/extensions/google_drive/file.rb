@@ -13,15 +13,16 @@ module GoogleDrive
       f = self
       #admin includes workers
       return true if f.has_admin_acl?
-      (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).each do |a| 
-        f.update_acl(a)
+      accounts = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails)
+      accounts.each do |email|
+        f.update_acl(email)
       end
     end
 
     def has_admin_acl?
       f = self
       curr_emails = f.acls.map{|a| a.scope}.sort
-      admin_emails = Mobilize::Gdrive.admin_emails.sort
+      admin_emails = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails)
       if (curr_emails & admin_emails) == admin_emails
         return true
       else

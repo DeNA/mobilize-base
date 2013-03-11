@@ -24,8 +24,15 @@ module Mobilize
                                     :content_type=>"test/plain",
                                     :convert=>false)
       file.add_admin_acl
+      #make sure user is owner or can edit
       u = User.where(:name=>user_name).first
-      file.update_acl(u.email)
+      entry = file.acl_entry(u.email)
+      unless entry and ['writer','owner'].include?(entry.role)
+        file.update_acl(u.email)
+      end
+      #update http url for file
+      dst = Dataset.find_by_handler_and_path("gfile",dst_path)
+      dst.update_attributes(:http_url=>file.human_url)
       true
     end
 
