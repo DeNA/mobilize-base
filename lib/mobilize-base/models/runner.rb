@@ -54,7 +54,7 @@ module Mobilize
           if j.is_due?
             j.update_attributes(:active=>false) if j.trigger=='once'
             s = j.stages.first
-            s.update_attributes(:retries=>0)
+            s.update_attributes(:retries_done=>0)
             s.enqueue!
           end
         rescue ScriptError, StandardError => exc

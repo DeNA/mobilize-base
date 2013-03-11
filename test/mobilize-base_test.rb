@@ -60,7 +60,7 @@ describe "Mobilize" do
     assert test_1_tsv == test_2_tsv
 
     puts "change first job to fail, wait for stages"
-    test_job_rows.first['stage1'] = %{gsheet.write source:"gfile://test_base_1.fail", target:base1.out}
+    test_job_rows.first['stage1'] = %{gsheet.write source:"gfile://test_base_1.fail", target:base1.out, retries:3}
     Mobilize::Dataset.write_by_url(test_error_sheet_url," ",user_name,gdrive_slot)
     jobs_sheet.add_or_update_rows(test_job_rows)
 

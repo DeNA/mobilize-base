@@ -8,7 +8,7 @@ module Mobilize
     field :param_string, type: Array
     field :status, type: String
     field :response, type: Hash
-    field :retries, type: Fixnum
+    field :retries_done, type: Fixnum
     field :completed_at, type: Time
     field :started_at, type: Time
     field :failed_at, type: Time
@@ -88,9 +88,10 @@ module Mobilize
       end
       if response['signal'] == 0
         s.complete(response)
-      elsif s.params['retries'].to_i < s.retries.to_i
+      elsif s.retries_done.to_i < s.params['retries'].to_i
         #retry
-        s.update_attributes(:retries => s.retries.to_i + 1, :response => response)
+        s.update_attributes(:retries_done => s.retries_done.to_i + 1, :response => response)
+        s.update_status(%{Retry #{s.retries_done.to_s} at #{Time.now.utc}})
         s.enqueue!
       else
         s.fail(response)
@@ -114,7 +115,7 @@ module Mobilize
         dep_jobs.each do |dj|
                         begin
                           unless dj.is_working?
-                            dj.stages.first.update_attributes(:retries=>0)
+                            dj.stages.first.update_attributes(:retries_done=>0)
                             dj.stages.first.enqueue!
                           end
                         rescue
@@ -125,7 +126,7 @@ module Mobilize
                       end
       else
         #queue up next stage
-        s.next.update_attributes(:retries=>0)
+        s.next.update_attributes(:retries_done=>0)
         s.next.enqueue!
       end
       true
