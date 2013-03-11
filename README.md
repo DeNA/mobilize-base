@@ -552,18 +552,23 @@ stage. These should be of the for `<key1>: <value1>, <key2>: <value2>`, where
 `<key>` is an unquoted string and `<value>` is a quoted string, an
 integer, an array (delimited by square braces), or a hash (delimited by
 curly braces).
-    * For mobilize-base, the following stages are available:
-      * gsheet.read `source: <input_gsheet_path>`, which reads the sheet. 
-        * The gsheet_path should be of the form
-`<gbook_name>/<gsheet_name>` or just `<gsheet_name>` if the target is in
-the Runner itself. The test uses "base1_stage1.in".
-      * gsheet.write `source: <stage_name>`,`target: <target_gsheet_path>`,
-which writes the specified stage output to the target_gsheet. 
-        * The stage_name should be of the form `<stage_column>`. The test uses "stage1" for the first test
+    * For mobilize-base, the following stage is available:
+      * gsheet.write `source: <input_path>`, which reads the sheet. 
+        * The input_path should be of the form:
+          * `<gbook_name>/<gsheet_name>` or just `<gsheet_name>` if the target is in
+the Runner itself. 
+          * `gfile://<gfile_name>` if the target is a file.  
+            * The file must be owned by the Gdrive owner.
+            * The test uses "gfile://test_base_1.tsv".
+    * The stage_name should be of the form `<stage_column>`. The test uses "stage1" for the first test
 and "base1.out" for the second test. The first
 takes the output from the first stage and the second reads it straight
 from the referenced sheet.
-        * The test uses "Requestor_mobilize(test)/base1.out" and
+    * All stages accept a "retries" parameter, which is an integer specifying the number of times that the system will try it again before
+giving up.
+    * If a stage fails after all retries, it will output its standard error to a tab in the Runner with the name of the job, the name of the stage, and a ".err" extension
+      * The tab will be headed "response" and will contain the exception and backtrace for the error.
+    * The test uses "Requestor_mobilize(test)/base1.out" and
 "Runner_mobilize(test)/base2.out" for target sheets.
 
 <a name='section_Start_Run_Test'></a>
