@@ -103,23 +103,28 @@ module Mobilize
       end
     end
 
-    def Resque.failure_report
+    def Resque.new_failures_by_email
       fjobs = {}
-      excs = Hash.new(0)
+      exc_to_s = Hash.new(0)
       Resque.failures.each_with_index do |f,f_i|
         #skip if already notified
         next if f['notified']
-        sname = f['payload']['args'].first
-        excs = f['error']
-        if fjobs[sname].nil?
-          fjobs[sname] = {excs => 1} 
-        elsif fjobs[sname][excs].nil?
-          fjobs[sname][excs] = 1
+        stage_path = f['payload']['args'].first
+        s = Stage.where(:path=>stage_path).first
+        email = s.job.runner.user.email
+        exc_to_s = f['error']
+        if fjobs[email].nil?
+          fjobs[email] = {stage_path => {exc_to_s => 1}}
+        elsif fjobs[email][stage_path].nil?
+          fjobs[email][stage_path] = {exc_to_s => 1}
+        elsif fjobs[email][stage_path][exc_to_s].nil?
+          fjobs[email][stage_path][exc_to_s] = 1        
         else
-          fjobs[sname][excs] += 1
+          fjobs[email][stage_path][exc_to_s] += 1
         end
         #add notified flag to redis
         f['notified'] = true
+        #tag stage with email
         ::Resque.redis.lset(:failed, f_i, ::Resque.encode(f))
       end
       return fjobs

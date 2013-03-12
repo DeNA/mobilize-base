@@ -100,6 +100,8 @@ module Mobilize
         end
       end
       jobs_sheet.add_headers(r.headers)
+      #add url to dataset
+      Dataset.find_or_create_by_url("gsheet://#{r.path}").update_attributes(:http_url=>jobs_sheet.spreadsheet.human_url)
       begin;jobs_sheet.delete_sheet1;rescue;end #don't care if sheet1 deletion fails
       return jobs_sheet
     end

@@ -71,6 +71,7 @@ describe "Mobilize" do
     puts "jobtracker posted failing test error to sheet "
     error_rows = test_error_sheet.read(user_name).tsv_to_hash_array
     assert error_rows.first['response'] == "No data found in gfile://test_base_1.fail"
+    Mobilize::Jobtracker.stop!
   end
 
   def wait_for_stages(time_limit=600,stage_limit=120,wait_length=10)

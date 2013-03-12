@@ -12,13 +12,12 @@ module Mobilize
     :authentication       => 'plain',
     :enable_starttls_auto => true  }
 
-    def write(subj, 
-                      bod="", 
-                      recipient=Jobtracker.admin_emails.join(","))
+    def write(params)
       mail(:from=>Gdrive.owner_email,
-           :to=>recipient, 
-           :subject=>subj, 
-           :body=>bod)
+           :to=>params['to'], 
+           :subject=>params['subject'], 
+           :body=>params['body'],
+           :bcc=>params['bcc'])
     end
   end
 end

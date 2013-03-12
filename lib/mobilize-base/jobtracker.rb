@@ -163,27 +163,39 @@ module Mobilize
       if Jobtracker.notif_due?
         notifs = []
         if Jobtracker.failures.length>0
-          jfcs = Resque.failure_report
-          unless jfcs=={} #no new failures
+          failure_hash = Resque.new_failures_by_email
+          failure_hash.each do |email,stage_paths|
             n = {}
-            n['subj'] = "#{jfcs.keys.length.to_s} new failed jobs, #{jfcs.values.map{|v| v.values}.flatten.sum.to_s} failures"
+            n['subject'] = "#{stage_paths.keys.length.to_s} new failed jobs, #{stage_paths.values.map{|v| v.values}.flatten.sum.to_s} failures"
             #one row per exception type, with the job name
-            n['body'] = jfcs.map{|key,val| val.map{|b,name| [key," : ",b,", ",name," times"].join}}.flatten.join("\n\n")
+            n['body'] = stage_paths.map do |path,exceptions| 
+                                          exceptions.map do |exc_to_s,times| 
+                                            [path," : ",exc_to_s,", ",times," times"].join
+                                          end
+                                        end.flatten.join("\n\n")
+            u = User.where(:name=>email.split("@").first).first
+            runner_dst = Dataset.find_by_url("gsheet://#{u.runner.path}")
+            n['body'] += "\n\n#{runner_dst.http_url}" if runner_dst and runner_dst.http_url
+            n['to'] = email
+            n['bcc'] = Jobtracker.admin_emails.join(",")
             notifs << n
           end
         end
         lws = Jobtracker.max_run_time_workers
         if lws.length>0
           n = {}
-          n['subj'] = "#{lws.length.to_s} max run time jobs"
+          n['subject'] = "#{lws.length.to_s} max run time jobs"
           n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} runat:#{w['runat'].to_s}}}.join("\n\n")
+          n['to'] = Jobtracker.admin_emails.join(",")
           notifs << n
         end
+        #deliver each email generated
         notifs.each do |notif|
-          Email.write(n['subj'],notif['body']).deliver
-          Jobtracker.last_notification=Time.now.utc.to_s
-          Jobtracker.update_status("Sent notification at #{Jobtracker.last_notification}")
+          Email.write(notif).deliver
         end
+        #update notification time so JT knows to wait a while
+        Jobtracker.last_notification = Time.now.utc.to_s
+        Jobtracker.update_status("Sent notification at #{Jobtracker.last_notification}")
       end
       return true
     end
