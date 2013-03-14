@@ -6,8 +6,9 @@ module GoogleDrive
       header = rows.first
       return nil unless header and header.first.to_s.length>0
       #look for blank cols to indicate end of row
-      row_last_i = (header.index("") || header.length)-1
-      out_tsv = rows.map{|r| r[0..row_last_i]}.map{|r| r.join("\t")}.join("\n")
+      col_last_i = (header.index("") || header.length)-1
+      #ignore user-entered line breaks for purposes of tsv reads
+      out_tsv = rows.map{|r| r[0..col_last_i].join("\t").gsub("\n","")+"\n"}.join + "\n"
       out_tsv.tsv_convert_dates(Mobilize::Gsheet.config['sheet_date_format'],
                                 Mobilize::Gsheet.config['read_date_format'])
     end

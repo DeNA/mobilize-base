@@ -1,8 +1,14 @@
 module Mobilize
   module Gfile
-
-    def Gfile.url(path,*args)
-      return "gfile://#{path}"
+    def Gfile.path_to_dst(path,stage_path)
+      #don't need the ://
+      path = path.split("://").last if path.index("://")
+      if Gfile.find_by_path(path)
+        handler = "gfile"
+        Dataset.find_or_create_by_url("#{handler}://#{path}")
+      else
+        raise "unable to find #{path}"
+      end
     end
 
     def Gfile.read_by_dataset_path(dst_path,user_name,*args)

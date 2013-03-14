@@ -13,6 +13,11 @@ module Mobilize
 
     index({ handler: 1, path: 1}, { unique: true})
 
+    def url
+      s = self
+      "#{s.handler}://#{s.path}"
+    end
+
     def read(user_name,*args)
       dst = self
       dst.update_attributes(:last_read_at=>Time.now.utc)

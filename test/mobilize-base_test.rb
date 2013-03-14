@@ -31,9 +31,13 @@ describe "Mobilize" do
     puts "Jobtracker created runner with 'jobs' sheet?"
     r = u.runner
     jobs_sheet_url = "gsheet://#{r.path}"
+    jobs_sheet = Mobilize::Gsheet.find_by_path(r.path,gdrive_slot)
     jobs_sheet_dst = Mobilize::Dataset.find_or_create_by_url(jobs_sheet_url)
     jobs_sheet_tsv = jobs_sheet_dst.read(user_name,gdrive_slot)
     assert jobs_sheet_tsv.tsv_header_array.join.length == 53 #total header length
+
+    #stop Jobtracker, if you're doing this by queueing runners
+    #Mobilize::Jobtracker.stop!
 
     puts "add base1 input file"
     test_filename = "test_base_1"
@@ -41,12 +45,15 @@ describe "Mobilize" do
     test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/#{test_filename}.yml")*40
     test_source_tsv = test_source_ha.hash_array_to_tsv
     Mobilize::Dataset.write_by_url(file_url,test_source_tsv,user_name)
+    rem_tsv = Mobilize::Dataset.read_by_url(file_url,user_name)
+    assert rem_tsv == test_source_tsv
 
     puts "add row to jobs sheet, wait for stages"
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/base_job_rows.yml")
-    jobs_sheet = Mobilize::Gsheet.find_by_path(r.path,gdrive_slot)
+    jobs_sheet.reload
     jobs_sheet.add_or_update_rows(test_job_rows)
     #wait for stages to complete
+    #r.enqueue!
     wait_for_stages
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
@@ -70,7 +77,7 @@ describe "Mobilize" do
     test_error_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/base1_stage1.err",gdrive_slot)
     puts "jobtracker posted failing test error to sheet "
     error_rows = test_error_sheet.read(user_name).tsv_to_hash_array
-    assert error_rows.first['response'] == "No data found in gfile://test_base_1.fail"
+    assert error_rows.first['response'] == "Could not get gfile://test_base_1.fail with error: unable to find test_base_1.fail"
     Mobilize::Jobtracker.stop!
   end
 

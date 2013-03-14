@@ -94,6 +94,8 @@ module Mobilize
         s.update_status(%{Retry #{s.retries_done.to_s} at #{Time.now.utc}})
         s.enqueue!
       else
+        #sleep as much as user specifies
+        sleep s['delay'].to_i
         s.fail(response)
       end
       return true
@@ -195,7 +197,7 @@ module Mobilize
       Mobilize::Resque.active_paths.include?(s.path)
     end
 
-    def target_url
+    def target
       s = self
       params = s.params
       target_path = params['target']
@@ -205,46 +207,50 @@ module Mobilize
       if handler and path and handler != s.handler
         raise "incompatible target handler #{handler} for #{s.handler} stage"
       else
-        path = target_path
+        begin
+          return "Mobilize::#{s.handler.downcase.capitalize}".constantize.path_to_dst(target_path,s.path)
+        rescue => exc
+          raise "Could not get #{target_path} with error: #{exc.to_s}"
+        end
       end
-      user_name = s.job.runner.user.name
-      "Mobilize::#{s.handler.downcase.capitalize}".constantize.url(path,user_name)
     end
 
-    def source_urls
-      #returns an array of Datasets corresponding to 
-      #gridfs caches for stage outputs, gsheets and gfiles
-      #or dataset pointers for other handlers
+    def sources
+      #returns an array of Datasets corresponding to
+      #items listed as sources in the stage params
       s = self
       params = s.params
       job = s.job
       runner = job.runner
-      user = runner.user
       source_paths = if params['sources']
                        params['sources']
                      elsif params['source']
                        [params['source']]
                      end
       return [] if (source_paths.class!=Array or source_paths.length==0)
-      urls = []
+      dsts = []
       source_paths.each do |source_path|
         if source_path.index(/^stage[1-5]$/)
           #stage arguments return the stage's output dst url
           source_stage_path = "#{runner.path}/#{job.name}/#{source_path}"
           source_stage = Stage.where(:path=>source_stage_path).first
-          urls << source_stage.response['out_url']
-        elsif source_path.index("://")
-          handler,path = source_path.split("://")
-          begin
-            urls << "Mobilize::#{handler.downcase.capitalize}".constantize.url(path,user.name)
-          rescue => exc
-            raise "Could not get url for #{source_path} with error: #{exc.to_s}"
-          end
+          source_stage_out_url = source_stage.response['out_url']
+          dsts << Dataset.find_by_url(source_stage_out_url)
         else
-          urls << "Mobilize::#{s.handler.capitalize}".constantize.url(source_path,user.name)
+          handler = if source_path.index("://")
+                      source_path.split("://").first
+                    else
+                      s.handler
+                    end
+          begin
+            stage_path = s.path
+            dsts << "Mobilize::#{handler.downcase.capitalize}".constantize.path_to_dst(source_path,stage_path)
+          rescue => exc
+            raise "Could not get #{source_path} with error: #{exc.to_s}"
+          end
         end
       end
-      return urls
+      return dsts
     end
   end
 end

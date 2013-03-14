@@ -15,11 +15,6 @@ module Mobilize
       %w{name active trigger status stage1 stage2 stage3 stage4 stage5}
     end
 
-    def cached_at
-      r = self
-      Dataset.find_or_create_by_path(r.path).cached_at
-    end
-
     def title
       r = self
       r.path.split("/").first
@@ -34,6 +29,9 @@ module Mobilize
       Runner.where(:path=>path).first
     end
 
+    def Runner.find_by_title(title)
+      Runner.where(:path=>"#{title}/jobs").first
+    end
     def Runner.perform(id,*args)
       r = Runner.find_by_path(id)
       #get gdrive slot for read
@@ -75,11 +73,6 @@ module Mobilize
       Runner.where(:path=>path).first || Runner.create(:path=>path,:active=>true)
     end
 
-    def cache
-      r = self
-      Dataset.find_or_create_by_url("gridfs://#{r.path}")
-    end
-
     def gbook(gdrive_slot)
       r = self
       title = r.path.split("/").first
@@ -109,8 +102,6 @@ module Mobilize
     def read_gsheet(gdrive_slot)
       r = self
       gsheet_tsv = r.gsheet(gdrive_slot).read(Gdrive.owner_name)
-      #cache in DB
-      r.cache.write(gsheet_tsv,Gdrive.owner_name)
       #turn it into a hash array
       gsheet_jobs = gsheet_tsv.tsv_to_hash_array
       #go through each job, update relevant job with its params

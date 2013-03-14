@@ -9,17 +9,38 @@ module Mobilize
       Gsheet.config['max_cells']
     end
 
-    # converts a path to a url in the context of gsheet and username
-    def Gsheet.url(path,*args)
+    # converts a source path or target path to a dst in the context of handler and stage
+    def Gsheet.path_to_dst(path,stage_path)
+      s = Stage.where(:path=>stage_path).first
+      params = s.params
+      target_path = params['target']
+      #take random slot if one is not available
+      gdrive_slot = Gdrive.slot_worker_by_path(stage_path) || Gdrive.worker_emails.sort_by{rand}.first
+      #if this is the target, it doesn't have to exist already
+      is_target = true if path == target_path
+      #don't need the ://
+      path = path.split("://").last if path.index("://")
       if path.split("/").length == 2
-        #user has specified path to a sheet
-        return "gsheet://#{path}"
+        if is_target or Gsheet.find_by_path(path,gdrive_slot)
+          #user has specified path to a sheet
+          return Dataset.find_or_create_by_url("gsheet://#{path}")
+        else
+          raise "unable to find #{path}"
+        end
       else
         #user has specified a sheet
-        #in their runner
-        user_name = args.first
-        u = User.where(:name=>user_name).first
-        return "gsheet://#{u.runner.title}/#{path}" if user_name
+        runner_title = stage_path.split("/").first
+        r = Runner.find_by_title(runner_title)
+        if is_target or r.gbook(gdrive_slot).worksheets.map{|w| w.title}.include?(path)
+          handler = "gsheet"
+          path = "#{runner_title}/#{path}"
+        elsif Gfile.find_by_path(path,gdrive_slot)
+          handler = "gfile"
+          path = "#{path}"
+        else
+          raise "unable to find #{path}"
+        end
+        return Dataset.find_or_create_by_url("#{handler}://#{path}")
       end
     end
 
@@ -113,16 +134,14 @@ module Mobilize
       crop = s.params['crop'] || true
       begin
         #get tsv to write from stage
-        source_url = s.source_urls.first
-        raise "Need source for gsheet write" unless source_url
-        dst = Dataset.find_or_create_by_url(source_url)
-        tsv = dst.read(u.name,gdrive_slot)
-        raise "No data found in #{source_url}" unless tsv
-        target_url = s.target_url
-        Dataset.write_by_url(target_url,tsv,u.name,gdrive_slot,crop)
+        source = s.sources.first
+        raise "Need source for gsheet write" unless source
+        tsv = source.read(u.name,gdrive_slot)
+        raise "No data found in #{source.url}" unless tsv
+        Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
         Gdrive.unslot_worker_by_path(stage_path)
         #update status
-        stdout = "Write successful for #{target_url}"
+        stdout = "Write successful for #{s.target.url}"
         stderr = nil
         s.update_status(stdout)
         signal = 0
