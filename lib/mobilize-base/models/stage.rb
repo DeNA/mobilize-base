@@ -103,7 +103,7 @@ module Mobilize
 
     def complete(response)
       s = self
-      s.update_attributes(:completed_at=>Time.now.utc)
+      s.update_attributes(:completed_at=>Time.now.utc,:response=>response)
       s.update_status("Completed at #{Time.now.utc.to_s}")
       j = s.job
       if s.idx == j.stages.length
