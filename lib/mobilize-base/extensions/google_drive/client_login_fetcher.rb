@@ -8,7 +8,7 @@ module GoogleDrive
       attempts = 0
       sleep_time = nil
       #try 5 times to make the call
-      while (response.nil? or response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}) and attempts < 20
+      while (response.nil? or response.code.starts_with?("5")) and attempts < 20
         #instantiate http object, set params
         http = @proxy.new(uri.host, uri.port)
         http.use_ssl = true
@@ -21,10 +21,10 @@ module GoogleDrive
                      #timeouts etc.
                      nil
                    end
-        if response.nil?
+        if response.nil? or response.code.starts_with?("4")
           attempts +=1
-        else
-          if response.code.ie{|rcode| rcode.starts_with?("4") or rcode.starts_with?("5")}
+        elsif
+          if response.code.starts_with?("5")
             #wait 10 seconds times number of attempts squared in case of error
             sleep_time = 10 * (attempts*attempts)
             attempts += 1
