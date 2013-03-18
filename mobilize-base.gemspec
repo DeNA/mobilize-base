@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = "mobilize-base"
   s.version     = Mobilize::Base::VERSION
   s.authors     = ["Cassio Paes-Leme"]
-  s.email       = ["cpaesleme@ngmoco.com"]
+  s.email       = ["cpaesleme@dena.com"]
   s.homepage    = "http://github.com/ngmoco/mobilize-base"
   s.summary     = %q{Moves datasets and schedules data transfers using MongoDB, Resque and Google Docs}
   s.description = %q{Manage your organization's workflows entirely through Google Docs and irb.
