@@ -118,8 +118,13 @@ module Mobilize
           stage_string = rj["stage#{s_idx.to_s}"]
           s = Stage.find_by_path("#{j.path}/stage#{s_idx.to_s}")
           if stage_string.to_s.length==0
-            #delete this stage; user has blanked it
-            s.delete if s
+            #delete this stage and all stages after
+            if s
+              j = s.job
+              j.stages[(s.idx-1)..-1].each{|ps| ps.delete}
+              #just in case
+              s.delete
+            end
             break
           elsif s.nil?
             #create this stage
