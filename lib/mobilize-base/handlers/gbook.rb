@@ -14,30 +14,36 @@ module Mobilize
       dst = Dataset.find_by_handler_and_path('gbook',path)
       if dst and dst.http_url.to_s.length>0
         book = Gbook.find_by_http_url(dst.http_url,gdrive_slot)
-      else
-        books = Gbook.find_all_by_path(path,gdrive_slot)
-        dst = Dataset.find_or_create_by_handler_and_path('gbook',path)
-        book = nil
-        if books.length>1 and dst.http_url.to_s.length>0
-          #some idiot process or malicious user created a duplicate book.
-          #Fix by deleting all but the one with dst entry's key
-          dkey = dst.http_url.split("key=").last
-          books.each do |b|
-            bkey = b.resource_id.split(":").last
-            if bkey == dkey
-              book = b
-            else
-              #delete the invalid book
-              b.delete
-              ("Deleted duplicate book #{path}").oputs
-            end
-          end
+        #doesn't count if it's deleted
+        if book.entry_hash[:deleted]
+          book = nil
         else
-          #If it's a new dst or if there are multiple books
-          #take the first
-          book = books.first
-          dst.update_attributes(:http_url=>book.http_url)
+          return book
         end
+      end
+      books = Gbook.find_all_by_path(path,gdrive_slot)
+      dst = Dataset.find_or_create_by_handler_and_path('gbook',path)
+      book = nil
+      if books.length>1 and dst.http_url.to_s.length>0
+        #some idiot process or malicious user created a duplicate book.
+        #Fix by deleting all but the one with dst entry's key
+        dkey = dst.http_url.split("key=").last
+        books.each do |b|
+          bkey = b.resource_id.split(":").last
+          if bkey == dkey
+            book = b
+            dst.update_attributes(:http_url=>book.human_url)
+          else
+            #delete the invalid book
+            b.delete
+            ("Deleted duplicate book #{path}").oputs
+          end
+        end
+      else
+        #If it's a new dst or if there are multiple books
+        #take the first
+        book = books.first
+        dst.update_attributes(:http_url=>book.human_url) if book
       end
       return book
     end
