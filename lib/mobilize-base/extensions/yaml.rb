@@ -1,3 +1,4 @@
+require 'yaml'
 module YAML
   def YAML.easy_load(string)
     begin
