@@ -96,10 +96,10 @@ module Mobilize
         #retry
         s.update_attributes(:retries_done => s.retries_done.to_i + 1, :response => response)
         s.update_status(%{Retry #{s.retries_done.to_s} at #{Time.now.utc}})
+        sleep s['delay'].to_i
         s.enqueue!
       else
         #sleep as much as user specifies
-        sleep s['delay'].to_i
         s.fail(response)
       end
       return true
