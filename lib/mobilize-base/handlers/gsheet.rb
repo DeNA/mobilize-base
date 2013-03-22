@@ -139,8 +139,8 @@ module Mobilize
         tsv = source.read(u.name,gdrive_slot)
         raise "No data source found for #{source.url}" unless tsv
         stdout = if tsv.to_s.length == 0
-                   #soft error
-                   "No data in #{source.url} for #{s.target.url}"
+                   #soft error; no data to write. Stage will complete.
+                   "Write skipped for #{s.target.url}"
                  else
                    Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
                    #update status
