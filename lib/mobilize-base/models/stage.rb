@@ -80,7 +80,11 @@ module Mobilize
       s.update_attributes(:started_at=>Time.now.utc)
       s.update_status(%{Starting at #{Time.now.utc}})
       #get response by running method
-      response = "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+      response = begin
+                   "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
+                 rescue => exc
+                   {'err_str'=>exc.to_s, 'signal'=>500}
+                 end
       unless response
         #re-queue self if no response
         s.enqueue!
@@ -111,7 +115,7 @@ module Mobilize
         r = j.runner
         dep_jobs = r.jobs.select do |dj|
                                    dj.active==true and
-                                     dj.trigger.strip.downcase == "after #{j.name}"
+                                     dj.trigger.strip.downcase == "after #{j.name.downcase}"
                                  end
         #put begin/rescue so all dependencies run
         dep_jobs.each do |dj|
