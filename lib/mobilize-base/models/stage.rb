@@ -83,7 +83,7 @@ module Mobilize
       response = begin
                    "Mobilize::#{s.handler.humanize}".constantize.send("#{s.call}_by_stage_path",s.path)
                  rescue => exc
-                   {'err_str'=>exc.to_s, 'signal'=>500}
+                   {'err_str'=>"#{exc.to_s}\n#{exc.backtrace.to_a.join("\n")}", 'signal'=>500}
                  end
       unless response
         #re-queue self if no response
