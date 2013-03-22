@@ -137,11 +137,16 @@ module Mobilize
         source = s.sources.first
         raise "Need source for gsheet write" unless source
         tsv = source.read(u.name,gdrive_slot)
-        raise "No data found in #{source.url}" unless tsv
-        Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
+        raise "No data source found for #{source.url}" unless tsv
+        stdout = if tsv.to_s.length == 0
+                   #soft error
+                   "No data in #{source.url} for #{s.target.url}"
+                 else
+                   Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
+                   #update status
+                   "Write successful for #{s.target.url}"
+                 end
         Gdrive.unslot_worker_by_path(stage_path)
-        #update status
-        stdout = "Write successful for #{s.target.url}"
         stderr = nil
         s.update_status(stdout)
         signal = 0
