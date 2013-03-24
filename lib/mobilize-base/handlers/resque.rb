@@ -111,7 +111,12 @@ module Mobilize
         next if f['notified']
         stage_path = f['payload']['args'].first
         s = Stage.where(:path=>stage_path).first
-        email = s.job.runner.user.email
+        email = if s
+                  s.job.runner.user.email
+                else
+                  #jobs without stages are sent to first admin
+                  Jobtracker.admin_emails.first
+                end
         exc_to_s = f['error']
         if fjobs[email].nil?
           fjobs[email] = {stage_path => {exc_to_s => 1}}
