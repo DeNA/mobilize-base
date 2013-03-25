@@ -44,9 +44,7 @@ module Mobilize
 
     def Gsheet.read_by_dataset_path(dst_path,user_name,*args)
       #expects gdrive slot as first arg, otherwise chooses random
-      gdrive_slot = args
-      worker_emails = Gdrive.worker_emails.sort_by{rand}
-      gdrive_slot = worker_emails.first unless worker_emails.include?(gdrive_slot)
+      gdrive_slot = args.to_a.first
       sheet = Gsheet.find_by_path(dst_path,gdrive_slot)
       sheet.read(user_name) if sheet
     end
@@ -54,8 +52,6 @@ module Mobilize
     def Gsheet.write_by_dataset_path(dst_path,tsv,user_name,*args)
       #expects gdrive slot as first arg, otherwise chooses random
       gdrive_slot,crop = args
-      worker_emails = Gdrive.worker_emails.sort_by{rand}
-      gdrive_slot = worker_emails.first unless worker_emails.include?(gdrive_slot)
       crop ||= true
       Gsheet.write_target(dst_path,tsv,user_name,gdrive_slot,crop)
     end
