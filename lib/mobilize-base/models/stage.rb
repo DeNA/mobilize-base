@@ -212,14 +212,15 @@ module Mobilize
         raise "incompatible target handler #{handler} for #{s.handler} stage"
       else
         begin
-          return "Mobilize::#{s.handler.downcase.capitalize}".constantize.path_to_dst(target_path,s.path)
+          #nil gdrive_slot for targets since there is no verification
+          return "Mobilize::#{s.handler.downcase.capitalize}".constantize.path_to_dst(target_path,s.path,nil)
         rescue => exc
           raise "Could not get #{target_path} with error: #{exc.to_s}"
         end
       end
     end
 
-    def sources
+    def sources(gdrive_slot)
       #returns an array of Datasets corresponding to
       #items listed as sources in the stage params
       s = self
@@ -248,7 +249,7 @@ module Mobilize
                     end
           begin
             stage_path = s.path
-            dsts << "Mobilize::#{handler.downcase.capitalize}".constantize.path_to_dst(source_path,stage_path)
+            dsts << "Mobilize::#{handler.downcase.capitalize}".constantize.path_to_dst(source_path,stage_path,gdrive_slot)
           rescue => exc
             raise "Could not get #{source_path} with error: #{exc.to_s}"
           end

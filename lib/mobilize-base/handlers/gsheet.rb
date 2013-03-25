@@ -10,12 +10,10 @@ module Mobilize
     end
 
     # converts a source path or target path to a dst in the context of handler and stage
-    def Gsheet.path_to_dst(path,stage_path)
+    def Gsheet.path_to_dst(path,stage_path,gdrive_slot)
       s = Stage.where(:path=>stage_path).first
       params = s.params
       target_path = params['target']
-      #take random slot if one is not available
-      gdrive_slot = Gdrive.slot_worker_by_path(stage_path) || Gdrive.worker_emails.sort_by{rand}.first
       #if this is the target, it doesn't have to exist already
       is_target = true if path == target_path
       #don't need the ://
@@ -134,7 +132,7 @@ module Mobilize
       crop = s.params['crop'] || true
       begin
         #get tsv to write from stage
-        source = s.sources.first
+        source = s.sources(gdrive_slot).first
         raise "Need source for gsheet write" unless source
         tsv = source.read(u.name,gdrive_slot)
         raise "No data source found for #{source.url}" unless tsv

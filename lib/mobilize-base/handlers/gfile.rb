@@ -1,6 +1,6 @@
 module Mobilize
   module Gfile
-    def Gfile.path_to_dst(path,stage_path)
+    def Gfile.path_to_dst(path,stage_path,gdrive_slot)
       #don't need the ://
       path = path.split("://").last if path.index("://")
       if Gfile.find_by_path(path)
