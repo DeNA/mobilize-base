@@ -101,7 +101,8 @@ module Mobilize
 
     def read_gsheet(gdrive_slot)
       r = self
-      gsheet_tsv = r.gsheet(gdrive_slot).read(Gdrive.owner_name)
+      #argument converts line breaks in cells to spaces
+      gsheet_tsv = r.gsheet(gdrive_slot).to_tsv(" ")
       #turn it into a hash array
       gsheet_jobs = gsheet_tsv.tsv_to_hash_array
       #go through each job, update relevant job with its params

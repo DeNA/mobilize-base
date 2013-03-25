@@ -1,6 +1,6 @@
 module GoogleDrive
   class Worksheet
-    def to_tsv
+    def to_tsv(gsub_line_breaks="\n")
       sheet = self
       rows = sheet.rows
       header = rows.first
@@ -8,7 +8,12 @@ module GoogleDrive
       #look for blank cols to indicate end of row
       col_last_i = (header.index("") || header.length)-1
       #ignore user-entered line breaks for purposes of tsv reads
-      out_tsv = rows.map{|r| r[0..col_last_i].join("\t").gsub("\n","")+"\n"}.join + "\n"
+      out_tsv = rows.map do |r|
+                             row = r[0..col_last_i].join("\t")
+                             row.gsub!("\n",gsub_line_breaks)
+                             row = row + "\n"
+                             row
+                         end.join + "\n"
       out_tsv.tsv_convert_dates(Mobilize::Gsheet.config['sheet_date_format'],
                                 Mobilize::Gsheet.config['read_date_format'])
     end
