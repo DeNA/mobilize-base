@@ -564,8 +564,10 @@ the Runner itself.
 and "base1.out" for the second test. The first
 takes the output from the first stage and the second reads it straight
 from the referenced sheet.
-    * All stages accept a "retries" parameter, which is an integer specifying the number of times that the system will try it again before
-giving up.
+    * All stages accept retry parameters:
+      * retries: an integer specifying the number of times that the system will try it again before giving up.
+      * delay: an integer specifying the number of seconds between retries.
+      * always_on: if true, keeps the job on regardless of failures. The job will retry with the same frequency as the Runner refresh rate.
     * If a stage fails after all retries, it will output its standard error to a tab in the Runner with the name of the job, the name of the stage, and a ".err" extension
       * The tab will be headed "response" and will contain the exception and backtrace for the error.
     * The test uses "Requestor_mobilize(test)/base1.out" and
