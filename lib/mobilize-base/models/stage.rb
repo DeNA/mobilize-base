@@ -145,7 +145,7 @@ module Mobilize
       j = s.job
       r = j.runner
       u = r.user
-      j.update_attributes(:active=>false)
+      j.update_attributes(:active=>false) unless s.params['always_on']
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
       stage_name = "#{j.name}_stage#{s.idx.to_s}.err"
       target_path =  (r.path.split("/")[0..-2] + [stage_name]).join("/")
@@ -162,10 +162,9 @@ module Mobilize
       err_txt = ["response","\n",err_txt].join
       err_sheet.write(err_txt,u.name)
       #exception will be first row below "response" header
-      exc_to_s,backtrace = err_txt.split("\n").ie{|ea| [ea[1], ea[2..-1]]}
       s.update_status(status_msg)
       #raise the exception so it bubbles up to resque
-      raise Exception,exc_to_s,backtrace
+      raise Exception,err_txt
     end
 
     def enqueue!

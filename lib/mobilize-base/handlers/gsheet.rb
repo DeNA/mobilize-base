@@ -108,7 +108,7 @@ module Mobilize
         #only give the user edit permissions if they're the ones
         #creating it
         target_sheet = Gsheet.find_or_create_by_path(target_path,gdrive_slot)
-        target_sheet.spreadsheet.update_acl(user_email,"writer") unless target_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="owner"}
+        target_sheet.spreadsheet.update_acl(u.email,"writer") unless target_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="owner"}
         target_sheet.delete_sheet1
       end
       #pass it crop param to determine whether to shrink target sheet to fit data
