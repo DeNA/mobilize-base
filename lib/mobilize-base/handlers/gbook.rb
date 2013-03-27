@@ -14,10 +14,15 @@ module Mobilize
       dst = Dataset.find_by_handler_and_path('gbook',path)
       if dst and dst.http_url.to_s.length>0
         book = Gbook.find_by_http_url(dst.http_url,gdrive_slot)
-        #doesn't count if it's deleted
-        if book.entry_hash[:deleted]
-          book = nil
-        else
+        begin
+          #doesn't count if it's deleted
+          if book.entry_hash[:deleted]
+            book = nil
+          else
+            return book
+          end
+        rescue
+          #entry hash is buggy, assume book still good
           return book
         end
       end
