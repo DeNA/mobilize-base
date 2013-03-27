@@ -16,14 +16,15 @@ module Mobilize
         book = Gbook.find_by_http_url(dst.http_url,gdrive_slot)
         begin
           #doesn't count if it's deleted
+          #or if its name can't be accessed
           if book.entry_hash[:deleted]
             book = nil
           else
             return book
           end
         rescue
-          #entry hash is buggy, assume book still good
-          return book
+          #use regular process if book entry hash fails
+          book = nil
         end
       end
       books = Gbook.find_all_by_path(path,gdrive_slot)

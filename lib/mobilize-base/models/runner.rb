@@ -76,7 +76,7 @@ module Mobilize
     def gbook(gdrive_slot)
       r = self
       title = r.path.split("/").first
-      Gbook.find_all_by_path(title,gdrive_slot).first
+      Gbook.find_by_path(title,gdrive_slot)
     end
 
     def gsheet(gdrive_slot)
