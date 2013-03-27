@@ -109,11 +109,12 @@ module Mobilize
       Resque.failures.each_with_index do |f,f_i|
         #skip if already notified
         next if f['notified']
+        #try to send message to stage owner, where appropriate
         stage_path = f['payload']['args'].first
-        s = Stage.where(:path=>stage_path).first
-        email = if s
+        email = begin
+                  s = Stage.where(:path=>stage_path).first
                   s.job.runner.user.email
-                else
+                rescue
                   #jobs without stages are sent to first admin
                   Jobtracker.admin_emails.first
                 end
@@ -123,7 +124,7 @@ module Mobilize
         elsif fjobs[email][stage_path].nil?
           fjobs[email][stage_path] = {exc_to_s => 1}
         elsif fjobs[email][stage_path][exc_to_s].nil?
-          fjobs[email][stage_path][exc_to_s] = 1        
+          fjobs[email][stage_path][exc_to_s] = 1
         else
           fjobs[email][stage_path][exc_to_s] += 1
         end
