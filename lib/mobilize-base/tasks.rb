@@ -40,17 +40,17 @@ namespace :mobilize_base do
     Mobilize::Jobtracker.prep_workers
   end
   desc "Stop Jobtracker"
-  task :stop do
+  task :stop_jobtracker do
     require 'mobilize-base'
     Mobilize::Jobtracker.stop!
   end
   desc "Start Jobtracker"
-  task :start do
+  task :start_jobtracker do
     require 'mobilize-base'
     Mobilize::Jobtracker.start
   end
   desc "Restart Jobtracker"
-  task :restart do
+  task :restart_jobtracker do
     require 'mobilize-base'
     Mobilize::Jobtracker.restart!
   end
@@ -66,6 +66,19 @@ namespace :mobilize_base do
     resque_redis_port_args = if Mobilize::Base.env == 'test'
                                " -r localhost:#{Mobilize::Base.config('resque')['redis_port']}"
                              end.to_s
+    #determine view folder and override queues and working erbs
+    require 'resque/server'
+    view_dir = ::Resque::Server.views + "/"
+    old_queues_erb_path = view_dir + "queues.erb"
+    old_working_erb_path = view_dir + "working.erb"
+    gem_dir = Gem::Specification.find_by_name("mobilize-base").gem_dir
+    new_queues_erb_path = gem_dir + "/lib/mobilize-base/extensions/resque-server/views/queues.erb"
+    new_working_erb_path = gem_dir + "/lib/mobilize-base/extensions/resque-server/views/working.erb"
+    [old_queues_erb_path,old_working_erb_path].each{|p| File.delete(p) if File.exists?(p)}
+    require 'fileutils'
+    FileUtils.copy(new_queues_erb_path,old_queues_erb_path)
+    FileUtils.copy(new_working_erb_path,old_working_erb_path)
+    sleep 5 #give them time to die
     command = "bundle exec resque-web -p #{port.to_s} #{resque_web_extension_path} #{resque_redis_port_args}"
     `#{command}`
   end

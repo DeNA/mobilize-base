@@ -12,10 +12,13 @@ class String
     pp self
   end
   def bash(except=true)
-    pid,stdin,stdout,stderr = Open4.popen4(self)
+    str = self
+    pid,stdin,stdout,stderr = Open4.popen4(str)
     pid,stdin = [nil,nil]
-    raise stderr.read if (stderr.read.length>0 and except==true)
-    return stdout.read
+    err_str = stderr.read if stderr
+    out_str = stdout.read if stdout
+    raise err_str if (err_str.length>0 and except==true)
+    return out_str
   end
   def escape_regex
     str = self
