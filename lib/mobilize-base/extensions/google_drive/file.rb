@@ -13,7 +13,7 @@ module GoogleDrive
       f = self
       #admin includes workers
       return true if f.has_admin_acl?
-      accounts = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails)
+      accounts = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).uniq
       accounts.each do |email|
         f.update_acl(email)
       end
@@ -21,9 +21,9 @@ module GoogleDrive
 
     def has_admin_acl?
       f = self
-      curr_emails = f.acls.map{|a| a.scope}.sort
-      admin_emails = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails)
-      if (curr_emails & admin_emails) == admin_emails
+      curr_emails = f.acls.map{|a| a.scope}.compact.sort
+      admin_emails = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).uniq
+      if curr_emails == admin_emails or (curr_emails & admin_emails) == admin_emails
         return true
       else
         return false
@@ -32,9 +32,9 @@ module GoogleDrive
 
     def has_worker_acl?
       f = self
-      curr_emails = f.acls.map{|a| a.scope}.sort
+      curr_emails = f.acls.map{|a| a.scope}.compact.sort
       worker_emails = Mobilize::Gdrive.worker_emails.sort
-      if (curr_emails & worker_emails) == worker_emails
+      if curr_emails == worker_emails or (curr_emails & worker_emails) == worker_emails
         return true
       else
         return false
@@ -84,7 +84,7 @@ module GoogleDrive
     end
     def acl_entry(email)
       f = self
-      f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope == email}.first
+      f.acls.select{|a| ['group','user'].include?(a.scope_type) and a.scope and a.scope == email}.first
     end
     def entry_hash
       f = self
