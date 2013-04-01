@@ -1,17 +1,17 @@
 ---
 development:
-  max_cells: 400000 #current google limit is 400k cells per book
+  max_cells: 50000 #current google limit is 400k cells per book but fails earlier
   read_date_format: "%Y-%m-%d" #format to record when reading sheets
   sheet_date_format: "%m/%d/%Y" #format to use to parse sheets
 test:
-  max_cells: 400000 #current google limit is 400k cells per book
+  max_cells: 50000 #current google limit is 400k cells per book but fails earlier
   read_date_format: "%Y-%m-%d" #format to record when reading sheets
   sheet_date_format: "%m/%d/%Y" #format to use to parse sheets
 staging:
-  max_cells: 400000 #current google limit is 400k cells per book
+  max_cells: 50000 #current google limit is 400k cells per book but fails earlier
   read_date_format: "%Y-%m-%d" #format to record when reading sheets
   sheet_date_format: "%m/%d/%Y" #format to use to parse sheets
 production:
-  max_cells: 400000 #current google limit is 400k cells per book
+  max_cells: 50000 #current google limit is 400k cells per book but fails earlier
   read_date_format: "%Y-%m-%d" #format to record when reading sheets
   sheet_date_format: "%m/%d/%Y" #format to use to parse sheets

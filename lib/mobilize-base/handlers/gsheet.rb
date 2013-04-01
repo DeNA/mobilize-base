@@ -132,9 +132,14 @@ module Mobilize
         raise "Need source for gsheet write" unless source
         tsv = source.read(u.name,gdrive_slot)
         raise "No data source found for #{source.url}" unless tsv
-        stdout = if tsv.to_s.length == 0
+        tsv_row_count = tsv.to_s.split("\n").length
+        tsv_col_count = tsv.to_s.split("\n").first.to_s.split("\t").length
+        tsv_cell_count = tsv_row_count * tsv_col_count
+        stdout = if tsv_row_count == 0
                    #soft error; no data to write. Stage will complete.
                    "Write skipped for #{s.target.url}"
+                 elsif tsv_cell_count > Gsheet.max_cells
+                   raise "Too many datapoints; you have #{tsv_cell_count.to_s}, max is #{Gsheet.max_cells.to_s}"
                  else
                    Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
                    #update status

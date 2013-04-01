@@ -220,9 +220,8 @@ production:
 
 gsheet.yml needs:
 * max_cells, which is the number of cells a sheet is allowed to have
-  written to it at one time. Default is 400k cells, which is the max per
-  book. Google Drive will throw its own exception if
-  you try to write more than that.
+  written to it at one time. Default is 50k cells, which is about how
+much you can write before things start breaking.
 * Because Google Docs ties date formatting to the Locale for the
   spreadsheet, there are 2 date format parameters:
   * read_date_format, which is the format that should be read FROM google
