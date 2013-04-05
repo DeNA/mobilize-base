@@ -86,6 +86,10 @@ module Mobilize
       temp_sheet.delete if temp_sheet
       #write data to temp sheet
       temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
+      #delete the temp sheet's datasets, they won't be needed again
+      temp_sheet_dst = Dataset.find_by_handler_and_path("gsheet",temp_path)
+      temp_book_dst = Dataset.find_by_handler_and_path("gbook",target_path.gridsafe)
+      [temp_sheet_dst, temp_book_dst].compact.each{|s| s.delete}
       #this step has a tendency to fail; if it does,
       #don't fail the stage, mark it as false
       begin

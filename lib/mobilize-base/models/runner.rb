@@ -159,7 +159,7 @@ module Mobilize
       #there's nothing to update if runner has never had a completed at
       return false unless r.completed_at
       jobs_gsheet = r.gsheet(gdrive_slot)
-      upd_jobs = r.jobs.select{|j| j.status_at and j.status_at > j.runner.completed_at}
+      upd_jobs = r.jobs.select{|j| j.status_at and j.status_at.to_f > j.runner.completed_at.to_f}
       upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}
       jobs_gsheet.add_or_update_rows(upd_rows)
       r.update_status("gsheet updated")
@@ -178,7 +178,7 @@ module Mobilize
 
     def user
       r = self
-      user_name = r.path.split("_").second.split("(").first.split("/").first
+      user_name = r.path.split("_")[1..-1].join("_").split("(").first.split("/").first
       User.where(:name=>user_name).first
     end
 

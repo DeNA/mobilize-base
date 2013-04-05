@@ -4,40 +4,34 @@ module Mobilize
       Base.config('gridfs')
     end
 
-    def Gridfs.grid
-      session = ::Mongoid.configure.sessions['default']
-      database_name = session['database']
-      host,port = session['hosts'].first.split(":")
-      return ::Mongo::GridFileSystem.new(::Mongo::Connection.new(host,port).db(database_name))
+    def Gridfs.read_by_dataset_path(dst_path,*args)
+      curr_file = Mongoid::GridFs::Fs::File.where(:filename=>dst_path).first
+      zs = curr_file.data if curr_file
+      return ::Zlib::Inflate.inflate(zs) if zs.to_s.length>0
     end
 
-    def Gridfs.read_by_dataset_path(dst_path,user_name,*args)
-      begin
-        zs=Gridfs.grid.open(dst_path,'r').read
-        return ::Zlib::Inflate.inflate(zs)
-      rescue
-        return nil
-      end
-    end
-
-    def Gridfs.write_by_dataset_path(dst_path,string,user_name,*args)
+    def Gridfs.write_by_dataset_path(dst_path,string,*args)
       zs = ::Zlib::Deflate.deflate(string)
       raise "compressed string too large for Gridfs write" if zs.length > Gridfs.config['max_compressed_write_size']
-      curr_zs = Gridfs.read_by_dataset_path(dst_path,user_name).to_s
-      #write a new version when there is a change
+      #find and delete existing file
+      curr_file = Mongoid::GridFs::Fs::File.where(:filename=>dst_path).first
+      curr_zs =  curr_file.data if curr_file
+      #overwrite when there is a change
       if curr_zs != zs
-        Gridfs.grid.open(dst_path,'w',:versions => Gridfs.config['max_versions']){|f| f.write(zs)}
+        curr_file.delete if curr_file
+        #create temp file w zstring
+        temp_file = Tempfile.new("#{string}#{Time.now.to_f}".to_md5)
+        temp_file.print(zs)
+        temp_file.close
+        #put data in file
+        Mongoid::GridFs.put(temp_file.path,:filename=>dst_path)
       end
       return true
     end
 
     def Gridfs.delete(dst_path)
-      begin
-        Gridfs.grid.delete(dst_path)
-        return true
-      rescue
-        return nil
-      end
+      curr_file = Mongoid::GridFs::Fs::File.where(:filename=>dst_path).first
+      curr_file.delete
     end
   end
 end

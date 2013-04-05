@@ -60,8 +60,8 @@ module Mobilize
 end
 mongoid_config_path = "#{Mobilize::Base.root}/#{Mobilize::Base.config_dir}mongoid.yml"
 if File.exists?(mongoid_config_path)
-  require 'mongo'
   require 'mongoid'
+  require 'mongoid-grid_fs'
   Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
   require "mobilize-base/models/dataset"
   require "mobilize-base/models/user"

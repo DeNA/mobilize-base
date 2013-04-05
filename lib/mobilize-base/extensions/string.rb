@@ -11,6 +11,9 @@ class String
   def opp
     pp self
   end
+  def to_md5
+    Digest::MD5.hexdigest(self)
+  end
   def bash(except=true)
     str = self
     pid,stdin,stdout,stderr = Open4.popen4(str)
