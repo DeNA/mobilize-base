@@ -355,22 +355,16 @@ mobilize_base:resque_web task, as detailed in [Start Resque-Web](#section_Start_
 Mobilize stores cached data in MongoDB Gridfs. 
 It needs the below parameters, which can be found in the [lib/samples][git_samples] folder. 
 
-* max_versions - the number of __different__ versions of data to keep
-for a given cache. Default is 10. This is meant mostly to allow you to
-restore Runners from cache if necessary.
 * max_compressed_write_size - the amount of compressed data Gridfs will
 allow. If you try to write more than this, an exception will be thrown.
 
 ``` yml
 ---
 development:
-  max_versions: 10 #number of versions of cache to keep in gridfs
   max_compressed_write_size: 1000000000 #~1GB
 test:
-  max_versions: 10 #number of versions of cache to keep in gridfs
   max_compressed_write_size: 1000000000 #~1GB
 production:
-  max_versions: 10 #number of versions of cache to keep in gridfs
   max_compressed_write_size: 1000000000 #~1GB
 ```
 
