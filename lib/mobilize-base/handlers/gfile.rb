@@ -38,7 +38,8 @@ module Mobilize
       end
       #update http url for file
       dst = Dataset.find_by_handler_and_path("gfile",dst_path)
-      dst.update_attributes(:http_url=>file.human_url)
+      api_url = file.human_url.split("&").first
+      dst.update_attributes(:http_url=>api_url)
       true
     end
 
@@ -86,7 +87,8 @@ module Mobilize
       #always make sure dataset http URL is up to date
       #and that it has admin acl
       if file
-        dst.update_attributes(:http_url=>file.human_url)
+        api_url = file.human_url.split("&").first
+        dst.update_attributes(:http_url=>api_url)
         file.add_admin_acl
       end
       return file

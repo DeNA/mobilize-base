@@ -286,6 +286,7 @@ module Mobilize
       # delete any old runner from previous test runs
       gdrive_slot = Gdrive.owner_email
       u.runner.gsheet(gdrive_slot).spreadsheet.delete
+      Dataset.find_by_handler_and_path('gbook',u.runner.title).delete
       Jobtracker.update_status("enqueue jobtracker, wait 45s")
       Mobilize::Jobtracker.start
       sleep 45
