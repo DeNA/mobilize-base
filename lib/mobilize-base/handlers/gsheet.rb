@@ -82,6 +82,11 @@ module Mobilize
     def Gsheet.write_temp(target_path,gdrive_slot,tsv)
       #find and delete temp sheet, if any
       temp_path = [target_path.gridsafe,"temp"].join("/")
+      #delete the temp sheet's datasets if they are lingering
+      temp_sheet_dst = Dataset.find_by_handler_and_path("gsheet",temp_path)
+      temp_book_dst = Dataset.find_by_handler_and_path("gbook",target_path.gridsafe)
+      [temp_sheet_dst, temp_book_dst].compact.each{|s| s.delete}
+      #then, the sheet itself
       temp_sheet = Gsheet.find_by_path(temp_path,gdrive_slot)
       temp_sheet.delete if temp_sheet
       #write data to temp sheet

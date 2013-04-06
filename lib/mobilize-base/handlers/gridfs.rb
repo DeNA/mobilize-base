@@ -1,3 +1,4 @@
+require 'tempfile'
 module Mobilize
   module Gridfs
     def Gridfs.config
@@ -18,9 +19,9 @@ module Mobilize
       curr_zs =  curr_file.data if curr_file
       #overwrite when there is a change
       if curr_zs != zs
-        curr_file.delete if curr_file
+        Mongoid::GridFs.delete(curr_file.id) if curr_file
         #create temp file w zstring
-        temp_file = Tempfile.new("#{string}#{Time.now.to_f}".to_md5)
+        temp_file = ::Tempfile.new("#{string}#{Time.now.to_f}".to_md5)
         temp_file.print(zs)
         temp_file.close
         #put data in file
