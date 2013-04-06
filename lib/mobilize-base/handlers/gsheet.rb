@@ -81,24 +81,16 @@ module Mobilize
 
     def Gsheet.write_temp(target_path,gdrive_slot,tsv)
       #find and delete temp sheet, if any
-      temp_path = [target_path.gridsafe,"temp"].join("/")
-      #delete the temp sheet's datasets if they are lingering
-      temp_sheet_dst = Dataset.find_by_handler_and_path("gsheet",temp_path)
-      temp_book_dst = Dataset.find_by_handler_and_path("gbook",target_path.gridsafe)
-      [temp_sheet_dst, temp_book_dst].compact.each{|s| s.delete}
-      #then, the sheet itself
-      temp_sheet = Gsheet.find_by_path(temp_path,gdrive_slot)
-      temp_sheet.delete if temp_sheet
-      #write data to temp sheet
-      temp_sheet = Gsheet.find_or_create_by_path(temp_path,gdrive_slot)
-      #delete the temp sheet's datasets, they won't be needed again
-      temp_sheet_dst = Dataset.find_by_handler_and_path("gsheet",temp_path)
-      temp_book_dst = Dataset.find_by_handler_and_path("gbook",target_path.gridsafe)
-      [temp_sheet_dst, temp_book_dst].compact.each{|s| s.delete}
+      temp_book_title = target_path.gridsafe
+      #create book and sheet
+      temp_book = Gdrive.root(gdrive_slot).create_spreadsheet(temp_book_title)
+      rows, cols = tsv.split("\n").ie{|t| [t.length,t.first.split("\t").length]}
+      temp_sheet = temp_book.add_worksheet("temp",rows,cols)
       #this step has a tendency to fail; if it does,
       #don't fail the stage, mark it as false
       begin
-        temp_sheet.write(tsv,Gdrive.owner_name)
+        gdrive_user = gdrive_slot.split("@").first
+        temp_sheet.write(tsv,gdrive_user)
       rescue
         return nil
       end
