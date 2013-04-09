@@ -48,6 +48,8 @@ module Mobilize
     end
 
     def Jobtracker.update_status(msg)
+      #this is to keep jobtracker from resisting stop commands
+      return false if Jobtracker.status=="stopping"
       #Jobtracker has no persistent database state
       Resque.set_worker_args_by_path("jobtracker",{'status'=>msg})
       return true
@@ -122,7 +124,7 @@ module Mobilize
       sleep 5
       i=0
       while Jobtracker.status=='stopping'
-        Jobtracker.update_status("#{Jobtracker.to_s} still on queue, waiting")
+        puts "#{Jobtracker.to_s} still on queue, waiting"
         sleep 5
         i+=1
       end
