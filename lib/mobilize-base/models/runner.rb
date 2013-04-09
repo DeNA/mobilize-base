@@ -91,9 +91,9 @@ module Mobilize
         unless jobs_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="owner"}
           jobs_sheet.spreadsheet.update_acl(u.email,"writer")
         end
+        jobs_sheet.add_headers(r.headers)
+        begin;jobs_sheet.delete_sheet1;rescue;end #don't care if sheet1 deletion fails
       end
-      jobs_sheet.add_headers(r.headers)
-      begin;jobs_sheet.delete_sheet1;rescue;end #don't care if sheet1 deletion fails
       return jobs_sheet
     end
 

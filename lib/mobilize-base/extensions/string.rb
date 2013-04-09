@@ -16,11 +16,13 @@ class String
   end
   def bash(except=true)
     str = self
-    pid,stdin,stdout,stderr = Open4.popen4(str)
-    pid,stdin = [nil,nil]
-    err_str = stderr.read if stderr
-    out_str = stdout.read if stdout
-    raise err_str if (err_str.length>0 and except==true)
+    out_str,err_str = []
+    status = Open4.popen4(str) do |pid,stdin,stdout,stderr|
+      out_str = stdout.read
+      err_str = stderr.read
+    end
+    exit_status = status.exitstatus
+    raise err_str if (exit_status !=0 and except==true)
     return out_str
   end
   def escape_regex
