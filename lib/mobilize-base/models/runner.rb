@@ -41,12 +41,18 @@ module Mobilize
         return false
       end
       r.update_attributes(:started_at=>Time.now.utc)
-      #make sure any updates to activity are processed first
-      #as in when someone runs a "once" job that has completed
-      r.update_gsheet(gdrive_slot) 
-      #read the jobs in the gsheet and update models with news
-      r.read_gsheet(gdrive_slot)
-      #queue up the jobs that are due and active
+      begin
+        #make sure any updates to activity are processed first
+        #as in when someone runs a "once" job that has completed
+        r.update_gsheet(gdrive_slot) 
+        #read the jobs in the gsheet and update models with news
+        r.read_gsheet(gdrive_slot)
+        #queue up the jobs that are due and active
+      rescue => exc
+        #log the exception, but continue w job processing
+        #This ensures jobs are still processed if google drive goes down
+        r.update_status("Failed to read or update gsheet with #{exc.to_s} #{exc.backtrace.join(";")}")
+      end
       r.jobs.each do |j|
         begin
           if j.is_due?

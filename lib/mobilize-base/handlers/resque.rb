@@ -113,7 +113,13 @@ module Mobilize
         stage_path = f['payload']['args'].first
         email = begin
                   s = Stage.where(:path=>stage_path).first
-                  s.job.runner.user.email
+                  if s.params['notify'].to_s=="false"
+                    next
+                  elsif s.params['notify'].index("@")
+                    s.params['notify']
+                  else
+                    s.job.runner.user.email
+                  end
                 rescue
                   #jobs without stages are sent to first admin
                   Jobtracker.admin_emails.first

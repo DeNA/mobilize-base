@@ -193,7 +193,12 @@ module Mobilize
         end
         #deliver each email generated
         notifs.each do |notif|
-          Email.write(notif).deliver
+          begin
+            Email.write(notif).deliver
+          rescue
+            #log email on failure
+            Jobtracker.update_status("Failed to deliver #{notif.to_s}")
+          end
         end
         #update notification time so JT knows to wait a while
         Jobtracker.last_notification = Time.now.utc.to_s

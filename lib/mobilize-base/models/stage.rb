@@ -2,6 +2,7 @@ module Mobilize
   class Stage
     include Mongoid::Document
     include Mongoid::Timestamps
+    include Mobilize::StageHelper
     field :path, type: String
     field :handler, type: String
     field :call, type: String
@@ -15,40 +16,6 @@ module Mobilize
     field :status_at, type: Time
 
     index({ path: 1})
-
-    def idx
-      s = self
-      s.path.split("/").last.gsub("stage","").to_i
-    end
-
-    def out_dst
-      #this gives a dataset that points to the output
-      #allowing you to determine its size
-      #before committing to a read or write
-      s = self
-      Dataset.find_by_url(s.response['out_url']) if s.response and s.response['out_url']
-    end
-
-    def err_dst
-      #this gives a dataset that points to the output
-      #allowing you to determine its size
-      #before committing to a read or write
-      s = self
-      Dataset.find_by_url(s.response['err_url']) if s.response and s.response['err_url']
-    end
-
-    def params
-      s = self
-      p = YAML.easy_load(s.param_string)
-      raise "Must resolve to Hash" unless p.class==Hash
-      return p
-    end
-
-    def job
-      s = self
-      job_path = s.path.split("/")[0..-2].join("/")
-      Job.where(:path=>job_path).first
-    end
 
     def Stage.find_or_create_by_path(path)
       s = Stage.where(:path=>path).first
@@ -145,7 +112,7 @@ module Mobilize
       j = s.job
       r = j.runner
       u = r.user
-      j.update_attributes(:active=>false) unless s.params['always_on']
+      j.update_attributes(:active=>false) if s.params['always_on'].to_s=="false"
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
       stage_name = "#{j.name}_stage#{s.idx.to_s}.err"
       target_path =  (r.path.split("/")[0..-2] + [stage_name]).join("/")
