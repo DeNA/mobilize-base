@@ -2,66 +2,45 @@ module Mobilize
   class Job
     include Mongoid::Document
     include Mongoid::Timestamps
+    include Mobilize::JobHelper
     field :path, type: String
     field :active, type: Boolean
     field :trigger, type: String
 
     index({ path: 1})
 
-    def name
-      j = self
-      j.path.split("/").last
-    end
-
-    def stages
-      j = self
-      #starts with the job path, followed by a slash
-      Stage.where(:path=>/^#{j.path.escape_regex}\//).to_a.sort_by{|s| s.path}
-    end
-
-    def Job.find_or_create_by_path(path)
-      j = Job.where(:path=>path).first
-      j = Job.create(:path=>path) unless j
-      return j
-    end
-
-    def status
-      #last stage status
-      j = self
-      j.active_stage.status if j.active_stage
-    end
-
-    def active_stage
-      j = self
-      #latest started at or first
-      j.stages.select{|s| s.started_at}.sort_by{|s| s.started_at}.last || j.stages.first
-    end
-
-    def completed_at
-      j = self
-      j.stages.last.completed_at if j.stages.last
-    end
-
-    def failed_at
-      j = self
-      j.active_stage.failed_at if j.active_stage
-    end
-
-    def status_at
-      j = self
-      j.active_stage.status_at if j.active_stage
-    end
-
-    #convenience methods
-    def runner
-      j = self
-      runner_path = j.path.split("/")[0..-2].join("/")
-      return Runner.where(:path=>runner_path).first
-    end
-
-    def is_working?
-      j = self
-      j.stages.select{|s| s.is_working?}.compact.length>0
+    #takes a hash of job parameters (name, active, trigger, stages)
+    #and creates/updates a job with it
+    def Job.update_by_user_name_and_hash(user_name,hash)
+      j = Job.find_or_create_by_path("Runner_#{user_name}/jobs/#{hash['name']}")
+      #update top line params
+      j.update_attributes(:active => hash['active'],
+                          :trigger => hash['trigger'])
+      (1..5).to_a.each do |s_idx|
+        stage_string = hash["stage#{s_idx.to_s}"]
+        s = Stage.find_by_path("#{j.path}/stage#{s_idx.to_s}")
+        if stage_string.to_s.length==0
+          #delete this stage and all stages after
+          if s
+            j = s.job
+            j.stages[(s.idx-1)..-1].each{|ps| ps.delete}
+            #just in case
+            s.delete
+          end
+          break
+        elsif s.nil?
+          #create this stage
+          s = Stage.find_or_create_by_path("#{j.path}/stage#{s_idx.to_s}")
+        end
+        #parse command string, update stage with it
+        s_handler, call, param_string = [""*3]
+        stage_string.split(" ").ie do |spls|
+          s_handler = spls.first.split(".").first
+          call = spls.first.split(".").last
+          param_string = spls[1..-1].join(" ").strip
+        end
+        s.update_attributes(:call=>call, :handler=>s_handler, :param_string=>param_string)
+      end
     end
 
     def is_due?
