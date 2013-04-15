@@ -64,6 +64,7 @@ describe "Mobilize" do
     test_1_tsv = Mobilize::Dataset.read_by_url(test_target_sheet_1_url,user_name,gdrive_slot)
     test_2_tsv = Mobilize::Dataset.read_by_url(test_target_sheet_1_url,user_name,gdrive_slot)
 
+    assert test_1_tsv.to_s.length>0
     assert test_1_tsv == test_2_tsv
 
     puts "change first job to fail, wait for stages"

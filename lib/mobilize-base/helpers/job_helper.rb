@@ -12,12 +12,6 @@ module Mobilize
       Stage.where(:path=>/^#{j.path.escape_regex}\//).to_a.sort_by{|s| s.path}
     end
 
-    def Job.find_or_create_by_path(path)
-      j = Job.where(:path=>path).first
-      j = Job.create(:path=>path) unless j
-      return j
-    end
-
     def status
       #last stage status
       j = self

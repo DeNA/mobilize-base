@@ -9,10 +9,18 @@ module Mobilize
 
     index({ path: 1})
 
+    def Job.find_or_create_by_path(path)
+      j = Job.where(:path=>path).first
+      j = Job.create(:path=>path) unless j
+      return j
+    end
+
     #takes a hash of job parameters (name, active, trigger, stages)
     #and creates/updates a job with it
     def Job.update_by_user_name_and_hash(user_name,hash)
-      j = Job.find_or_create_by_path("Runner_#{user_name}/jobs/#{hash['name']}")
+      u = User.where(name: user_name).first
+      r = u.runner
+      j = Job.find_or_create_by_path("#{r.path}/#{hash['name']}")
       #update top line params
       j.update_attributes(:active => hash['active'],
                           :trigger => hash['trigger'])
@@ -41,6 +49,7 @@ module Mobilize
         end
         s.update_attributes(:call=>call, :handler=>s_handler, :param_string=>param_string)
       end
+      return j.reload
     end
 
     def is_due?

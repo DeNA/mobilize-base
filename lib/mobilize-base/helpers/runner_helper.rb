@@ -15,14 +15,6 @@ module Mobilize
       Mobilize::Resque.find_worker_by_path(r.path)
     end
 
-    def Runner.find_by_path(path)
-      Runner.where(:path=>path).first
-    end
-
-    def Runner.find_by_title(title)
-      Runner.where(:path=>"#{title}/jobs").first
-    end
-
     def dataset
       r = self
       Dataset.find_or_create_by_handler_and_path("gsheet",r.path)

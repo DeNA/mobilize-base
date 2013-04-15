@@ -12,6 +12,14 @@ module Mobilize
 
     index({ path: 1})
 
+    def Runner.find_by_path(path)
+      Runner.where(:path=>path).first
+    end
+
+    def Runner.find_by_title(title)
+      Runner.where(:path=>"#{title}/jobs").first
+    end
+
     def Runner.perform(id,*args)
       r = Runner.find_by_path(id)
       #get gdrive slot for read
@@ -66,7 +74,7 @@ module Mobilize
       gsheet_hashes.each do |gsheet_hash|
         #skip non-jobs or jobs without required values
         next if (gsheet_hash['name'].to_s.first == "#" or ['name','active','trigger','stage1'].select{|c| gsheet_hash[c].to_s.strip==""}.length>0)
-        Job.update_by_user_name_and_hash(r.user.name,gsheet_hash)
+        j = Job.update_by_user_name_and_hash(r.user.name,gsheet_hash)
         r.update_status("Updated #{j.path} stages at #{Time.now.utc}")
         #add this job to list of read ones
         done_jobs << j
