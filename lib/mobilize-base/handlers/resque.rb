@@ -25,7 +25,7 @@ module Mobilize
       return idle_workers if state == 'idle'
       stale_workers = workers.select{|w| Time.parse(w.started) < Jobtracker.deployed_at}
       return stale_workers if state == 'stale'
-      timeout_workers = workers.select{|w| w.job['payload'] and w.job['payload']['class']!='Jobtracker' and w.job['runat'] < (Time.now.utc - Jobtracker.max_run_time)}
+      timeout_workers = workers.select{|w| w.job['payload'] and w.job['payload']['class']!='Jobtracker' and w.job['run_at'] < (Time.now.utc - Jobtracker.max_run_time)}
       return timeout_workers if state == 'timeout'
       raise "invalid state #{state}"
     end

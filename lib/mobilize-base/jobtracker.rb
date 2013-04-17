@@ -147,8 +147,8 @@ module Mobilize
     def Jobtracker.max_run_time_workers
       #return workers who have been cranking away for 6+ hours
         workers = Jobtracker.workers('working').select do |w|
-            w.job['runat'].to_s.length>0 and 
-              (Time.now.utc - Time.parse(w.job['runat'])) > Jobtracker.max_run_time
+            w.job['run_at'].to_s.length>0 and 
+              (Time.now.utc - Time.parse(w.job['run_at'])) > Jobtracker.max_run_time
         end
         return workers
     end
@@ -187,7 +187,7 @@ module Mobilize
         if lws.length>0
           n = {}
           n['subject'] = "#{lws.length.to_s} max run time jobs"
-          n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} runat:#{w['runat'].to_s}}}.join("\n\n")
+          n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} run_at:#{w['run_at'].to_s}}}.join("\n\n")
           n['to'] = Jobtracker.admin_emails.join(",")
           notifs << n
         end
