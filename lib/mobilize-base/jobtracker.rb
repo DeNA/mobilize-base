@@ -1,148 +1,7 @@
 module Mobilize
   module Jobtracker
-    def Jobtracker.config
-      Base.config('jobtracker')
-    end
-
-    #modify this to increase the frequency of request cycles
-    def Jobtracker.cycle_freq
-      Jobtracker.config['cycle_freq']
-    end
-
-    #frequency of notifications
-    def Jobtracker.notification_freq
-      Jobtracker.config['notification_freq']
-    end
-
-    def Jobtracker.runner_read_freq
-      Jobtracker.config['runner_read_freq']
-    end
-
-    #long running tolerance
-    def Jobtracker.max_run_time
-      Jobtracker.config['max_run_time']
-    end
-
-    def Jobtracker.admins
-      Jobtracker.config['admins']
-    end
-
-    def Jobtracker.admin_emails
-      Jobtracker.admins.map{|a| a['email'] }
-    end
-
-    def Jobtracker.worker
-      Resque.find_worker_by_path("jobtracker")
-    end
-
-    def Jobtracker.workers(state="all")
-      Resque.workers(state)
-    end
-
-    def Jobtracker.status
-      args = Jobtracker.get_args
-      return args['status'] if args
-      job = Resque.jobs.select{|j| j['args'].first=='jobtracker'}.first
-      return 'queued' if job
-      return 'stopped'
-    end
-
-    def Jobtracker.update_status(msg)
-      #this is to keep jobtracker from resisting stop commands
-      return false if Jobtracker.status=="stopping"
-      #Jobtracker has no persistent database state
-      Resque.set_worker_args_by_path("jobtracker",{'status'=>msg})
-      return true
-    end
-
-    def Jobtracker.restart
-      Jobtracker.stop!
-      Jobtracker.start
-    end
-
-    def Jobtracker.set_args(args)
-      Resque.set_worker_args(Jobtracker.worker,args)
-      return true
-    end
-
-    def Jobtracker.get_args
-      Resque.get_worker_args(Jobtracker.worker)
-    end
-
-    def Jobtracker.kill_workers
-      Resque.kill_workers
-    end
-
-    def Jobtracker.kill_idle_workers
-      Resque.kill_idle_workers
-    end
-
-    def Jobtracker.kill_idle_and_stale_workers
-      Resque.kill_idle_and_stale_workers
-    end
-
-    def Jobtracker.prep_workers
-      Resque.prep_workers
-    end
-
-    def Jobtracker.failures
-      Resque.failures
-    end
-
-    def Jobtracker.start
-      if Jobtracker.status!='stopped'
-        Jobtracker.update_status("Jobtracker still #{Jobtracker.status}")
-      else
-        #make sure that workers are running and at the right number
-        #Resque.prep_workers
-        #queue up the jobtracker (starts the perform method)
-        Jobtracker.enqueue!
-      end
-      return true
-    end
-
-    def Jobtracker.enqueue!
-      ::Resque::Job.create(Resque.queue_name, Jobtracker, 'jobtracker',{})
-    end
-
-    def Jobtracker.restart!
-      Jobtracker.stop!
-      Jobtracker.start
-      return true
-    end
-
-    def Jobtracker.restart_workers!
-      Jobtracker.kill_workers
-      sleep 10
-      Jobtracker.prep_workers
-      Jobtracker.update_status("put workers back on the queue")
-    end
-
-    def Jobtracker.stop!
-      #send signal for Jobtracker to check for
-      Jobtracker.update_status('stopping')
-      sleep 5
-      i=0
-      while Jobtracker.status=='stopping'
-        puts "#{Jobtracker.to_s} still on queue, waiting"
-        sleep 5
-        i+=1
-      end
-      return true
-    end
-
-    def Jobtracker.last_notification
-      return Jobtracker.get_args["last_notification"] if Jobtracker.get_args
-    end
-
-    def Jobtracker.last_notification=(time)
-      Jobtracker.set_args({"last_notification"=>time})
-    end
-
-    def Jobtracker.notif_due?
-      last_duetime = Time.now.utc - Jobtracker.notification_freq
-      return (Jobtracker.last_notification.to_s.length==0 || Jobtracker.last_notification.to_datetime < last_duetime)
-    end
+    #adds convenience methods
+    require "#{File.dirname(__FILE__)}/helpers/jobtracker_helper"
 
     def Jobtracker.max_run_time_workers
       #return workers who have been cranking away for 6+ hours
@@ -185,9 +44,14 @@ module Mobilize
         end
         lws = Jobtracker.max_run_time_workers
         if lws.length>0
+          bod = begin
+                  lws.map{|w| w.job['payload']['args']}.first.join("\n")
+                rescue
+                  "Failed to get job names"
+                end
           n = {}
           n['subject'] = "#{lws.length.to_s} max run time jobs"
-          n['body'] = lws.map{|w| %{spec:#{w['spec']} stg:#{w['stg']} run_at:#{w['run_at'].to_s}}}.join("\n\n")
+          n['body'] = bod
           n['to'] = Jobtracker.admin_emails.join(",")
           notifs << n
         end
@@ -249,54 +113,6 @@ module Mobilize
                       mod_time
                     end.to_s.strip
       Time.parse(deploy_time)
-    end
-
-    #test methods
-    def Jobtracker.restart_test_redis
-      Jobtracker.stop_test_redis
-      if !system("which redis-server")
-        raise "** can't find `redis-server` in your path, you need redis to run Resque and Mobilize"
-      end
-      "redis-server #{Base.root}/test/redis-test.conf".bash
-    end
-
-    def Jobtracker.stop_test_redis
-      processes = `ps -A -o pid,command | grep [r]edis-test`.split($/)
-      pids = processes.map { |process| process.split(" ")[0] }
-      puts "Killing test redis server..."
-      pids.each { |pid| Process.kill("TERM", pid.to_i) }
-      puts "removing redis db dump file"
-      sleep 5
-      `rm -f #{Base.root}/test/dump.rdb #{Base.root}/test/dump-cluster.rdb`
-    end
-
-    def Jobtracker.set_test_env
-      ENV['MOBILIZE_ENV']='test'
-      ::Resque.redis="localhost:9736"
-      mongoid_config_path = "#{Base.root}/config/mobilize/mongoid.yml"
-      Mongoid.load!(mongoid_config_path, Base.env)
-    end
-
-    def Jobtracker.drop_test_db
-      Jobtracker.set_test_env
-      Mongoid.session(:default).collections.each do |collection| 
-        unless collection.name =~ /^system\./
-          collection.drop
-        end
-      end
-    end
-
-    def Jobtracker.build_test_runner(user_name)
-      Jobtracker.set_test_env
-      u = User.where(:name=>user_name).first
-      Jobtracker.update_status("delete old books and datasets")
-      # delete any old runner from previous test runs
-      gdrive_slot = Gdrive.owner_email
-      u.runner.gsheet(gdrive_slot).spreadsheet.delete
-      Dataset.find_by_handler_and_path('gbook',u.runner.title).delete
-      Jobtracker.update_status("enqueue jobtracker, wait 45s")
-      Mobilize::Jobtracker.start
-      sleep 45
     end
   end
 end

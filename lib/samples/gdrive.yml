@@ -4,8 +4,10 @@ development:
   owner:
     name: owner_development
     pw: google_drive_password
+  admin_group_name: admins_development
   admins:
     - name: admin
+  worker_group_name: workers_development
   workers:
     - name: worker_development001 
       pw: worker001_google_drive_password
@@ -16,8 +18,10 @@ test:
   owner:
     name: owner_test
     pw: google_drive_password
+  admin_group_name: admins_test
   admins:
     - name: admin
+  worker_group_name: workers_test
   workers:
     - name: worker_test001 
       pw: worker001_google_drive_password
@@ -28,8 +32,10 @@ production:
   owner:
     name: owner_production
     pw: google_drive_password
+  admin_group_name: admins_production
   admins:
     - name: admin
+  worker_group_name: workers_production
   workers:
     - name: worker_production001 
       pw: worker001_google_drive_password

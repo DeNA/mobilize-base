@@ -162,9 +162,15 @@ the same domain, and all Users should have emails in this domain.
 * an owner name and password. You can set up separate owners
   for different environments as in the below file, which will keep your
 mission critical workers from getting rate-limit errors.
+* one admin_group_name, which the owner and all admins should be added to -- this
+group will need read permissions to read from and edit permissions to write
+to files.
 * one or more admins with email attributes -- these will be for people
   who should be given write permissions to all Mobilize books in the
 environment for maintenance purposes.
+* one worker_group_name, which the owner and all workers should be added to -- this
+group will need read permissions to read from and edit permissions to write
+to files.
 * one or more workers with name and pw attributes -- they will be used
   to queue up google reads and writes. This can be the same as the owner
 account for testing purposes or low-volume environments. 
@@ -182,8 +188,10 @@ development:
   owner:
     name: owner_development
     pw: google_drive_password
+  admin_group_name: admins_development
   admins:
     - name: admin
+  worker_group_name: workers_development
   workers:
     - name: worker_development001 
       pw: worker001_google_drive_password
@@ -194,8 +202,10 @@ test:
   owner:
     name: owner_test
     pw: google_drive_password
+  admin_group_name: admins_test
   admins:
     - name: admin
+  worker_group_name: workers_test
   workers:
     - name: worker_test001 
       pw: worker001_google_drive_password
@@ -206,8 +216,10 @@ production:
   owner:
     name: owner_production
     pw: google_drive_password
+  admin_group_name: admins_production
   admins:
     - name: admin
+  worker_group_name: workers_production
   workers:
     - name: worker_production001 
       pw: worker001_google_drive_password

@@ -3,9 +3,13 @@
   trigger: once
   status: ""
   stage1: gsheet.write source:"gfile://test_base_1.tsv", target:base1.out
-
 - name: base2
   active: true
   trigger: after base1
   status: ""
   stage1: gsheet.write source:base1.out, target:base2.out
+- name: base3
+  active: true
+  trigger: after base2
+  status: ""
+  stage1: gsheet.write source:"base1."_"", target:base2.out

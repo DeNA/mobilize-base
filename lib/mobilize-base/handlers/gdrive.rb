@@ -37,6 +37,14 @@ module Mobilize
       end
     end
 
+    def Gdrive.worker_group_name
+      Gdrive.config['worker_group_name']
+    end
+
+    def Gdrive.admin_group_name
+      Gdrive.config['admin_group_name']
+    end
+
     def Gdrive.worker_emails
       Gdrive.workers.map{|w| [w['name'],Gdrive.domain].join("@")}
     end

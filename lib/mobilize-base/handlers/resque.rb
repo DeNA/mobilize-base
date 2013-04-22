@@ -120,7 +120,7 @@ module Mobilize
                   else
                     s.job.runner.user.email
                   end
-                rescue
+                rescue ScriptError, StandardError
                   #jobs without stages are sent to first admin
                   Jobtracker.admin_emails.first
                 end

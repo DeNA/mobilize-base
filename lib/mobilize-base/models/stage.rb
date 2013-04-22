@@ -44,6 +44,14 @@ module Mobilize
 
     def Stage.perform(id,*args)
       s = Stage.where(:path=>id).first
+      #check to make sure params are parsable
+      begin
+        param_hash = s.params
+        raise ScriptError if param_hash.class!=Hash
+      rescue StandardError, ScriptError
+        s.fail({'signal'=>500,
+                'err_str'=>"Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."})
+      end
       s.update_attributes(:started_at=>Time.now.utc)
       s.update_status(%{Starting at #{Time.now.utc}})
       #get response by running method
@@ -112,7 +120,11 @@ module Mobilize
       j = s.job
       r = j.runner
       u = r.user
-      j.update_attributes(:active=>false) if s.params['always_on'].to_s=="false"
+      begin
+        j.update_attributes(:active=>false) if s.params['always_on'].to_s=="false"
+      rescue StandardError, ScriptError
+        #skip due to parse error on params
+      end
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
       stage_name = "#{j.name}_stage#{s.idx.to_s}.err"
       target_path =  (r.path.split("/")[0..-2] + [stage_name]).join("/")
