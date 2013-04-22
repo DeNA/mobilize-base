@@ -1,5 +1,5 @@
 module Mobilize
   module Base
-    VERSION = "1.3"
+    VERSION = "1.32"
   end
 end
