@@ -35,8 +35,10 @@ module Mobilize
                                           end
                                         end.flatten.join("\n\n")
             u = User.where(:name=>email.split("@").first).first
-            runner_dst = Dataset.find_by_url("gsheet://#{u.runner.path}")
-            n['body'] += "\n\n#{runner_dst.http_url}" if runner_dst and runner_dst.http_url
+            if u
+              runner_dst = Dataset.find_by_url("gsheet://#{u.runner.path}")
+              n['body'] += "\n\n#{runner_dst.http_url}" if runner_dst and runner_dst.http_url
+            end
             n['to'] = email
             n['bcc'] = [Gdrive.admin_group_name,Gdrive.domain].join("@")
             notifs << n

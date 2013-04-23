@@ -101,9 +101,14 @@ module Mobilize
       return true
     end
 
+    def worker
+      r = self
+      Mobilize::Resque.find_worker_by_path(r.path)
+    end
+
     def enqueue!
       r = self
-      ::Resque::Job.create("mobilize",Runner,r.path,{})
+      ::Resque::Job.create("mobilize",Runner,r.path,{}) unless r.worker
       return true
     end
   end
