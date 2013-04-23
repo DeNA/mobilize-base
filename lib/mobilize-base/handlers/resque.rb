@@ -115,7 +115,7 @@ module Mobilize
                   s = Stage.where(:path=>stage_path).first
                   if s.params['notify'].to_s=="false"
                     next
-                  elsif s.params['notify'].index("@")
+                  elsif s.params['notify'].to_s.index("@")
                     s.params['notify']
                   else
                     s.job.runner.user.email
