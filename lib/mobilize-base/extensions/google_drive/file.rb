@@ -3,42 +3,16 @@ module GoogleDrive
 
     def add_worker_acl
       f = self
-      return true if f.has_worker_acl?
-      Mobilize::Gdrive.worker_emails.each do |a| 
-        f.update_acl(a)
-      end
+      email = "#{Mobilize::Gdrive.worker_group_name}@#{Mobilize::Gdrive.domain}"
+      f.update_acl(email,"group")
     end
 
     def add_admin_acl
       f = self
-      #admin includes workers
-      return true if f.has_admin_acl?
-      accounts = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).uniq
-      accounts.each do |email|
-        f.update_acl(email)
-      end
-    end
-
-    def has_admin_acl?
-      f = self
-      curr_emails = f.acls.map{|a| a.scope}.compact.sort
-      admin_emails = (Mobilize::Gdrive.admin_emails + Mobilize::Gdrive.worker_emails).uniq
-      if curr_emails == admin_emails or (curr_emails & admin_emails) == admin_emails
-        return true
-      else
-        return false
-      end
-    end
-
-    def has_worker_acl?
-      f = self
-      curr_emails = f.acls.map{|a| a.scope}.compact.sort
-      worker_emails = Mobilize::Gdrive.worker_emails.sort
-      if curr_emails == worker_emails or (curr_emails & worker_emails) == worker_emails
-        return true
-      else
-        return false
-      end
+      email = "#{Mobilize::Gdrive.admin_group_name}@#{Mobilize::Gdrive.domain}"
+      f.update_acl(email,"group")
+      #if adding acl ,must currently add workers as well
+      f.add_worker_acl
     end
 
     def read(user_name)
@@ -51,7 +25,7 @@ module GoogleDrive
       end
     end
 
-    def update_acl(email,role="writer")
+    def update_acl(email,scope_type="user",role="writer")
       f = self
       #need these flags for HTTP retries
       #create req_acl hash to add to current acl
@@ -64,16 +38,16 @@ module GoogleDrive
           if entry.role != role
             #for whatever reason
             f.acl.delete(entry)
-            f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})
+            f.acl.push({:scope_type=>scope_type,:scope=>email,:role=>role})
           end
         elsif !['reader','writer','owner'].include?(role)
           raise "Invalid role #{role}"
         end
       else
         begin
-          f.acl.push({:scope_type=>"user",:scope=>email,:role=>role})
+          f.acl.push({:scope_type=>scope_type,:scope=>email,:role=>role})
         rescue => exc
-          raise exc unless exc.to_s.index("user already has access")
+          raise exc unless exc.to_s.index("already has access")
         end
       end
       return true
