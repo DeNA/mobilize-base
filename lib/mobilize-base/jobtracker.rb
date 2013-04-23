@@ -38,7 +38,7 @@ module Mobilize
             runner_dst = Dataset.find_by_url("gsheet://#{u.runner.path}")
             n['body'] += "\n\n#{runner_dst.http_url}" if runner_dst and runner_dst.http_url
             n['to'] = email
-            n['bcc'] = Jobtracker.admin_emails.join(",")
+            n['bcc'] = [Gdrive.admin_group_name,Gdrive.domain].join("@")
             notifs << n
           end
         end
@@ -52,7 +52,7 @@ module Mobilize
           n = {}
           n['subject'] = "#{lws.length.to_s} max run time jobs"
           n['body'] = bod
-          n['to'] = Jobtracker.admin_emails.join(",")
+          n['to'] = [Gdrive.admin_group_name,Gdrive.domain].join("@")
           notifs << n
         end
         #deliver each email generated

@@ -27,10 +27,6 @@ module Mobilize
       Jobtracker.config['admins']
     end
 
-    def Jobtracker.admin_emails
-      Jobtracker.admins.map{|a| a['email'] }
-    end
-
     def Jobtracker.worker
       Resque.find_worker_by_path("jobtracker")
     end

@@ -125,8 +125,8 @@ module Mobilize
                     s.job.runner.user.email
                   end
                 rescue ScriptError, StandardError
-                  #jobs without stages are sent to first admin
-                  Jobtracker.admin_emails.first
+                  #jobs without stages are sent to admins
+                  [Gdrive.admin_group_name,Gdrive.domain].join("@")
                 end
         exc_to_s = f['error']
         if fjobs[email].nil?

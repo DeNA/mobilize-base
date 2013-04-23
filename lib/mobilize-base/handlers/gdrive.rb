@@ -49,10 +49,6 @@ module Mobilize
       Gdrive.workers.map{|w| [w['name'],Gdrive.domain].join("@")}
     end
 
-    def Gdrive.admin_emails
-      Gdrive.admins.map{|w| [w['name'],Gdrive.domain].join("@")}
-    end
-
     #email management - used to make sure not too many emails get used at the same time
     def Gdrive.slot_worker_by_path(path)
       working_slots = Mobilize::Resque.jobs.map{|j| begin j['args'][1]['gdrive_slot'];rescue;nil;end}.compact.uniq
