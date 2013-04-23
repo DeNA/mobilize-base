@@ -36,7 +36,7 @@ module Mobilize
         #creating it
         jobs_sheet = Gsheet.find_or_create_by_path(r.path,gdrive_slot)
         unless jobs_sheet.spreadsheet.acl_entry(u.email).ie{|e| e and e.role=="owner"}
-          jobs_sheet.spreadsheet.update_acl(u.email,"writer")
+          jobs_sheet.spreadsheet.update_acl(u.email)
         end
         jobs_sheet.add_headers(r.headers)
         begin;jobs_sheet.delete_sheet1;rescue;end #don't care if sheet1 deletion fails

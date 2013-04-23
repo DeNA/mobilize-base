@@ -58,7 +58,7 @@ module Mobilize
     def Gfile.update_acl_by_path(path,gdrive_slot,role="writer",target_email=nil)
       file = Gfile.find_by_path(path,target_email)
       raise "File #{path} not found" unless file
-      file.update_acl(gdrive_slot,role)
+      file.update_acl(gdrive_slot,"user",role)
     end
 
     def Gfile.find_by_path(path)
