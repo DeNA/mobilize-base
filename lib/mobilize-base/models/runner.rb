@@ -108,7 +108,7 @@ module Mobilize
 
     def enqueue!
       r = self
-      ::Resque::Job.create("mobilize",Runner,r.path,{}) unless r.worker
+      ::Resque::Job.create("mobilize",Runner,r.path,{})
       return true
     end
   end
