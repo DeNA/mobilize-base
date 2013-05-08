@@ -43,7 +43,7 @@ class String
     return v if v.to_s.strip==""
     #normalize numbers by removing '$', '%', ',', ' '
     vnorm = v.to_s.norm_num
-    vdigits = vnorm.split(".").last.length
+    vdigits = vnorm.split(".").last.to_s.length
     if vnorm.to_f.to_s=="Infinity"
       #do nothing
     elsif ("%.#{vdigits}f" % vnorm.to_f.to_s)==vnorm
