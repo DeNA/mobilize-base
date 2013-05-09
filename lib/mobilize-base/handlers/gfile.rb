@@ -1,5 +1,14 @@
 module Mobilize
   module Gfile
+
+    def Gfile.config
+      Base.config('gfile')
+    end
+
+    def Gfile.max_cells
+      Gfile.config['max_cells']
+    end
+   
     def Gfile.path_to_dst(path,stage_path,gdrive_slot)
       #don't need the ://
       path = path.split("://").last if path.index("://")
@@ -34,6 +43,7 @@ module Mobilize
       u = User.where(:name=>user_name).first
       entry = file.acl_entry(u.email)
       unless entry and entry.role == "owner"
+        file.add_admin_acl
         file.update_acl(u.email,"owner")
       end
       #update http url for file
@@ -100,34 +110,42 @@ module Mobilize
       return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
       u = s.job.runner.user
-      begin
-        #get tsv to write from stage
-        source = s.sources(gdrive_slot).first
-        raise "Need source for gfile write" unless source
-        tsv = source.read(u.name,gdrive_slot)
-        raise "No data source found for #{source.url}" unless tsv.to_s.length>0
-        tsv_row_count = tsv.to_s.split("\n").length
-        tsv_col_count = tsv.to_s.split("\n").first.to_s.split("\t").length
-        tsv_cell_count = tsv_row_count * tsv_col_count
-        if tsv_cell_count > Gfile.max_cells
-          raise "Too many datapoints; you have #{tsv_cell_count.to_s}, max is #{Gfile.max_cells.to_s}"
+      retries = 0
+      while retries < Gdrive.max_file_write_retries
+        begin
+          #get tsv to write from stage
+          source = s.sources(gdrive_slot).first
+          raise "Need source for gfile write" unless source
+          tsv = source.read(u.name,gdrive_slot)
+          raise "No data source found for #{source.url}" unless tsv.to_s.length>0
+          tsv_row_count = tsv.to_s.split("\n").length
+          tsv_col_count = tsv.to_s.split("\n").first.to_s.split("\t").length
+          tsv_cell_count = tsv_row_count * tsv_col_count
+          if tsv_cell_count > Gfile.max_cells
+            raise "Too many datapoints; you have #{tsv_cell_count.to_s}, max is #{Gfile.max_cells.to_s}"
+          end
+          stdout = if tsv_row_count == 0
+               #soft error; no data to write. Stage will complete.
+               "Write skipped for #{s.target.url}"
+             else
+               Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
+               #update status
+               "Write successful for #{s.target.url}"
+             end
+          Gdrive.unslot_worker_by_path(stage_path)
+          stderr = nil
+          s.update_status(stdout)
+          signal = 0
+        rescue => exc
+          if retries < Gdrive.max_file_write_retries
+            retries +=1
+            sleep Gdrive.file_write_retry_delay
+          else
+            stdout = nil
+            stderr = [exc.to_s,"\n",exc.backtrace.join("\n")].join
+            signal = 500
+          end
         end
-        stdout = if tsv_row_count == 0
-             #soft error; no data to write. Stage will complete.
-             "Write skipped for #{s.target.url}"
-           else
-             Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
-             #update status
-             "Write successful for #{s.target.url}"
-           end
-        Gdrive.unslot_worker_by_path(stage_path)
-        stderr = nil
-        s.update_status(stdout)
-        signal = 0
-      rescue => exc
-        stdout = nil
-        stderr = [exc.to_s,"\n",exc.backtrace.join("\n")].join
-        signal = 500
       end
       return {'out_str'=>stdout, 'err_str'=>stderr, 'signal' => signal}
     end
