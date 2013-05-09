@@ -8,7 +8,7 @@ module GoogleDrive
       attempts = 0
       sleep_time = nil
       #try 5 times to make the call
-      while (response.nil? or response.code.starts_with?("5")) and attempts < 20
+      while (response.nil? or response.code.starts_with?("5")) and attempts < Mobilize::Gdrive.max_api_retries
         #instantiate http object, set params
         http = @proxy.new(uri.host, uri.port)
         http.use_ssl = true
