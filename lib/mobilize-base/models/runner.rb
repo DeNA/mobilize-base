@@ -95,7 +95,15 @@ module Mobilize
       return false unless r.completed_at
       jobs_gsheet = r.gsheet(gdrive_slot)
       upd_jobs = r.jobs.select{|j| j.status_at and j.status_at.to_f > j.runner.completed_at.to_f}
-      upd_rows = upd_jobs.map{|j| {'name'=>j.name, 'active'=>j.active, 'status'=>j.status}}
+      upd_rows = upd_rows = upd_jobs.map do |j|
+        uj = {'name'=>j.name, 'status'=>j.status}
+        #jobs can only be turned off
+        #automatically, not back on
+        if uj.active==false
+          uj['active'] = false
+        end
+        uj
+      end
       jobs_gsheet.add_or_update_rows(upd_rows)
       r.update_status("gsheet updated")
       return true
