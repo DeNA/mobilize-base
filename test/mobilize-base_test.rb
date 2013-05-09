@@ -30,13 +30,13 @@ describe "Mobilize" do
 
     assert jobs_sheet_tsv.tsv_header_array.join.length == 53 #total header length
 
-    puts "add base1 input file"
-    test_filename = "test_base_1"
-    file_url = "gfile://#{test_filename}.tsv"
-    test_source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/#{test_filename}.yml")*40
+    puts "add base1 input sheet"
+    sheet_title = "base1"
+    sheet_url = "gsheet://#{r.path}/#{sheet_title}.in"
+    source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/#{sheet_title}.yml")*40
     test_source_tsv = test_source_ha.hash_array_to_tsv
-    Mobilize::Dataset.write_by_url(file_url,test_source_tsv,user_name)
-    rem_tsv = Mobilize::Dataset.read_by_url(file_url,user_name)
+    Mobilize::Dataset.write_by_url(sheet_url,test_source_tsv,user_name)
+    target_tsv = Mobilize::Dataset.read_by_url(sheet_url,user_name)
     assert rem_tsv == test_source_tsv
 
     puts "add row to jobs sheet, wait for stages"
@@ -59,6 +59,10 @@ describe "Mobilize" do
 
     base3_response = tsv_hash["base3_stage1.err"].tsv_to_hash_array.first['response']
     assert base3_response == "Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."
+
+    puts "make sure failed job retries after next run"
+
+    puts "create jobdue every hour after 12h ago, make sure it runs"
 
     Mobilize::Jobtracker.stop!
   end
