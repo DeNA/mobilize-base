@@ -54,6 +54,17 @@ namespace :mobilize_base do
     require 'mobilize-base'
     Mobilize::Jobtracker.restart!
   end
+  desc "Enqueue a user's runner"
+  task :enqueue_user, [:name] do |t,args|
+    require 'mobilize-base'
+    Mobilize::User.where(name: args.name).first.runner.enqueue!
+  end
+  desc "Enqueue a stage"
+  task :enqueue_stage, [:path] do |t,args|
+    require 'mobilize-base'
+    user,job,stage = args.path.split("/")
+    Mobilize::Stage.where(path: "Runner_#{user}/jobs/#{job}/#{stage}").first.en
+  end
   desc "kill all old resque web processes, start new one with resque_web.rb extension file"
   task :resque_web do
     require 'mobilize-base'
