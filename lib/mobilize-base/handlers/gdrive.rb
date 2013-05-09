@@ -29,8 +29,8 @@ module Mobilize
       Gdrive.config['max_api_retries']
     end
 
-    def Gdrive.file_write_attempts
-      Gdrive.config['file_write_retries']
+    def Gdrive.max_file_write_retries
+      Gdrive.config['max_file_write_retries']
     end
 
     def Gdrive.file_write_retry_delay
