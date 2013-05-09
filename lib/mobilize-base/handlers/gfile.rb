@@ -30,11 +30,11 @@ module Mobilize
                                     :content_type=>"test/plain",
                                     :convert=>false)
       file.add_admin_acl
-      #make sure user is owner or can edit
+      #make sure user is owner
       u = User.where(:name=>user_name).first
       entry = file.acl_entry(u.email)
-      unless entry and ['writer','owner'].include?(entry.role)
-        file.update_acl(u.email)
+      unless entry and entry.role == "owner"
+        file.update_acl(u.email,"owner")
       end
       #update http url for file
       dst = Dataset.find_by_handler_and_path("gfile",dst_path)
@@ -92,6 +92,44 @@ module Mobilize
         file.add_admin_acl
       end
       return file
+    end
+
+    def Gfile.write_by_stage_path(stage_path)
+      gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
+      #return blank response if there are no slots available
+      return nil unless gdrive_slot
+      s = Stage.where(:path=>stage_path).first
+      u = s.job.runner.user
+      begin
+        #get tsv to write from stage
+        source = s.sources(gdrive_slot).first
+        raise "Need source for gfile write" unless source
+        tsv = source.read(u.name,gdrive_slot)
+        raise "No data source found for #{source.url}" unless tsv.to_s.length>0
+        tsv_row_count = tsv.to_s.split("\n").length
+        tsv_col_count = tsv.to_s.split("\n").first.to_s.split("\t").length
+        tsv_cell_count = tsv_row_count * tsv_col_count
+        if tsv_cell_count > Gfile.max_cells
+          raise "Too many datapoints; you have #{tsv_cell_count.to_s}, max is #{Gfile.max_cells.to_s}"
+        end
+        stdout = if tsv_row_count == 0
+             #soft error; no data to write. Stage will complete.
+             "Write skipped for #{s.target.url}"
+           else
+             Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
+             #update status
+             "Write successful for #{s.target.url}"
+           end
+        Gdrive.unslot_worker_by_path(stage_path)
+        stderr = nil
+        s.update_status(stdout)
+        signal = 0
+      rescue => exc
+        stdout = nil
+        stderr = [exc.to_s,"\n",exc.backtrace.join("\n")].join
+        signal = 500
+      end
+      return {'out_str'=>stdout, 'err_str'=>stderr, 'signal' => signal}
     end
   end
 end
