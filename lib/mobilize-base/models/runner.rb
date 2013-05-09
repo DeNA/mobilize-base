@@ -99,7 +99,7 @@ module Mobilize
         uj = {'name'=>j.name, 'status'=>j.status}
         #jobs can only be turned off
         #automatically, not back on
-        if uj.active==false
+        if j.active==false
           uj['active'] = false
         end
         uj

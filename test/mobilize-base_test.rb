@@ -32,12 +32,12 @@ describe "Mobilize" do
 
     puts "add base1 input sheet"
     sheet_title = "base1"
-    sheet_url = "gsheet://#{r.path}/#{sheet_title}.in"
+    sheet_url = "gsheet://#{r.title}/#{sheet_title}.in"
     source_ha = ::YAML.load_file("#{Mobilize::Base.root}/test/#{sheet_title}.yml")*40
-    test_source_tsv = test_source_ha.hash_array_to_tsv
-    Mobilize::Dataset.write_by_url(sheet_url,test_source_tsv,user_name)
-    target_tsv = Mobilize::Dataset.read_by_url(sheet_url,user_name)
-    assert rem_tsv == test_source_tsv
+    source_tsv = source_ha.hash_array_to_tsv
+    Mobilize::Dataset.write_by_url(sheet_url,source_tsv,user_name,gdrive_slot)
+    target_tsv = Mobilize::Dataset.read_by_url(sheet_url,user_name,gdrive_slot)
+    assert target_tsv == source_tsv
 
     puts "add row to jobs sheet, wait for stages"
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/base_job_rows.yml")
@@ -63,6 +63,10 @@ describe "Mobilize" do
     puts "make sure failed job retries after next run"
 
     puts "create jobdue every hour after 12h ago, make sure it runs"
+
+    puts "test notification for administrator"
+
+    puts "test notification for specific user"
 
     Mobilize::Jobtracker.stop!
   end

@@ -1,5 +1,6 @@
 module Mobilize
   module Gsheet
+
     def Gsheet.config
       Base.config('gsheet')
     end
@@ -127,7 +128,8 @@ module Mobilize
       u = s.job.runner.user
       crop = s.params['crop'] || true
       retries = 0
-      while retries < Gdrive.max_file_write_retries
+      stdout,stderr = []
+      while stdout.nil? and stderr.nil? and retries < Gdrive.max_file_write_retries
         begin
           #get tsv to write from stage
           source = s.sources(gdrive_slot).first
