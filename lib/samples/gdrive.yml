@@ -1,6 +1,9 @@
 ---
 development:
   domain: host.com
+  max_api_retries: 10
+  file_write_retries: 5
+  file_write_retry_delay: 30
   owner:
     name: owner_development
     pw: google_drive_password
@@ -15,6 +18,9 @@ development:
       pw: worker002_google_drive_password
 test:
   domain: host.com
+  max_api_retries: 10
+  file_write_retries: 5
+  file_write_retry_delay: 30
   owner:
     name: owner_test
     pw: google_drive_password
@@ -29,6 +35,9 @@ test:
       pw: worker002_google_drive_password
 production:
   domain: host.com
+  max_api_retries: 10
+  file_write_retries: 5
+  file_write_retry_delay: 30
   owner:
     name: owner_production
     pw: google_drive_password
