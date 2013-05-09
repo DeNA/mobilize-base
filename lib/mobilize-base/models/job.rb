@@ -52,16 +52,53 @@ module Mobilize
       return j.reload
     end
 
+    def parent
+      j = self
+      u = j.runner.user
+      if j.trigger.strip[0..4].downcase == "after"
+        parent_name = j.trigger[5..-1].to_s.strip
+        parent_j = u.jobs.select{|job| job.name == parent_name}.first
+        return parent_j
+      else
+        return nil
+      end
+    end
+
+    def children
+      j = self
+      u = j.runner.user
+      u.jobs.select do |job|
+        parent_name = job.trigger[5..-1].to_s.strip
+        job.trigger.strip[0..4].downcase == "after" and
+          parent_name == j.name
+      end
+    end
+
     def is_due?
       j = self
-      return false if j.is_working? or j.active == false or j.trigger.to_s.starts_with?("after")
+      if j.is_working? or j.active == false
+        return false
+      elsif j.parent
+        if j.failed_at and j.parent.completed_at and j.failed_at > j.parent.com
+          (j.parent.failed_at.nil? or j.parent.failed_at < j.failed_at)
+          #determine if this job failed after its parent completed, if so say i
+          return true
+        else
+          # if parent has failed more recently than child, is not
+          return false
+        end
+      elsif j.trigger.strip.downcase=='once'
+        #active and once means due
+        return true
+      end
+      #uncomment and customize to disallow jobs that include modules under main
+      #return false if j.stages.map{|s| s.handler}.include?("hive")
       last_run = j.completed_at
-      #check trigger
-      trigger = j.trigger
-      return true if trigger == 'once'
+       #check trigger
+      trigger = j.trigger.strip
       #strip the "every" from the front if present
       trigger = trigger.gsub("every","").gsub("."," ").strip
-      value,unit,operator,job_utctime = trigger.split(" ")
+      value,unit,operator,job_utctime = trigger.split(" ").map{|t_node| t_node.downcase}
       curr_utctime = Time.now.utc
       curr_utcdate = curr_utctime.to_date.strftime("%Y-%m-%d")
       if job_utctime
@@ -78,7 +115,7 @@ module Mobilize
       elsif ["day","days"].include?(unit)
         if last_run.nil? or curr_utctime.to_date >= (last_run.to_date + value.to_i.day)
           if operator and job_utctime
-            if curr_utctime>job_utctime and (job_utctime - curr_utctime).abs < 1.hour
+            if curr_utctime>job_utctime
               return true
             end
           elsif operator || job_utctime
