@@ -5,14 +5,19 @@ module Mobilize
       Base.config('gfile')
     end
 
-    def Gfile.max_cells
-      Gfile.config['max_cells']
+    def Gfile.max_length
+      Gfile.config['max_length']
     end
    
     def Gfile.path_to_dst(path,stage_path,gdrive_slot)
+      s = Stage.where(:path=>stage_path).first
+      params = s.params
+      target_path = params['target']
+      #if this is the target, it doesn't have to exist already
+      is_target = true if path == target_path
       #don't need the ://
       path = path.split("://").last if path.index("://")
-      if Gfile.find_by_path(path)
+      if is_target or Gfile.find_by_path(path)
         handler = "gfile"
         Dataset.find_or_create_by_url("#{handler}://#{path}")
       else
@@ -39,13 +44,6 @@ module Mobilize
                                     :content_type=>"test/plain",
                                     :convert=>false)
       file.add_admin_acl
-      #make sure user is owner
-      u = User.where(:name=>user_name).first
-      entry = file.acl_entry(u.email)
-      unless entry and entry.role == "owner"
-        file.add_admin_acl
-        file.update_acl(u.email,"owner")
-      end
       #update http url for file
       dst = Dataset.find_by_handler_and_path("gfile",dst_path)
       api_url = file.human_url.split("&").first
@@ -111,24 +109,22 @@ module Mobilize
       s = Stage.where(:path=>stage_path).first
       u = s.job.runner.user
       retries = 0
-      while retries < Gdrive.max_file_write_retries
+      stdout,stderr = []
+      while stdout.nil? and stderr.nil? and retries < Gdrive.max_file_write_retries
         begin
           #get tsv to write from stage
           source = s.sources(gdrive_slot).first
           raise "Need source for gfile write" unless source
           tsv = source.read(u.name,gdrive_slot)
           raise "No data source found for #{source.url}" unless tsv.to_s.length>0
-          tsv_row_count = tsv.to_s.split("\n").length
-          tsv_col_count = tsv.to_s.split("\n").first.to_s.split("\t").length
-          tsv_cell_count = tsv_row_count * tsv_col_count
-          if tsv_cell_count > Gfile.max_cells
-            raise "Too many datapoints; you have #{tsv_cell_count.to_s}, max is #{Gfile.max_cells.to_s}"
+          if tsv.length > Gfile.max_length
+            raise "Too much data; you have #{tsv.length.to_s}, max is #{Gfile.max_length.to_s}"
           end
-          stdout = if tsv_row_count == 0
+          stdout = if tsv.length == 0
                #soft error; no data to write. Stage will complete.
                "Write skipped for #{s.target.url}"
              else
-               Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot,crop)
+               Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot)
                #update status
                "Write successful for #{s.target.url}"
              end
