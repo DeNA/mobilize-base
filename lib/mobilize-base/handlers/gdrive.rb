@@ -25,6 +25,18 @@ module Mobilize
       end
     end
 
+    def Gdrive.max_api_retries
+      Gdrive.config['max_api_retries']
+    end
+
+    def Gdrive.file_write_attempts
+      Gdrive.config['file_write_retries']
+    end
+
+    def Gdrive.file_write_retry_delay
+      Gdrive.config['file_write_retry_delay']
+    end
+
     def Gdrive.admins
       Gdrive.config['admins']
     end
