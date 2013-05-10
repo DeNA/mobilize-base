@@ -79,9 +79,9 @@ module Mobilize
       if j.is_working? or j.active == false
         return false
       elsif j.parent
-        if j.failed_at and j.parent.completed_at and j.failed_at > j.parent.com
+        if j.failed_at and j.parent.completed_at and j.failed_at > j.parent.completed_at and
           (j.parent.failed_at.nil? or j.parent.failed_at < j.failed_at)
-          #determine if this job failed after its parent completed, if so say i
+          #determine if this job failed after its parent completed, if so is due
           return true
         else
           # if parent has failed more recently than child, is not
@@ -98,12 +98,18 @@ module Mobilize
       trigger = j.trigger.strip
       #strip the "every" from the front if present
       trigger = trigger.gsub("every","").gsub("."," ").strip
-      value,unit,operator,job_utctime = trigger.split(" ").map{|t_node| t_node.downcase}
+      value,unit,operator,job_hhmm = trigger.split(" ").map{|t_node| t_node.downcase}
       curr_utctime = Time.now.utc
       curr_utcdate = curr_utctime.to_date.strftime("%Y-%m-%d")
-      if job_utctime
-        job_utctime = job_utctime.split(" ").first
-        job_utctime = Time.parse([curr_utcdate,job_utctime,"UTC"].join(" "))
+      if job_hhmm
+        #determine last due time
+        job_hhmm = job_hhmm.split(" ").first
+        job_utcdate = last_run ? last_run.strftime("%Y-%m-%d") : curr_utcdate
+        job_utctime = Time.parse([job_utcdate,job_utctime,"UTC"].join(" "))
+        #if the job completed after the last job_utctime, bump to next day
+        if last_run > job_utctime
+          job_utctime = job_utctime + 1.day
+        end
       end
       #after is the only operator
       raise "Unknown #{operator.to_s} operator" if operator and operator != "after"

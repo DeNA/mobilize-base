@@ -50,8 +50,7 @@ module Mobilize
             s.enqueue!
           end
         rescue ScriptError, StandardError => exc
-          r.update_status("Failed to enqueue #{j.path} with #{exc.to_s}")
-          j.update_attributes(:active=>false)
+          j.update_status("Failed to enqueue")
         end
       end
       r.update_gsheet(gdrive_slot)

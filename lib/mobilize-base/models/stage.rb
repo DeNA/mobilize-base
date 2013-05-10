@@ -82,8 +82,6 @@ module Mobilize
 
     def complete(response)
       s = self
-      s.update_attributes(:completed_at=>Time.now.utc,:response=>response)
-      s.update_status("Completed at #{Time.now.utc.to_s}")
       j = s.job
       if s.idx == j.stages.length
         #check for any dependent jobs, if there are, enqueue them
@@ -110,6 +108,10 @@ module Mobilize
         s.next.update_attributes(:retries_done=>0)
         s.next.enqueue!
       end
+      #complete after dependencies are processed
+      #to make sure it doesn't enqueue due to runner check
+      s.update_attributes(:completed_at=>Time.now.utc,:response=>response)
+      s.update_status("Completed at #{Time.now.utc.to_s}")
       true
     end
 

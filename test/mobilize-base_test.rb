@@ -1,6 +1,17 @@
 require 'test_helper'
 
 describe "Mobilize" do
+
+  it "tests is_due? methods" do
+    TestHelper.drop_test_db
+    u = TestHelper.owner_user
+    user_name = u.name
+    gdrive_slot = u.email
+  end
+
+  it "tests notifications" do
+  end
+
   it "runs integration test" do
 
     puts "restart test redis"
@@ -48,25 +59,16 @@ describe "Mobilize" do
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     tsv_hash = {}
-    ["base1.out", "base2.out", "base3_stage1.err"].each do |sheet_name|
+    ["base1.in", "base2.out", "base3_stage1.err"].each do |sheet_name|
       url = "gsheet://#{r.title}/#{sheet_name}"
       data = Mobilize::Dataset.read_by_url(url,user_name,gdrive_slot)
       tsv_hash[sheet_name] = data
     end
 
-    assert tsv_hash["base1.out"].to_s.length>0
-    assert tsv_hash["base2.out"] == tsv_hash["base1.out"]
+    assert tsv_hash["base2.out"] == tsv_hash["base1.in"]
 
     base3_response = tsv_hash["base3_stage1.err"].tsv_to_hash_array.first['response']
     assert base3_response == "Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."
-
-    puts "make sure failed job retries after next run"
-
-    puts "create jobdue every hour after 12h ago, make sure it runs"
-
-    puts "test notification for administrator"
-
-    puts "test notification for specific user"
 
     Mobilize::Jobtracker.stop!
   end
