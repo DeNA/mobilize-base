@@ -7,6 +7,7 @@ describe "Mobilize" do
     u = TestHelper.owner_user
     user_name = u.name
     gdrive_slot = u.email
+    due_jobs = TestHelper.load_fixture("is_due")
   end
 
   it "tests notifications" do

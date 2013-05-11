@@ -86,4 +86,8 @@ module TestHelper
     user_name = gdrive_slot.split("@").first
     return Mobilize::User.find_or_create_by_name(user_name)
   end
+
+  def TestHelper.load_fixture(name)
+    YAML.load_file("#{$dir}/fixtures/#{name}.yml")
+  end
 end
