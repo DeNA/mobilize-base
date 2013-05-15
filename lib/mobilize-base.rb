@@ -3,6 +3,7 @@ require "mobilize-base/extensions/array"
 require "mobilize-base/extensions/hash"
 require "mobilize-base/extensions/object"
 require "mobilize-base/extensions/string"
+require "mobilize-base/extensions/time"
 require "mobilize-base/extensions/yaml"
 #this is the base of the mobilize object, any methods that should be
 #made available application-wide go over here
@@ -55,6 +56,9 @@ module Mobilize
       else
         raise "Could not find #{log_dir} folder for logs"
       end
+    end
+    def Base.handlers
+      Dir.entries(File.dirname(__FILE__) + "/mobilize-base/handlers").select{|e| e.ends_with?(".rb")}.map{|e| e.split(".").first}
     end
   end
 end

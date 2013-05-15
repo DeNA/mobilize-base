@@ -1,67 +1,97 @@
 ---
-- name: once_active #true
+- name: once_active
   active: true
   trigger: once
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: once_inactive #false
+  stage1: gsheet.method source:"source", target:"target"
+  expected: true
+- name: once_inactive
   active: false
   trigger: once
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1h_comp_never #true
+  stage1: gfile.method source:"source", target:"target"
+  expected: false
+- name: 1h_comp_never
   active: true
   trigger: every 1.hour
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1h_comp_0.5h_ago #false
+  stage1: gsheet.method source:"source", target:"target"
+  expected: true
+- name: 1h_comp_0.5h_ago
   active: true
   trigger: every 1.hour
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1h_comp_1.5h_ago #true
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.now.utc - 1800.seconds
+  expected: false
+- name: 1h_comp_1.5h_ago
   active: true
   trigger: every 1.hour
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1h_aft45_comp_2_45_marks_ago #true
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.now.utc - 5400.seconds
+  expected: true
+- name: 1h_aft45_comp_2_45_marks_ago
   active: true
   trigger: 'every 1.hour after 45'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1h_aft45_comp_aft_1_45_mark_ago #false
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(2,'hour', '45')
+  expected: true
+- name: 1h_aft45_comp_aft_1_45_mark_ago
   active: true
   trigger: 'every 1.hour after :45'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1d_aft0135_comp_2_0135_marks_ago #true
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(1,'hour', '45')
+  expected: false
+- name: 1d_aft0135_comp_2_0135_marks_ago
   active: true
   trigger: 'every 1.day after 01:35'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 1d_aft0135_comp_1_0135_mark_ago #false
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(2,'day', '0135')
+  expected: true
+- name: 1d_aft0135_comp_1_0135_mark_ago
   active: true
   trigger: 'every 1.day after 0135'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 5d_aft0135_comp_5_0135_mark_ago #false
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(1,'day', '0135')
+  expected: false
+- name: 5d_aft0135_comp_5_0135_mark_ago
   active: true
   trigger: 'every 5.day after 01:35'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: 5d_aft0135_comp_6_0135_mark_ago #true
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(5,'day', '0135')
+  expected: false
+- name: 5d_aft0135_comp_6_0135_mark_ago
   active: true
   trigger: 'every 5.day after 01:35'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: parent_comp_child_fail #true
+  stage1: gsheet.method source:"source", target:"target"
+  completed_at: Time.at_marks_ago(6,'day', '0135')
+  expected: true
+- name: parent_comp_child_fail
   active: true
   trigger: 'after once_inactive'
   status: ""
-  stage1: handler.method source:"source", target:"target"
-- name: parent_comp_child_comp #false
+  stage1: gsheet.method source:"source", target:"target"
+  parent: {completed_at: Time.now.utc - 1.second}
+  failed_at: Time.now.utc
+  expected: true
+- name: parent_comp_child_comp
   active: true
   trigger: 'after once_inactive'
   status: ""
+  stage1: gsheet.method source:"source", target:"target"
+  parent: {completed_at: Time.now.utc - 1.second}
+  completed_at: Time.now.utc
+  expected: false
+- name: missing_module
+  active: true
+  trigger: once
+  status: ""
   stage1: handler.method source:"source", target:"target"
-
+  expected: false

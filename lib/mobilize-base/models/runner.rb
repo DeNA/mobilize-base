@@ -73,7 +73,9 @@ module Mobilize
       gsheet_hashes.each do |gsheet_hash|
         #skip non-jobs or jobs without required values
         next if (gsheet_hash['name'].to_s.first == "#" or ['name','active','trigger','stage1'].select{|c| gsheet_hash[c].to_s.strip==""}.length>0)
-        j = Job.update_by_user_name_and_hash(r.user.name,gsheet_hash)
+        #find job w this name, or make one
+        j = r.jobs.select{|rj| rj.name == gsheet_hash['name']}.first || Job.find_or_create_by_path("#{r.path}/#{gsheet_hash['name']}")
+        j.update_from_hash(gsheet_hash)
         r.update_status("Updated #{j.path} stages at #{Time.now.utc}")
         #add this job to list of read ones
         done_jobs << j

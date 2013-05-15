@@ -15,12 +15,32 @@ module Mobilize
       return j
     end
 
+    def parent
+      j = self
+      u = j.runner.user
+      if j.trigger.strip[0..4].downcase == "after"
+        parent_name = j.trigger[5..-1].to_s.strip
+        parent_j = u.jobs.select{|job| job.name == parent_name}.first
+        return parent_j
+      else
+        return nil
+      end
+    end
+
+    def children
+      j = self
+      u = j.runner.user
+      u.jobs.select do |job|
+        parent_name = job.trigger[5..-1].to_s.strip
+        job.trigger.strip[0..4].downcase == "after" and
+          parent_name == j.name
+      end
+    end
+
     #takes a hash of job parameters (name, active, trigger, stages)
     #and creates/updates a job with it
-    def Job.update_by_user_name_and_hash(user_name,hash)
-      u = User.where(name: user_name).first
-      r = u.runner
-      j = Job.find_or_create_by_path("#{r.path}/#{hash['name']}")
+    def update_from_hash(hash)
+      j = self
       #update top line params
       j.update_attributes(:active => hash['active'],
                           :trigger => hash['trigger'])
@@ -52,104 +72,83 @@ module Mobilize
       return j.reload
     end
 
-    def parent
-      j = self
-      u = j.runner.user
-      if j.trigger.strip[0..4].downcase == "after"
-        parent_name = j.trigger[5..-1].to_s.strip
-        parent_j = u.jobs.select{|job| job.name == parent_name}.first
-        return parent_j
-      else
-        return nil
-      end
-    end
-
-    def children
-      j = self
-      u = j.runner.user
-      u.jobs.select do |job|
-        parent_name = job.trigger[5..-1].to_s.strip
-        job.trigger.strip[0..4].downcase == "after" and
-          parent_name == j.name
-      end
-    end
-
     def is_due?
       j = self
+      #working or inactive jobs are not due
       if j.is_working? or j.active == false
         return false
-      elsif j.parent
-        if j.failed_at and j.parent.completed_at and j.failed_at > j.parent.completed_at and
-          (j.parent.failed_at.nil? or j.parent.failed_at < j.failed_at)
-          #determine if this job failed after its parent completed, if so is due
-          return true
-        else
-          # if parent has failed more recently than child, is not
-          return false
-        end
-      elsif j.trigger.strip.downcase=='once'
+      end
+
+      #if job contains handlers not loaded by jobtracker, not due
+      loaded_handlers = Jobtracker.config['extensions'].map{|m| m.split("-").last}
+      job_handlers = j.stages.map{|s| s.handler}.uniq
+      #base handlers are the ones in mobilize-base/handlers
+      if (job_handlers - loaded_handlers - Base.handlers).length>0
+        return false
+      end
+
+      #once
+      if j.trigger.strip.downcase=='once'
         #active and once means due
         return true
       end
-      #uncomment and customize to disallow jobs that include modules under main
-      #return false if j.stages.map{|s| s.handler}.include?("hive")
-      last_run = j.completed_at
-       #check trigger
-      trigger = j.trigger.strip
-      #strip the "every" from the front if present
-      trigger = trigger.gsub("every","").gsub("."," ").strip
-      value,unit,operator,job_hhmm = trigger.split(" ").map{|t_node| t_node.downcase}
-      curr_utctime = Time.now.utc
-      curr_utcdate = curr_utctime.to_date.strftime("%Y-%m-%d")
-      if job_hhmm
-        #determine last due time
-        job_hhmm = job_hhmm.split(" ").first
-        job_utcdate = last_run ? last_run.strftime("%Y-%m-%d") : curr_utcdate
-        job_utctime = Time.parse([job_utcdate,job_utctime,"UTC"].join(" "))
-        #if the job completed after the last job_utctime, bump to next day
-        if last_run > job_utctime
-          job_utctime = job_utctime + 1.day
+
+      #depedencies
+      if j.parent
+        #if parent completed more recently than self, is due
+        if j.parent.completed_at and (j.completed_at.nil? or j.parent.completed_at > j.completed_at)
+          return true
+        else
+          return false
         end
       end
-      #after is the only operator
-      raise "Unknown #{operator.to_s} operator" if operator and operator != "after"
-      if ["hour","hours"].include?(unit)
-        #if it's later than the last run + hour tolerance, is due
-        if last_run.nil? or curr_utctime > (last_run + value.to_i.hour)
-          return true
-        end
-      elsif ["day","days"].include?(unit)
-        if last_run.nil? or curr_utctime.to_date >= (last_run.to_date + value.to_i.day)
-          if operator and job_utctime
-            if curr_utctime>job_utctime
-              return true
-            end
-          elsif operator || job_utctime
-            raise "Please specify both an operator and a time in UTC, or neither"
-          else
+
+      #time based
+      last_comp_time = j.completed_at
+      #check trigger; strip the "every" from the front if present, change dot to space
+      trigger = j.trigger.strip.gsub("every","").gsub("."," ").strip
+      number, unit, operator, mark = trigger.split(" ").map{|t_node| t_node.downcase}
+      #operator is not used
+      operator = nil
+      #get time for time-based evaluations
+      curr_time = Time.now.utc
+      if ["hour","hours","day","days"].include?(unit)
+        if mark
+          last_mark_time = Time.at_marks_ago(number,unit,mark)
+          if last_comp_time < last_mark_time
             return true
+          else
+            return false
           end
+        elsif last_comp_time.nil? or last_comp_time < (curr_time - number.to_i.send(unit))
+          return true
+        else
+          return false
         end
       elsif unit == "day_of_week"
-        if curr_utctime.wday==value and (last_run.nil? or last_run.to_date != curr_utctime.to_date)
-          if operator and job_utctime
-            if curr_utctime>job_utctime and (job_utctime - curr_utctime).abs < 1.hour
+        if curr_time.wday==number and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
+          if mark
+            #check if it already ran today
+            last_mark_time = Time.at_marks_ago(1,"day",mark)
+            if last_comp_time < last_mark_time
               return true
+            else
+              return false
             end
-          elsif operator || job_utctime
-            raise "Please specify both an operator and a time in UTC, or neither"
           else
             return true
           end
         end
       elsif unit == "day_of_month"
-        if curr_utctime.day==value and (last_run.nil? or last_run.to_date != curr_utctime.to_date)
-          if operator and job_utctime
-            if curr_utctime>job_utctime and (job_utctime - curr_utctime).abs < 1.hour
+        if curr_time.day==number and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
+          if mark
+            #check if it already ran today
+            last_mark_time = Time.at_marks_ago(1,"day",mark)
+            if last_comp_time < last_mark_time
               return true
+            else
+              return false
             end
-          elsif operator || job_utctime
-            raise "Please specify both an operator and a time in UTC, or neither"
           else
             return true
           end

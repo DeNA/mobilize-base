@@ -1,8 +1,9 @@
+---
 - name: base1
   active: true
   trigger: once
   status: ""
-  stage1: gfile.write source:"gsheet://base1.in", target:"gfile://base1.out"
+  stage1: gfile.write source:"gsheet://integration_data.in", target:"gfile://base1.out"
 - name: base2
   active: true
   trigger: after base1
