@@ -148,10 +148,7 @@ module Mobilize
 
     def Resque.start_workers(count=1)
       count.times do
-        dir_envs = "MOBILIZE_ENV=#{Base.env} " +
-                   "MOBILIZE_CONFIG_DIR=#{Base.config_dir} " +
-                   "MOBILIZE_LOG_DIR=#{Base.log_dir}"
-        "(cd #{Base.root};rake #{dir_envs} mobilize_base:work) >> #{Resque.log_path} 2>&1 &".bash
+        "(cd #{Base.root};rake mobilize_base:work[#{Base.env}]) >> #{Resque.log_path} 2>&1 &".bash
       end
     end
 
