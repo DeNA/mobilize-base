@@ -9,26 +9,50 @@ ENV['MOBILIZE_ENV'] = 'test'
 require 'mobilize-base'
 $TESTING = true
 module TestHelper
-  def TestHelper.wait_for_stages(time_limit=600,stage_limit=120,wait_length=10)
-    time = 0
-    time_since_stage = 0
-    #check for 10 min
-    while time < time_limit and time_since_stage < stage_limit
-      sleep wait_length
-      job_classes = Mobilize::Resque.jobs.map{|j| j['class']}
-      if job_classes.include?("Mobilize::Stage")
-        time_since_stage = 0
-        puts "saw stage at #{time.to_s} seconds"
-      else
-        time_since_stage += wait_length
-        puts "#{time_since_stage.to_s} seconds since stage seen"
-      end
-      time += wait_length
-      puts "total wait time #{time.to_s} seconds"
-    end
+  def TestHelper.confirm_expected_jobs(expected_fixture_name,time_limit=600)
+    jobs = {}
+    jobs['expected'] = TestHelper.load_fixture(expected_fixture_name)
+    jobs['pending'] = jobs['expected'].select{|j| j['confirmed_ats'].length < j['count']}
+    start_time = Time.now.utc
+    total_time = 0
+    while jobs['pending'].length>0 and total_time < time_limit
+      #working jobs are running on the queue at this instant
+      jobs['working'] = Mobilize::Resque.workers('working').map{|w| w.job}.select{|j| j and j['payload'] and j['payload']['args']}
+      #failed jobs are in the failure queue
+      jobs['failed'] = Mobilize::Resque.failures.select{|j| j and j['payload'] and j['payload']['args']}
 
-    if time >= time_limit
-      raise "Timed out before stage completion"
+      #unexpected jobs are not supposed to be run in this test, includes leftover failures
+      jobs['unexpected'] = {}
+      error_msg = ""
+      ['working','failed'].each do |state|
+        jobs['unexpected'][state] = jobs[state].reject{|j|
+                                      jobs['expected'].select{|ej|
+                                        ej['state']==state and j['payload']['args'].first == ej['path']}.first}
+        if jobs['unexpected'][state].length>0
+          error_msg += state + ": " + jobs['unexpected'][state].map{|j| j['payload']['args'].first}.join(";") + "\n"
+        end
+      end
+      #clear out unexpected paths or there will be failure
+      if error_msg.length>0
+        raise "Found unexpected results:\n" + error_msg
+      end
+
+      #now make sure pending jobs get done
+      jobs['expected'].each do |j|
+        start_confirmed_ats = j['confirmed_ats']
+        resque_timestamps = jobs[j['state']].select{|sj| sj['payload']['args'].first == j['path']}.map{|sj| sj['run_at'] || sj['failed_at']}
+        new_timestamps = (resque_timestamps - start_confirmed_ats).uniq
+        if new_timestamps.length>0 and j['confirmed_ats'].length < j['count']
+          j['confirmed_ats'] += new_timestamps
+          puts "#{Time.now.utc.to_s}: #{new_timestamps.length.to_s} #{j['state']} added to #{j['path']} for total count of #{j['confirmed_ats'].length.to_s} of #{j['count']}"
+        end
+      end
+
+      #figure out who's still pending
+      jobs['pending'] = jobs['expected'].select{|j| j['confirmed_ats'].length < j['count']}
+      sleep 1
+      total_time = Time.now.utc - start_time
+      puts "#{total_time.to_s} seconds elapsed" if total_time.to_s.ends_with?("0")
     end
   end
 
@@ -82,12 +106,28 @@ module TestHelper
 
   def TestHelper.owner_user
     gdrive_slot = Mobilize::Gdrive.owner_email
-    puts "create user 'mobilize'"
     user_name = gdrive_slot.split("@").first
     return Mobilize::User.find_or_create_by_name(user_name)
   end
 
   def TestHelper.load_fixture(name)
     YAML.load_file("#{$dir}/fixtures/#{name}.yml")
+  end
+
+  def TestHelper.write_fixture(fixture_name, target_url, mode)
+    u = TestHelper.owner_user
+    fixture_ha = TestHelper.load_fixture(fixture_name)
+    if mode == 'replace'
+      fixture_tsv = fixture_ha.hash_array_to_tsv
+      Mobilize::Dataset.write_by_url(target_url,fixture_tsv,u.name,u.email)
+    elsif mode == 'update'
+      handler, sheet_path = target_url.split("://")
+      raise "update only works for gsheet, not #{handler}" unless handler=='gsheet'
+      sheet = Mobilize::Gsheet.find_or_create_by_path(sheet_path,u.email)
+      sheet.add_or_update_rows(fixture_ha)
+    else
+      raise "unknown mode #{mode}"
+    end
+    return true
   end
 end

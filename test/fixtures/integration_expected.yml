@@ -1,0 +1,25 @@
+---
+- path: "jobtracker"
+  state: working
+  count: 1
+  confirmed_ats: []
+- path: "Runner_mobilize(test)/jobs"
+  state: working
+  count: 2
+  confirmed_ats: []
+- path: "Runner_mobilize(test)/jobs/base1/stage1"
+  state: working
+  count: 1
+  confirmed_ats: []
+- path: "Runner_mobilize(test)/jobs/base1/stage2"
+  state: working
+  count: 1
+  confirmed_ats: []
+- path: "Runner_mobilize(test)/jobs/base2/stage1"
+  state: working
+  count: 1
+  confirmed_ats: []
+- path: "Runner_mobilize(test)/jobs/base2/stage1"
+  state: failed
+  count: 2
+  confirmed_ats: []

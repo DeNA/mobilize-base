@@ -16,7 +16,7 @@ module GoogleDrive
         #set 600  to allow for large downloads
         http.read_timeout = 600
         response = begin
-                     puts "Gdrive API #{method.to_s}: #{uri.to_s} #{extra_header.to_s}"
+                     puts "#{Time.now.utc} Gdrive API #{method.to_s}: #{uri.to_s} #{extra_header.to_s}"
                      clf.http_call(http, method, uri, data, extra_header, auth)
                    rescue
                      #timeouts etc.

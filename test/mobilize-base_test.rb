@@ -53,30 +53,30 @@ describe "Mobilize" do
     puts "add base1_stage1.in sheet"
     input_fixture_name = "base1_stage1.in"
     input_target_url = "gsheet://#{r.title}/#{input_fixture_name}"
-    TestHelper.write_fixture(input_fixture_name, input_target_url, mode: 'replace')
+    TestHelper.write_fixture(input_fixture_name, input_target_url, 'replace')
 
     puts "add jobs sheet with integration jobs"
-    job_fixture_name = "integration_jobs"
+    jobs_fixture_name = "integration_jobs"
     jobs_target_url = "gsheet://#{r.title}/jobs"
-    TestHelper.write_fixture(jobs_fixture_name, jobs_target_url, mode: 'update')
+    TestHelper.write_fixture(jobs_fixture_name, jobs_target_url, 'update')
 
     puts "wait for stages"
     Mobilize::Jobtracker.start
     #wait for stages to complete
-    resque_fixture_name = "integration_resque"
-    TestHelper.wait_for_resque_workers(resque_fixture_name)
+    expected_fixture_name = "integration_expected"
+    TestHelper.confirm_expected_jobs(expected_fixture_name)
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     tsv_hash = {}
-    ["base1.in", "base2.out", "base3_stage1.err"].each do |sheet_name|
+    ["base1_stage1.in", "base1_stage2.out", "base2_stage1.err"].each do |sheet_name|
       url = "gsheet://#{r.title}/#{sheet_name}"
       data = Mobilize::Dataset.read_by_url(url,user_name,gdrive_slot)
       tsv_hash[sheet_name] = data
     end
 
-    assert tsv_hash["base2.out"] == tsv_hash["base1.in"]
+    assert tsv_hash["base1_stage2.out"] == tsv_hash["base1_stage1.in"]
 
-    base3_response = tsv_hash["base3_stage1.err"].tsv_to_hash_array.first['response']
+    base3_response = tsv_hash["base2_stage1.err"].tsv_to_hash_array.first['response']
     assert base3_response == "Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."
 
   end

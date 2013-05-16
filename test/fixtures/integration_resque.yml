@@ -1,6 +1,0 @@
----
-working:
-- id: "Runner_mobilize(test)/jobs/base1/stage1"
-- id: "Runner_mobilize(test)/jobs/base1/stage2"
-failed:
-- id: "Runner_mobilize(test)/jobs/base2/stage1"
