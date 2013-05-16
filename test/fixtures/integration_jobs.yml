@@ -3,14 +3,10 @@
   active: true
   trigger: once
   status: ""
-  stage1: gfile.write source:"gsheet://integration_data.in", target:"gfile://base1.out"
+  stage1: gfile.write source:"gsheet://base1_stage1.in", target:"gfile://base1_stage1.out"
+  stage2: gsheet.write source:"gfile://base1_stage1.out", target:"gsheet://base1_stage2.out"
 - name: base2
   active: true
   trigger: after base1
   status: ""
-  stage1: gsheet.write source:"gfile://base1.out", target:"gsheet://base2.out"
-- name: base3
-  active: true
-  trigger: after base2
-  status: ""
-  stage1: gsheet.write source:"base1."_"", target:"base2.out"
+  stage1: gsheet.write source:"base1."_"", target:"base2_stage1.out"

@@ -50,10 +50,10 @@ describe "Mobilize" do
     TestHelper.build_test_runner(user_name)
     assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
-    puts "add integration data sheet"
-    data_fixture_name = "integration_data"
-    data_target_url = "gsheet://#{r.title}/base1.in"
-    TestHelper.write_fixture(data_fixture_name, data_target_url, mode: 'replace')
+    puts "add base1_stage1.in sheet"
+    input_fixture_name = "base1_stage1.in"
+    input_target_url = "gsheet://#{r.title}/#{input_fixture_name}"
+    TestHelper.write_fixture(input_fixture_name, input_target_url, mode: 'replace')
 
     puts "add jobs sheet with integration jobs"
     job_fixture_name = "integration_jobs"
@@ -63,8 +63,8 @@ describe "Mobilize" do
     puts "wait for stages"
     Mobilize::Jobtracker.start
     #wait for stages to complete
-    stage_fixture_name = "integration_stages"
-    TestHelper.wait_for_stages(stage_fixture_name)
+    resque_fixture_name = "integration_resque"
+    TestHelper.wait_for_resque_workers(resque_fixture_name)
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     tsv_hash = {}
