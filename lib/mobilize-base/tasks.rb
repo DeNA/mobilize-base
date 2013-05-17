@@ -127,8 +127,7 @@ namespace :mobilize do
     end
   end
   desc "Set up config and log folders and files, populate from samples"
-  task :setup, :env do |t,args|
-    ENV['MOBILIZE_ENV']=args.env
+  task :setup_base do
     config_dir = (ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/")
     log_dir = (ENV['MOBILIZE_LOG_DIR'] ||= "log/")
     sample_dir = File.dirname(__FILE__) + '/../samples/'
