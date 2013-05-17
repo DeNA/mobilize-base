@@ -1,4 +1,4 @@
-namespace :mobilize_base do
+namespace :mobilize do
   desc "Start a Resque worker"
   task :work, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
@@ -44,6 +44,14 @@ namespace :mobilize_base do
     require 'mobilize-base'
     Mobilize::Jobtracker.prep_workers
   end
+  desc "Restart Resque workers"
+  task :restart_workers, :env do |t,args|
+    ENV['MOBILIZE_ENV']=args.env
+    require 'mobilize-base'
+    Mobilize::Jobtracker.kill_workers
+    sleep 5
+    Mobilize::Jobtracker.prep_workers
+  end
   desc "Stop Jobtracker"
   task :stop_jobtracker, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
@@ -63,10 +71,10 @@ namespace :mobilize_base do
     Mobilize::Jobtracker.restart!
   end
   desc "Add a user"
-  task :enqueue_user, :name, :env do |t,args|
+  task :add_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
-    Mobilize::User.where(name: args.name).first.runner.enqueue!
+    Mobilize::User.find_or_create_by_name(args.name)
   end
   desc "Enqueue a user's runner"
   task :enqueue_user, :name, :env do |t,args|

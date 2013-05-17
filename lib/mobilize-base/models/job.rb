@@ -115,7 +115,7 @@ module Mobilize
       if ["hour","hours","day","days"].include?(unit)
         if mark
           last_mark_time = Time.at_marks_ago(number,unit,mark)
-          if last_comp_time < last_mark_time
+          if last_comp_time.nil? or last_comp_time < last_mark_time
             return true
           else
             return false

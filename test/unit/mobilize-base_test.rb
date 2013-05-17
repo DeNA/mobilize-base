@@ -5,7 +5,8 @@ class TestUnit < MiniTest::Unit::TestCase
     TestHelper.drop_test_db
   end
 
-  def test_is_due_methods
+  #this test checks that several job triggers work as expected
+  def test_is_due
     u = TestHelper.owner_user
     job_hashes = TestHelper.load_fixture("is_due")
     job_hashes.each do |jh|
