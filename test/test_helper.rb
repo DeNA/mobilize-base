@@ -111,7 +111,16 @@ module TestHelper
   end
 
   def TestHelper.load_fixture(name)
-    YAML.load_file("#{$dir}/fixtures/#{name}.yml")
+    #assume yml, check
+    yml_file_path = "#{Mobilize::Base.root}/test/fixtures/#{name}.yml"
+    standard_file_path = "#{Mobilize::Base.root}/test/fixtures/#{name}"
+    if File.exists?(yml_file_path)
+      YAML.load_file(yml_file_path)
+    elsif File.exists?(standard_file_path)
+      File.read(standard_file_path)
+    else
+      raise "Could not find #{standard_file_path}"
+    end
   end
 
   def TestHelper.write_fixture(fixture_name, target_url, mode)

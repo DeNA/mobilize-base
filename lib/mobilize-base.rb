@@ -17,6 +17,9 @@ module Mobilize
         ENV['PWD']
       end
     end
+    def Base.home_dir
+      File.expand_path('..',File.dirname(__FILE__))
+    end
     def Base.config_dir
       ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/"
     end
