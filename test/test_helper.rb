@@ -126,18 +126,18 @@ module TestHelper
   def TestHelper.write_fixture(fixture_name, target_url, options={})
     u = TestHelper.owner_user
     fixture_raw = TestHelper.load_fixture(fixture_name)
-    fixture_data = if fixture_raw.class == Array
+    if options['replace']
+      fixture_data = if fixture_raw.class == Array
                      fixture_raw.hash_array_to_tsv
                    elsif fixture_raw.class == String
                      fixture_raw
                    end
-    if options['replace']
       Mobilize::Dataset.write_by_url(target_url,fixture_data,u.name,u.email)
     elsif options['update']
       handler, sheet_path = target_url.split("://")
       raise "update only works for gsheet, not #{handler}" unless handler=='gsheet'
       sheet = Mobilize::Gsheet.find_or_create_by_path(sheet_path,u.email)
-      sheet.add_or_update_rows(fixture_data)
+      sheet.add_or_update_rows(fixture_raw)
     else
       raise "unknown options #{options.to_s}"
     end
