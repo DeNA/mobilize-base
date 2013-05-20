@@ -39,16 +39,19 @@ describe Mobilize do
 
     puts "jobtracker posted test sheet data to test destination, and checksum succeeded?"
     tsv_hash = {}
-    ["base1_stage1.in", "base1_stage2.out", "base2_stage1.err"].each do |sheet_name|
+    ["base1_stage1.in", "base1_stage2.out"].each do |sheet_name|
       url = "gsheet://#{r.title}/#{sheet_name}"
       data = Mobilize::Dataset.read_by_url(url,user_name,gdrive_slot)
+      assert TestHelper.check_output(url, 'min_length' => 10) == true
       tsv_hash[sheet_name] = data
     end
 
     assert tsv_hash["base1_stage2.out"] == tsv_hash["base1_stage1.in"]
 
-    base3_response = tsv_hash["base2_stage1.err"].tsv_to_hash_array.first['response']
-    assert base3_response == "Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."
+    err_url = "gsheet://#{r.title}/base2_stage1.err"
+    err_response = "Unable to parse stage params, make sure you don't have issues with your quotes, commas, or colons."
+
+    assert TestHelper.check_output(err_url, 'match' => err_response) == true
 
   end
 end

@@ -44,7 +44,7 @@ module TestHelper
         new_timestamps = (resque_timestamps - start_confirmed_ats).uniq
         if new_timestamps.length>0 and j['confirmed_ats'].length < j['count']
           j['confirmed_ats'] += new_timestamps
-          puts "#{Time.now.utc.to_s}: #{new_timestamps.length.to_s} #{j['state']} added to #{j['path']} for total count of #{j['confirmed_ats'].length.to_s} of #{j['count']}"
+          puts "#{Time.now.utc.to_s}: #{new_timestamps.length.to_s} #{j['state']} added to #{j['path']}; total #{j['confirmed_ats'].length.to_s} of #{j['count']}"
         end
       end
 
@@ -139,4 +139,23 @@ module TestHelper
     end
     return true
   end
+
+  #checks output sheet for matching string or minimum length
+  def TestHelper.check_output(target_url, options={})
+    u = TestHelper.owner_user
+    handler, sheet_path = target_url.split("://")
+    handler = nil
+    sheet = Mobilize::Gsheet.find_by_path(sheet_path,u.email)
+    raise "no output found" if sheet.nil?
+    output = sheet.to_tsv
+    if options['match']
+      return true if output == options['match']
+    elsif options['min_length']
+      return true if output.length >= options['min_length']
+    else
+      raise "unknown check options #{options.to_s}"
+    end
+    return true
+  end
+
 end
