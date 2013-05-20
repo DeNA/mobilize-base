@@ -22,12 +22,12 @@ describe Mobilize do
     puts "add base1_stage1.in sheet"
     input_fixture_name = "base1_stage1.in"
     input_target_url = "gsheet://#{r.title}/#{input_fixture_name}"
-    TestHelper.write_fixture(input_fixture_name, input_target_url, 'replace')
+    TestHelper.write_fixture(input_fixture_name, input_target_url, 'replace' => true)
 
     puts "add jobs sheet with integration jobs"
     jobs_fixture_name = "integration_jobs"
     jobs_target_url = "gsheet://#{r.title}/jobs"
-    TestHelper.write_fixture(jobs_fixture_name, jobs_target_url, 'update')
+    TestHelper.write_fixture(jobs_fixture_name, jobs_target_url, 'update' => true)
 
     puts "wait for stages"
     Mobilize::Jobtracker.start
