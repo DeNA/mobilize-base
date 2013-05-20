@@ -15,7 +15,7 @@ module TestHelper
     jobs['pending'] = jobs['expected'].select{|j| j['confirmed_ats'].length < j['count']}
     start_time = Time.now.utc
     total_time = 0
-    while jobs['pending'].length>0 and total_time < time_limit
+    while (jobs['pending'].length>0 or Mobilize::Resque.workers('working')) and total_time < time_limit
       #working jobs are running on the queue at this instant
       jobs['working'] = Mobilize::Resque.workers('working').map{|w| w.job}.select{|j| j and j['payload'] and j['payload']['args']}
       #failed jobs are in the failure queue
