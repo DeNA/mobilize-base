@@ -95,8 +95,9 @@ module Mobilize
 
       #depedencies
       if j.parent
-        #if parent completed more recently than self, is due
-        if j.parent.completed_at and (j.completed_at.nil? or j.parent.completed_at > j.completed_at)
+        #if parent is not working and completed more recently than self, is due
+        if !j.parent.is_working? and j.parent.active and
+          j.parent.completed_at and (j.completed_at.nil? or j.parent.completed_at > j.completed_at)
           return true
         else
           return false
