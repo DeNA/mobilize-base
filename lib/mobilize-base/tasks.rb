@@ -87,7 +87,7 @@ namespace :mobilize do
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
     user,job,stage = args.path.split("/")
-    Mobilize::Stage.where(path: "Runner_#{user}/jobs/#{job}/#{stage}").first.en
+    Mobilize::Stage.where(path: "Runner_#{user}/jobs/#{job}/#{stage}").first.enqueue!
   end
   desc "kill all old resque web processes, start new one with resque_web.rb extension file"
   task :resque_web, :env do |t,args|
