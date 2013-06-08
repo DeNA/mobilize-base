@@ -44,22 +44,6 @@ module Mobilize
         ENV['MOBILIZE_ENV'] || "development"
       end
     end
-    def Base.log_dir
-      ENV['MOBILIZE_LOG_DIR'] ||= "log/"
-    end
-    def Base.log_path(log_name)
-      log_dir = begin
-                  "#{::Rails.root}/#{Base.log_dir}"
-                rescue
-                  "#{Base.root}/#{Base.log_dir}"
-                end
-      log_path = "#{log_dir}#{log_name}.log"
-      if ::File.exists?(log_dir)
-        return log_path
-      else
-        raise "Could not find #{log_dir} folder for logs"
-      end
-    end
     def Base.handlers
       Dir.entries(File.dirname(__FILE__) + "/mobilize-base/handlers").select{|e| e.ends_with?(".rb")}.map{|e| e.split(".").first}
     end
@@ -69,6 +53,7 @@ mongoid_config_path = "#{Mobilize::Base.root}/#{Mobilize::Base.config_dir}mongoi
 if File.exists?(mongoid_config_path)
   require 'mongoid'
   require 'mongoid-grid_fs'
+  require 'mongo'
   Mongoid.load!(mongoid_config_path, Mobilize::Base.env)
   require "mobilize-base/models/dataset"
   require "mobilize-base/models/user"
@@ -96,4 +81,5 @@ require "mobilize-base/extensions/google_drive/client_login_fetcher"
 require "mobilize-base/extensions/google_drive/file"
 require "mobilize-base/extensions/google_drive/worksheet"
 require "mobilize-base/handlers/gridfs"
+require "mobilize-base/handlers/log"
 require "mobilize-base/handlers/email"

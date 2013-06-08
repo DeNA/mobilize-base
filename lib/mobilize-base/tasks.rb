@@ -118,6 +118,18 @@ namespace :mobilize do
     command = "bundle exec resque-web -p #{port.to_s} #{resque_web_extension_path} #{resque_redis_port_args}"
     `#{command}`
   end
+  desc "drop and recreate log collection"
+  task :refresh_logs, :env do |t,args|
+    ENV['MOBILIZE_ENV']=args.env
+    require 'mobilize-base'
+    Mobilize::Log.refresh
+  end
+  desc "check for new logs and output header to stdout"
+  task :tail_logs, :env do |t,args|
+    ENV['MOBILIZE_ENV']=args.env
+    require 'mobilize-base'
+    Mobilize::Log.tail
+  end
   desc "create indexes for all base models in mongodb"
   task :create_indexes, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
@@ -126,21 +138,15 @@ namespace :mobilize do
       "Mobilize::#{m}".constantize.create_indexes
     end
   end
-  desc "Set up config and log folders and files, populate from samples"
+  desc "Set up config folders and files, populate from samples"
   task :setup_base do
     config_dir = (ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/")
-    log_dir = (ENV['MOBILIZE_LOG_DIR'] ||= "log/")
     sample_dir = File.dirname(__FILE__) + '/../samples/'
     sample_files = Dir.entries(sample_dir)
     full_config_dir = "#{ENV['PWD']}/#{config_dir}"
-    full_log_dir = "#{ENV['PWD']}/#{log_dir}"
     unless File.exists?(full_config_dir)
       puts "creating #{config_dir}"
       `mkdir #{full_config_dir}`
-    end
-    unless File.exists?(full_log_dir)
-      puts "creating #{log_dir}"
-      `mkdir #{full_log_dir}`
     end
     sample_files.each do |fname|
       unless File.exists?("#{full_config_dir}#{fname}")
