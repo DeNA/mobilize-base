@@ -6,7 +6,10 @@ module Mobilize
     field :path, type: String
     field :http_url, type: String
     field :raw_size, type: Fixnum
+    field :last_cached_at, type: Time
+    field :last_cache_handler, type: String
     field :last_read_at, type: Time
+    field :cache_expire_at, type: Time
 
     index({ handler: 1, path: 1}, { unique: true})
 

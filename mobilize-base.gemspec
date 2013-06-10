@@ -24,8 +24,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'rake'
   s.add_runtime_dependency 'bson','1.8.4'
   s.add_runtime_dependency 'bson_ext','1.8.4'
-  s.add_runtime_dependency 'mongo','1.8.4'
-  s.add_runtime_dependency 'mongoid', '~>3.0.0'
+  s.add_runtime_dependency "mongoid", "~>3.0.0"
   s.add_runtime_dependency 'mongoid-grid_fs'
   s.add_runtime_dependency 'resque', '1.24.0'
   s.add_runtime_dependency 'google_drive','0.3.2'

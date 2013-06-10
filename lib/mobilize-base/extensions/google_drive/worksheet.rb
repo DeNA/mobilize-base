@@ -222,8 +222,7 @@ module GoogleDrive
           true
         end
       else
-        sheet.save
-        "#{errcnt} errors found in checksum".oputs
+        raise "#{errcnt} errors found in checksum"
       end
     end
   end
