@@ -33,9 +33,9 @@ class String
     new_str.gsub!(c,"\\#{c}")}
     new_str
   end
-  def gridsafe
+  def alphanum
     str = self
-    str.downcase.gsub(/[^a-z0-9]/,"")
+    str.gsub(/[^A-Za-z0-9]/,"")
   end
   def googlesafe
     v=self
