@@ -79,11 +79,10 @@ module Mobilize
         return false
       end
 
-      #if job contains handlers not loaded by jobtracker, not due
-      loaded_handlers = Jobtracker.config['extensions'].map{|m| m.split("-").last}
-      job_handlers = j.stages.map{|s| s.handler}.uniq
+      #if job contains methods in disabled_methods, not due
+      job_methods = j.stages.map{|s| "#{s.handler}.#{s.call}"}.uniq
       #base handlers are the ones in mobilize-base/handlers
-      if (job_handlers - loaded_handlers - Base.handlers).length>0
+      if (Jobtracker.disabled_methods & job_methods).length>0
         return false
       end
 

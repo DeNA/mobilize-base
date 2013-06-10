@@ -33,9 +33,12 @@ class String
     new_str.gsub!(c,"\\#{c}")}
     new_str
   end
+  #makes everything alphanumeric
+  #except spaces, slashes, and underscores
+  #which are made into underscores
   def alphanunderscore
     str = self
-    str.gsub(/ \//,"_").gsub(/[^A-Za-z0-9]/,"")
+    str.gsub(/[^A-Za-z0-9_ \/]/,"").gsub(/[ \/]/,"_")
   end
   def googlesafe
     v=self

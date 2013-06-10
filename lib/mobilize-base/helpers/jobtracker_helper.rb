@@ -35,6 +35,10 @@ module Mobilize
       Resque.workers(state)
     end
 
+    def Jobtracker.disabled_methods
+      Jobtracker.config['disabled_methods']
+    end
+
     def Jobtracker.status
       args = Jobtracker.get_args
       return args['status'] if args

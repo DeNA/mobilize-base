@@ -27,6 +27,7 @@ class TestUnit < MiniTest::Unit::TestCase
       end
       expected = jh['expected']
       #check if is_due
+      puts "checking #{j.name}"
       assert expected == j.is_due?
     end
   end

@@ -89,9 +89,3 @@
   parent: {completed_at: Time.now.utc - 1.second}
   completed_at: Time.now.utc
   expected: false
-- name: missing_module
-  active: true
-  trigger: once
-  status: ""
-  stage1: handler.method source:"source", target:"target"
-  expected: false

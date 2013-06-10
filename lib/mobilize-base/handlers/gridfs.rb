@@ -26,6 +26,8 @@ module Mobilize
         temp_file.close
         #put data in file
         Mongoid::GridFs.put(temp_file.path,:filename=>dst_path)
+        #remove temp file
+        `rm #{temp_file.path}`
       end
       return true
     end
