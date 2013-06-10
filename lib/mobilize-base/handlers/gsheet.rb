@@ -81,7 +81,7 @@ module Mobilize
 
     def Gsheet.write_temp(target_path,gdrive_slot,tsv)
       #find and delete temp sheet, if any
-      temp_book_title = target_path.downcase.alphanum
+      temp_book_title = target_path.downcase.alphanunderscore
       #create book and sheet
       temp_book = Gdrive.root(gdrive_slot).create_spreadsheet(temp_book_title)
       #add admin acl so we can look at it if it fails

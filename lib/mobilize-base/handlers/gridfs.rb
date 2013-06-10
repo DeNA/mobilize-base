@@ -21,7 +21,7 @@ module Mobilize
       if curr_zs != zs
         Mongoid::GridFs.delete(curr_file.id) if curr_file
         #create temp file w zstring
-        temp_file = ::Tempfile.new("#{dst_path.downcase.alphanum}_#{Time.now.to_f}")
+        temp_file = ::Tempfile.new("#{dst_path.downcase.alphanunderscore}_#{Time.now.to_f}")
         temp_file.print(zs)
         temp_file.close
         #put data in file
