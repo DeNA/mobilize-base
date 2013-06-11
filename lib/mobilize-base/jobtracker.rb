@@ -60,7 +60,7 @@ module Mobilize
         #deliver each email generated
         notifs.each do |notif|
           begin
-            Email.write(notif).deliver
+            Gmail.write(notif).deliver
           rescue
             #log email on failure
             Jobtracker.update_status("Failed to deliver #{notif.to_s}")
