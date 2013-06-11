@@ -9,10 +9,6 @@ module Mobilize
       Jobtracker.config['cycle_freq']
     end
 
-    def Jobtracker.user_home_dir
-      Jobtracker.config['user_home_dir']
-    end
-
     #frequency of notifications
     def Jobtracker.notification_freq
       Jobtracker.config['notification_freq']

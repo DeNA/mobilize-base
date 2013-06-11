@@ -28,22 +28,6 @@ module Mobilize
       return u.runner.jobs
     end
 
-    def creds(gdrive_slot)
-      u = self
-      creds_path = "#{u.runner.path.split("/").first}/creds"
-      begin
-        creds_sheet = Gsheet.find_by_path(creds_path,gdrive_slot)
-        cred_array = creds_sheet.read(u.name).tsv_to_hash_array.map{|h| {h['name']=>{'user'=>h['user'],'password'=>h['password']}}}
-        result = {}
-        cred_array.each do |cred|
-          result[cred.keys.first] = cred.values.first
-        end
-        return result
-      rescue
-        return {}
-      end
-    end
-
     def runner_path
       u = self
       prefix = "Runner_"
