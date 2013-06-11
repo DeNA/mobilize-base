@@ -82,7 +82,16 @@ module Mobilize
         users.sort_by{rand}.each do |u|
           r = u.runner
           Jobtracker.update_status("Checking #{r.path}")
-          if r.is_due?
+          run_now_dir = "#{Jobtracker.user_home_dir}#{u.name}/mobilize/"
+          run_now_path = "#{run_now_dir}run_now"
+          run_now = if File.exists?(run_now_dir) and File.exists?(run_now_path)
+                      #clear user's path
+                      `sudo rm -rf #{run_now_path}`
+                      true
+                    else
+                      false
+                    end
+          if r.is_due? or run_now
             r.enqueue!
             Jobtracker.update_status("Enqueued #{r.path}")
           end
@@ -91,30 +100,6 @@ module Mobilize
       end
       Jobtracker.update_status("told to stop")
       return true
-    end
-
-    def Jobtracker.deployed_at
-      #assumes deploy is as of last commit, or as of last deploy time
-      #as given by the REVISION file in the root folder
-      deploy_time = begin
-                      %{git log -1 --format="%cd"}.bash
-                    rescue
-                      revision_path = "#{ENV['PWD']}/REVISION"
-                      "touch #{revision_path}".bash unless File.exists?(revision_path)
-                      revision_string = "ls -l #{revision_path}".bash
-                      revision_rows = revision_string.split("\n").map{|lss| lss.strip.split(" ")}
-                      mod_time = revision_rows.map do |lsr| 
-                        if lsr.length == 8
-                          #ubuntu
-                          lsr[5..6].join(" ")
-                        elsif lsr.length == 9
-                          #osx
-                          lsr[5..7].join(" ")
-                        end
-                      end.first
-                      mod_time
-                    end.to_s.strip
-      Time.parse(deploy_time)
     end
   end
 end

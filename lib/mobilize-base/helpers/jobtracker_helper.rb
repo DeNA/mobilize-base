@@ -9,6 +9,10 @@ module Mobilize
       Jobtracker.config['cycle_freq']
     end
 
+    def Jobtracker.user_home_dir
+      Jobtracker.config['user_home_dir']
+    end
+
     #frequency of notifications
     def Jobtracker.notification_freq
       Jobtracker.config['notification_freq']
@@ -75,10 +79,6 @@ module Mobilize
 
     def Jobtracker.kill_idle_workers
       Resque.kill_idle_workers
-    end
-
-    def Jobtracker.kill_idle_and_stale_workers
-      Resque.kill_idle_and_stale_workers
     end
 
     def Jobtracker.prep_workers

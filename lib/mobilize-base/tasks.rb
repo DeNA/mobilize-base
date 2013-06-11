@@ -26,12 +26,6 @@ namespace :mobilize do
     require 'mobilize-base'
     Mobilize::Jobtracker.kill_workers
   end
-  desc "Kill idle workers not in sync with repo"
-  task :kill_idle_and_stale_workers, :env do |t,args|
-    ENV['MOBILIZE_ENV']=args.env
-    require 'mobilize-base'
-    Mobilize::Jobtracker.kill_idle_and_stale_workers
-  end
   desc "Kill idle workers"
   task :kill_idle_workers, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
@@ -71,20 +65,13 @@ namespace :mobilize do
     Mobilize::Jobtracker.restart!
   end
   desc "Add a user"
-  task :add_base_user, :name, :env do |t,args|
+  task :add_base_user, :name, :key_path, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
     Mobilize::User.find_or_create_by_name(args.name)
-  end
-  desc "Add a user"
-  task :set_user_public_key, :name, :key_path, :env do |t,args|
-    ENV['MOBILIZE_ENV']=args.env
-    require 'mobilize-base'
-    u = Mobilize::User.find_or_create_by_name(args.name)
     public_key = File.read(args.key_path)
     u.update_attributes(:public_key=>public_key)
   end
-
   desc "Enqueue a user's runner"
   task :enqueue_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
@@ -135,7 +122,7 @@ namespace :mobilize do
       "Mobilize::#{m}".constantize.create_indexes
     end
   end
-  desc "Set up config and log folders and files, populate from samples"
+  desc "Set up base config and log folders and files"
   task :setup_base do
     config_dir = (ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/")
     log_dir = (ENV['MOBILIZE_LOG_DIR'] ||= "log/")
