@@ -76,6 +76,15 @@ namespace :mobilize do
     require 'mobilize-base'
     Mobilize::User.find_or_create_by_name(args.name)
   end
+  desc "Add a user"
+  task :set_user_public_key, :name, :key_path, :env do |t,args|
+    ENV['MOBILIZE_ENV']=args.env
+    require 'mobilize-base'
+    u = Mobilize::User.find_or_create_by_name(args.name)
+    public_key = File.read(args.key_path)
+    u.update_attributes(:public_key=>public_key)
+  end
+
   desc "Enqueue a user's runner"
   task :enqueue_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env

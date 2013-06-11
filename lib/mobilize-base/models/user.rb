@@ -4,6 +4,7 @@ module Mobilize
     include Mongoid::Timestamps
     field :active, type: Boolean
     field :name, type: String
+    field :ssh_public_key, type: String
     field :last_run, type: Time
 
     def User.find_or_create_by_name(name)

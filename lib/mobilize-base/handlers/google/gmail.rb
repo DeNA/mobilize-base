@@ -1,6 +1,6 @@
 module Mobilize
   require 'action_mailer'
-  class Email < ActionMailer::Base
+  class Gmail < ActionMailer::Base
     ActionMailer::Base.delivery_method = :smtp
     
     ActionMailer::Base.smtp_settings = {
