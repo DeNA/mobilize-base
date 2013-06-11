@@ -64,13 +64,11 @@ namespace :mobilize do
     require 'mobilize-base'
     Mobilize::Jobtracker.restart!
   end
-  desc "Add a user"
-  task :add_base_user, :name, :key_path, :env do |t,args|
+  desc "Add a user and set up local files"
+  task :add_base_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
-    Mobilize::User.find_or_create_by_name(args.name)
-    public_key = File.read(args.key_path)
-    u.update_attributes(:public_key=>public_key)
+    u = Mobilize::User.find_or_create_by_name(args.name)
   end
   desc "Enqueue a user's runner"
   task :enqueue_user, :name, :env do |t,args|

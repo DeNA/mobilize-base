@@ -82,10 +82,11 @@ module Mobilize
         users.sort_by{rand}.each do |u|
           r = u.runner
           Jobtracker.update_status("Checking #{r.path}")
+          #check for run_now file
           run_now_dir = "#{Jobtracker.user_home_dir}#{u.name}/mobilize/"
           run_now_path = "#{run_now_dir}run_now"
           run_now = if File.exists?(run_now_dir) and File.exists?(run_now_path)
-                      #clear user's path
+                      #delete user's run now file
                       `sudo rm -rf #{run_now_path}`
                       true
                     else
