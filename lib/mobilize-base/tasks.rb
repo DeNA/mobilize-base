@@ -71,7 +71,7 @@ namespace :mobilize do
     Mobilize::Jobtracker.restart!
   end
   desc "Add a user"
-  task :add_user, :name, :env do |t,args|
+  task :add_base_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
     Mobilize::User.find_or_create_by_name(args.name)
