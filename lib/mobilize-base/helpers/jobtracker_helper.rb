@@ -35,6 +35,10 @@ module Mobilize
       Resque.workers(state)
     end
 
+    def Jobtracker.disabled_methods
+      Jobtracker.config['disabled_methods']
+    end
+
     def Jobtracker.status
       args = Jobtracker.get_args
       return args['status'] if args
@@ -71,10 +75,6 @@ module Mobilize
 
     def Jobtracker.kill_idle_workers
       Resque.kill_idle_workers
-    end
-
-    def Jobtracker.kill_idle_and_stale_workers
-      Resque.kill_idle_and_stale_workers
     end
 
     def Jobtracker.prep_workers

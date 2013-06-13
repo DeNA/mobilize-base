@@ -81,9 +81,11 @@ module Mobilize
 
     def Gsheet.write_temp(target_path,gdrive_slot,tsv)
       #find and delete temp sheet, if any
-      temp_book_title = target_path.gridsafe
+      temp_book_title = target_path.downcase.alphanunderscore
       #create book and sheet
       temp_book = Gdrive.root(gdrive_slot).create_spreadsheet(temp_book_title)
+      #add admin acl so we can look at it if it fails
+      temp_book.add_admin_acl
       rows, cols = tsv.split("\n").ie{|t| [t.length,t.first.split("\t").length]}
       temp_sheet = temp_book.add_worksheet("temp",rows,cols)
       #this step has a tendency to fail; if it does,

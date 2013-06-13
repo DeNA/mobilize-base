@@ -10,6 +10,8 @@ require 'mobilize-base'
 $TESTING = true
 module TestHelper
   def TestHelper.confirm_expected_jobs(expected_fixture_name,time_limit=600)
+    #clear all failures
+    ::Resque::Failure.clear
     jobs = {}
     jobs['expected'] = TestHelper.load_fixture(expected_fixture_name)
     jobs['pending'] = jobs['expected'].select{|j| j['confirmed_ats'].length < j['count']}
