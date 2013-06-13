@@ -70,7 +70,10 @@ module Mobilize
     def Gsheet.find_or_create_by_path(path,gdrive_slot,rows=100,cols=20)
       book_path,sheet_name = path.split("/")
       book = Gbook.find_or_create_by_path(book_path,gdrive_slot)
-      sheet = book.worksheet_by_title(sheet_name)
+      #try to guess the sheet case
+      sheet = book.worksheet_by_title(sheet_name) ||
+              book.worksheet_by_title(sheet_name.downcase) ||
+              book.worksheet_by_title(sheet_name.capitalize)
       if sheet.nil?
         sheet = book.add_worksheet(sheet_name,rows,cols)
         ("Created gsheet #{path} at #{Time.now.utc.to_s}").oputs
