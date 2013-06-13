@@ -108,28 +108,40 @@ module Mobilize
       return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
       u = s.job.runner.user
+      retries = 0
       stdout,stderr = []
-      begin
-        #get tsv to write from stage
-        source = s.sources(gdrive_slot).first
-        raise "Need source for gfile write" unless source
-        tsv = source.read(u.name,gdrive_slot)
-        raise "No data source found for #{source.url}" unless tsv.to_s.length>0
-        if tsv.length > Gfile.max_length
-          raise "Too much data; you have #{tsv.length.to_s}, max is #{Gfile.max_length.to_s}"
+      while stdout.nil? and stderr.nil? and retries < Gdrive.max_file_write_retries
+        begin
+          #get tsv to write from stage
+          source = s.sources(gdrive_slot).first
+          raise "Need source for gfile write" unless source
+          tsv = source.read(u.name,gdrive_slot)
+          raise "No data source found for #{source.url}" unless tsv.to_s.length>0
+          if tsv.length > Gfile.max_length
+            raise "Too much data; you have #{tsv.length.to_s}, max is #{Gfile.max_length.to_s}"
+          end
+          stdout = if tsv.length == 0
+               #soft error; no data to write. Stage will complete.
+               "Write skipped for #{s.target.url}"
+             else
+               Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot)
+               #update status
+               "Write successful for #{s.target.url}"
+             end
+          Gdrive.unslot_worker_by_path(stage_path)
+          stderr = nil
+          s.update_status(stdout)
+          signal = 0
+        rescue => exc
+          if retries < Gdrive.max_file_write_retries
+            retries +=1
+            sleep Gdrive.file_write_retry_delay
+          else
+            stdout = nil
+            stderr = [exc.to_s,"\n",exc.backtrace.join("\n")].join
+            signal = 500
+          end
         end
-        stdout = if tsv.length == 0
-             #soft error; no data to write. Stage will complete.
-             "Write skipped for #{s.target.url}"
-           else
-             Dataset.write_by_url(s.target.url,tsv,u.name,gdrive_slot)
-             #update status
-             "Write successful for #{s.target.url}"
-           end
-        Gdrive.unslot_worker_by_path(stage_path)
-        stderr = nil
-        s.update_status(stdout)
-        signal = 0
       end
       return {'out_str'=>stdout, 'err_str'=>stderr, 'signal' => signal}
     end
