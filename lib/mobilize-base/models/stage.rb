@@ -83,9 +83,9 @@ module Mobilize
     def complete(response)
       s = self
       j = s.job
+      r = j.runner
       if s.idx == j.stages.length
         #check for any dependent jobs, if there are, enqueue them
-        r = j.runner
         dep_jobs = r.jobs.select do |dj|
                                    dj.active==true and
                                      dj.trigger.strip.downcase == "after #{j.name.downcase}"
