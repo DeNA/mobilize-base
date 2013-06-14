@@ -40,7 +40,8 @@ module Mobilize
               n['body'] += "\n\n#{runner_dst.http_url}" if runner_dst and runner_dst.http_url
             end
             n['to'] = email
-            n['bcc'] = [Gdrive.admin_group_name,Gdrive.domain].join("@")
+            #uncomment to receive a copy of emails sent to users
+            #n['bcc'] = [Gdrive.admin_group_name,Gdrive.domain].join("@")
             notifs << n
           end
         end
