@@ -204,8 +204,14 @@ module GoogleDrive
                 end
               else
                 #"loc_v=>#{loc_v.to_s},rem_v=>#{rem_v.to_s}".oputs
-                if loc_v.force_encoding("UTF-8") != rem_v.force_encoding("UTF-8")
-                #make sure it's not an ecoding issue
+                begin 
+                  if loc_v.force_encoding("UTF-8") != rem_v.force_encoding("UTF-8")
+                  #make sure it's not an ecoding issue
+                    "row #{row_i.to_s} col #{col_i.to_s}: Local=>#{loc_v} , Remote=>#{rem_v}".oputs
+                    errcnt+=1
+                  end
+                rescue => exc
+                  "#{exc.to_s}".oputs
                   "row #{row_i.to_s} col #{col_i.to_s}: Local=>#{loc_v} , Remote=>#{rem_v}".oputs
                   errcnt+=1
                 end

@@ -162,11 +162,10 @@ module Mobilize
         rescue => exc
           if retries < Gdrive.max_file_write_retries
             retries +=1
-            sleep Gdrive.file_write_retry_delay
-          else
             stdout = nil
             stderr = [exc.to_s,"\n",exc.backtrace.join("\n")].join
             signal = 500
+            sleep Gdrive.file_write_retry_delay
           end
         end
       end

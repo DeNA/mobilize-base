@@ -112,6 +112,15 @@ module Mobilize
       #to make sure it doesn't enqueue due to runner check
       s.update_attributes(:completed_at=>Time.now.utc,:response=>response)
       s.update_status("Completed at #{Time.now.utc.to_s}")
+      #delete error sheet if any
+      begin
+        err_sheet_name = "#{j.name}_stage#{s.idx.to_s}.err"
+        err_sheet_path =  (r.path.split("/")[0..-2] + [err_sheet_name]).join("/")
+        err_sheet = Gsheet.find_by_path(err_sheet_path,gdrive_slot)
+        err_sheet.delete if err_sheet
+      rescue
+        #if it doesn't delete, whatever
+      end
       true
     end
 
