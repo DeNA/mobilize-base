@@ -93,7 +93,8 @@ module Mobilize
         #put begin/rescue so all dependencies run
         dep_jobs.each do |dj|
                         begin
-                          unless dj.is_working?
+                          dj_methods = dj.stages.map{|ds| "#{ds.handler}.#{ds.call}"}.uniq
+                          unless dj.is_working? or (Jobtracker.disabled_methods & dj_methods).length>0
                             dj.stages.first.update_attributes(:retries_done=>0)
                             dj.stages.first.enqueue!
                           end
@@ -131,11 +132,6 @@ module Mobilize
       j = s.job
       r = j.runner
       u = r.user
-      begin
-        j.update_attributes(:active=>false) if s.params['always_on'].to_s=="false"
-      rescue StandardError, ScriptError
-        #skip due to parse error on params
-      end
       s.update_attributes(:failed_at=>Time.now.utc,:response=>response)
       stage_name = "#{j.name}_stage#{s.idx.to_s}.err"
       target_path =  (r.path.split("/")[0..-2] + [stage_name]).join("/")

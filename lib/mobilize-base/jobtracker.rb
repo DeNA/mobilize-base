@@ -86,7 +86,7 @@ module Mobilize
           #check for run_now file
           run_now_dir = "/home/#{u.name}/mobilize/"
           run_now_path = "#{run_now_dir}run_now"
-          run_now = if File.exists?(run_now_dir) and File.exists?(run_now_path)
+          run_now = if `sudo ls #{run_now_dir}`.split("\n").include?("run_now")
                       #delete user's run now file
                       `sudo rm -rf #{run_now_path}`
                       true
