@@ -65,7 +65,7 @@ namespace :mobilize do
     Mobilize::Jobtracker.restart!
   end
   desc "Add a user and set up local files"
-  task :add_base_user, :name, :env do |t,args|
+  task :add_user, :name, :env do |t,args|
     ENV['MOBILIZE_ENV']=args.env
     require 'mobilize-base'
     u = Mobilize::User.find_or_create_by_name(args.name)
@@ -82,6 +82,13 @@ namespace :mobilize do
     require 'mobilize-base'
     user,job,stage = args.path.split("/")
     Mobilize::Stage.where(path: "Runner_#{user}/jobs/#{job}/#{stage}").first.enqueue!
+  end
+  desc "Remap http_url for Gbook, Gfile, etc."
+  task :remap_http_url, :handler, :path, :http_url, :env do |t,args|
+    ENV['MOBILIZE_ENV']=args.env
+    require 'mobilize-base'
+    dst = Mobilize::Dataset.find_or_create_by_handler_and_path(args.handler,args.path)
+    dst.update_attributes(:http_url=>args.http_url)
   end
   desc "kill all old resque web processes, start new one with resque_web.rb extension file"
   task :resque_web, :env do |t,args|

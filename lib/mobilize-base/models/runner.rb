@@ -26,7 +26,9 @@ module Mobilize
       gdrive_slot = Gdrive.slot_worker_by_path(r.path)
       unless gdrive_slot
         r.update_status("no gdrive slot available")
-        return false
+        #re-queue so we can wait for slot
+        r.enqueue!
+        return nil
       end
       r.update_attributes(:started_at=>Time.now.utc)
       begin
