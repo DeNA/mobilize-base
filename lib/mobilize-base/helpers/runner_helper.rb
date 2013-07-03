@@ -74,6 +74,11 @@ module Mobilize
 
     def is_due?
       r = self.reload
+      u = r.user
+      #make sure we're on the right server
+      resque_server = u.resque_server
+      current_server = begin;Socket.gethostbyname(Socket.gethostname);rescue;nil;end
+      return false unless ['127.0.0.1',current_server].include?(resque_server)
       return false if r.is_working?
       prev_due_time = Time.now.utc - Jobtracker.runner_read_freq
       return true if r.started_at.nil? or r.started_at < prev_due_time
