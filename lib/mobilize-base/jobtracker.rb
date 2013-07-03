@@ -93,7 +93,8 @@ module Mobilize
                     else
                       false
                     end
-          if r.is_due? or run_now
+          r.force_due if run_now
+          if r.is_due?
             r.enqueue!
             Jobtracker.update_status("Enqueued #{r.path}")
           end

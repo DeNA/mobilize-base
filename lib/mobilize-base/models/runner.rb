@@ -131,6 +131,14 @@ module Mobilize
       return true if ['127.0.0.1',current_server].include?(resque_server)
     end
 
+    #update runner started_at
+    #to be whatever the notification is - 1.second
+    #which will force runner to be due
+    def force_due
+      r = self
+      r.update_attributes(:started_at=>(Time.now.utc - Jobtracker.runner_read_freq - 1.second))
+    end
+
     def is_due?
       r = self.reload
       #make sure we're on the right server
