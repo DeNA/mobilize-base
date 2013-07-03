@@ -117,6 +117,8 @@ module Mobilize
       begin
         err_sheet_name = "#{j.name}_stage#{s.idx.to_s}.err"
         err_sheet_path =  (r.path.split("/")[0..-2] + [err_sheet_name]).join("/")
+        #get a slot, any slot
+        gdrive_slot = Gdrive.worker_emails.sort_by{rand}.first
         err_sheet = Gsheet.find_by_path(err_sheet_path,gdrive_slot)
         err_sheet.delete if err_sheet
       rescue
