@@ -82,7 +82,7 @@ module Mobilize
         #so none are privileged on JT restarts
         users.sort_by{rand}.each do |u|
           r = u.runner
-          Jobtracker.update_status("Checking #{r.path}")
+          Jobtracker.update_status("Checking #{r.path}") if r.is_on_server?
           #check for run_now file
           run_now_dir = "/home/#{u.name}/mobilize/"
           run_now_path = "#{run_now_dir}run_now"
