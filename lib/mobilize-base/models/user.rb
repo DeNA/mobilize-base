@@ -33,19 +33,9 @@ module Mobilize
     #otherwise, localhost
     def resque_server
       u = self
-      deploy_file_path = "#{Base.root}/config/deploy/#{Base.env}.rb"
-      result = begin
-                 server_line = File.readlines(deploy_file_path).select{|l| l.strip.starts_with?("role ")}.first
-                 #reject arguments that start w symbols
-                 server_strings = server_line.split(",")[1..-1].reject{|t| t.strip.starts_with?(":")}
-                 servers = server_strings.map{|ss| ss.gsub("'","").gsub('"','').strip}
-                 server_i = u.name.to_md5.gsub(/[^0-9]/,'').to_i % servers.length
-                 servers[server_i]
-               rescue
-                 #default to self if this doesn't work
-                 "127.0.0.1"
-               end
-      result
+      servers = Jobtracker.deploy_servers
+      server_i = u.name.to_md5.gsub(/[^0-9]/,'').to_i % servers.length
+      servers[server_i]
     end
 
     def runner_path

@@ -74,6 +74,27 @@ module Mobilize
       return true
     end
 
+    def Jobtracker.deploy_servers
+      servers = begin
+                  deploy_file_path = "#{Base.root}/config/deploy/#{Base.env}.rb"
+                  server_line = File.readlines(deploy_file_path).select{|l| l.strip.starts_with?("role ")}.first
+                  #reject arguments that start w symbols
+                  server_strings = server_line.split(",")[1..-1].reject{|t| t.strip.starts_with?(":")}
+                  server_strings.map{|ss| ss.gsub("'","").gsub('"','').strip}
+                rescue
+                  ["127.0.0.1"]
+                end
+      servers
+    end
+
+    def Jobtracker.current_server
+      begin
+        Socket.gethostbyname(Socket.gethostname).first
+      rescue
+        nil
+      end
+    end
+
     def Jobtracker.perform(id,*args)
       while Jobtracker.status != 'stopping'
         users = User.all

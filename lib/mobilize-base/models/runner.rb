@@ -23,13 +23,7 @@ module Mobilize
     def Runner.perform(id,*args)
       r = Runner.find_by_path(id)
       #get gdrive slot for read
-      gdrive_slot = Gdrive.slot_worker_by_path(r.path)
-      unless gdrive_slot
-        r.update_status("no gdrive slot available")
-        #re-queue so we can wait for slot
-        r.enqueue!
-        return nil
-      end
+      gdrive_slot = Gdrive.slot_worker_by_path(r.path) || Gdrive.worker_emails.sort_by{rand}.first
       r.update_attributes(:started_at=>Time.now.utc)
       begin
         #make sure any updates to activity are processed first
@@ -127,7 +121,7 @@ module Mobilize
       r = self
       u = r.user
       resque_server = u.resque_server
-      current_server = begin;Socket.gethostbyname(Socket.gethostname).first;rescue;nil;end
+      current_server = Jobtracker.current_server
       return true if ['127.0.0.1',current_server].include?(resque_server)
     end
 

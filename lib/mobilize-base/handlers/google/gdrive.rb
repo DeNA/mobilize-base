@@ -43,7 +43,14 @@ module Mobilize
 
     def Gdrive.workers(email=nil)
       if email.nil?
-        Gdrive.config['workers']
+        #divide worker array into equal number of parts
+        #as there are deploy servers
+        servers = Jobtracker.deploy_servers
+        workers = Gdrive.config['workers']
+        current_server = Jobtracker.current_server || servers.first
+        server_i = servers.index(current_server)
+        server_workers = workers.in_groups(servers.length,false)[server_i]
+        return server_workers
       else
         Gdrive.workers.select{|w| [w['name'],Gdrive.domain].join("@") == email}.first
       end
