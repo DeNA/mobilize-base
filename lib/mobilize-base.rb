@@ -23,18 +23,38 @@ module Mobilize
     def Base.config_dir
       ENV['MOBILIZE_CONFIG_DIR'] ||= "config/mobilize/"
     end
-    def Base.config(config_name)
+    def Base.config_file(config_name)
       config_dir = begin
                      "#{::Rails.root}/#{Base.config_dir}"
                    rescue
                      "#{Base.root}/#{Base.config_dir}"
                    end
-      yaml_path = "#{config_dir}#{config_name}.yml"
-      if ::File.exists?(yaml_path)
-        return ::YAML.load_file(yaml_path)[Base.env]
+      file = "#{config_dir}#{config_name}.yml"
+      raise "Could not find #{file}" unless ::File.exists?(file)
+      file
+    end
+    def Base.config_file_updated?(config_name)
+      @config_mtime ||= {}
+      mtime = File.mtime(Base.config_file(config_name))
+      if !@config_mtime[config_name] or @config_mtime[config_name] < mtime
+        @config_mtime[config_name] = mtime
+        return true
       else
-        raise "Could not find #{config_name}.yml in #{config_dir}"
+        return false
       end
+    end
+    def Base.config(config_name)
+      @config ||= {}
+      if !@config[config_name] or Base.config_file_updated?(config_name)
+        yaml_path = Base.config_file(config_name)
+        puts "reload config #{yaml_path}"
+        if ::File.exists?(yaml_path)
+          @config[config_name] = ::YAML.load_file(yaml_path)[Base.env]
+        else
+          raise "Could not find #{yaml_path}"
+        end
+      end
+      @config[config_name]
     end
     def Base.env
       begin
