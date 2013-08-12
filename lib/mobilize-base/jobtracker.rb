@@ -82,17 +82,24 @@ module Mobilize
                   server_strings = server_line.split(",")[1..-1].reject{|t| t.strip.starts_with?(":")}
                   server_strings.map{|ss| ss.gsub("'","").gsub('"','').strip}
                 rescue
+                  # for dev/test
                   ["127.0.0.1"]
                 end
       servers
     end
 
     def Jobtracker.current_server
-      begin
-        Socket.gethostbyname(Socket.gethostname).first
-      rescue
-        nil
+      server = case Base.env
+        when %w[production staging]
+          begin
+            Socket.gethostbyname(Socket.gethostname).first
+          rescue
+            nil
+          end
+        else
+          "127.0.0.1"
       end
+      server
     end
 
     def Jobtracker.perform(id,*args)
