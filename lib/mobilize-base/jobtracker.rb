@@ -90,7 +90,7 @@ module Mobilize
 
     def Jobtracker.current_server
       server = case Base.env
-        when %w[production staging]
+        when "production", "staging"
           begin
             Socket.gethostbyname(Socket.gethostname).first
           rescue
