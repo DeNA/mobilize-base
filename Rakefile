@@ -22,12 +22,11 @@ require 'mobilize-base/tasks'
 #
 # Tests
 #
-require 'rake/testtask'
-
-Rake::TestTask.new do |test|
-  test.verbose = true
-  test.libs << "test"
-  test.libs << "lib"
-  test.test_files = FileList['test/**/*_test.rb']
+task :default => [:spec]
+begin
+  require 'rspec/core/rake_task'
+  RSpec::Core::RakeTask.new(:spec) do |spec|
+    spec.rspec_opts = %w[-cfs -r ./spec/spec_helper.rb]
+  end
+rescue LoadError => e
 end
-task :default => :test

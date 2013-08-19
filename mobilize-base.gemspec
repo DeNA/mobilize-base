@@ -30,4 +30,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'google_drive','0.3.2'
   s.add_runtime_dependency 'popen4','0.1.2'
   s.add_runtime_dependency 'actionmailer','3.1.1'
+
+  s.add_development_dependency 'rspec'
 end
