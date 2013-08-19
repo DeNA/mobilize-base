@@ -22,11 +22,21 @@ require 'mobilize-base/tasks'
 #
 # Tests
 #
-task :default => [:spec]
-begin
-  require 'rspec/core/rake_task'
-  RSpec::Core::RakeTask.new(:spec) do |spec|
-    spec.rspec_opts = %w[-cfs -r ./spec/spec_helper.rb]
-  end
-rescue LoadError => e
+require 'rspec/core'
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:integration_tests) do |spec|
+  spec.pattern = FileList['spec/integration/*_spec.rb']
+  spec.rspec_opts = ['--color', '--format documentation']
 end
+
+RSpec::Core::RakeTask.new(:unit_tests) do |spec|
+  spec.pattern = FileList['spec/unit/*_spec.rb']
+  spec.rspec_opts = ['--color', '--format documentation']
+end
+
+RSpec::Core::RakeTask.new(:test) do |spec|
+  spec.pattern = FileList['spec/*/*_spec.rb']
+  spec.rspec_opts = ['--color', '--format documentation']
+end
+
+task :default => [:test]
