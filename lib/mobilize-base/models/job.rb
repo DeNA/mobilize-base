@@ -74,6 +74,9 @@ module Mobilize
 
     def is_due?
       j = self
+      #make sure we're on the right server
+      return false unless j.is_on_server?
+
       #working or inactive jobs are not due
       if j.is_working? or j.active == false
         return false
@@ -158,6 +161,23 @@ module Mobilize
       end
       #if nothing happens, return false
       return false
+    end
+
+    #identifies the server which should process this user's jobs
+    #determined by available servers in config/deploy/<env>
+    #otherwise, localhost
+    def resque_server
+      j = self
+      servers = Jobtracker.deploy_servers
+      server_i = j.path.to_md5.sum % servers.length
+      servers[server_i]
+    end
+
+    def is_on_server?
+      j = self
+      resque_server = j.resque_server
+      current_server = Jobtracker.current_server
+      return true if ['127.0.0.1',current_server].include?(resque_server)
     end
   end
 end

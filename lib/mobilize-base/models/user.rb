@@ -28,16 +28,6 @@ module Mobilize
       return u.runner.jobs
     end
 
-    #identifies the server which should process this user's jobs
-    #determined by available servers in config/deploy/<env>
-    #otherwise, localhost
-    def resque_server
-      u = self
-      servers = Jobtracker.deploy_servers
-      server_i = u.name.to_md5.gsub(/[^0-9]/,'').to_i % servers.length
-      servers[server_i]
-    end
-
     def runner_path
       u = self
       prefix = "Runner_"
