@@ -126,7 +126,7 @@ module Mobilize
           return false
         end
       elsif unit == "day_of_week"
-        if curr_time.wday==number and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
+        if curr_time.wday==number.to_i and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
           if mark
             #check if it already ran today
             last_mark_time = Time.at_marks_ago(1,"day",mark)
@@ -140,7 +140,7 @@ module Mobilize
           end
         end
       elsif unit == "day_of_month"
-        if curr_time.day==number and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
+        if curr_time.day==number.to_i and (last_comp_time.nil? or last_comp_time.to_date != curr_time.to_date)
           if mark
             #check if it already ran today
             last_mark_time = Time.at_marks_ago(1,"day",mark)

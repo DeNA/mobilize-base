@@ -89,3 +89,33 @@
   parent: {completed_at: Time.now.utc - 1.second}
   completed_at: Time.now.utc
   expected: false
+- name: day_of_month
+  active: true
+  trigger: 'every 1.day_of_month'
+  status: ""
+  stage1: gsheet.method source:"source", target:"target"
+  now: Time.utc(2013,9,1)
+  expected: true
+- name: not_day_of_month
+  active: true
+  trigger: 'every 1.day_of_month'
+  status: ""
+  stage1: gsheet.method source:"source", target:"target"
+  now: Time.utc(2013,9,2)
+  expected: false
+- name: day_of_month_aft0100_comp_1monthago
+  active: true
+  trigger: 'every 1.day_of_month after 01:00'
+  status: ""
+  stage1: gsheet.method source:"source", target:"target"
+  now: Time.utc(2013,9,1,1,30)
+  completed_at: Time.utc(2013,8,1,1,15)
+  expected: true
+- name: day_of_month_aft0100_comp0115
+  active: true
+  trigger: 'every 1.day_of_month after 01:00'
+  status: ""
+  stage1: gsheet.method source:"source", target:"target"
+  now: Time.utc(2013,9,1,1,30)
+  completed_at: Time.utc(2013,9,1,1,15)
+  expected: false
