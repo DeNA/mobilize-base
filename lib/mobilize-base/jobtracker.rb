@@ -17,6 +17,7 @@ module Mobilize
     end
 
     def Jobtracker.kill_workers(count=nil)
+      Jobtracker.stop!
       Resque.kill_workers(count)
     end
 

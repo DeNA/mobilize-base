@@ -157,9 +157,9 @@ module Mobilize
       if count.to_i > idle_pids.length or count == 0
         return false
       elsif count
-        "kill #{idle_pids[0..count-1].join(" ")}".bash(false)
+        "kill -QUIT #{idle_pids[0..count-1].join(" ")}".bash(false)
       else
-        "kill #{idle_pids.join(" ")}".bash(false)
+        "kill -QUIT #{idle_pids.join(" ")}".bash(false)
       end
       return true
     end
@@ -171,7 +171,7 @@ module Mobilize
       if idle_stale_pids.length == 0
         return false
       else
-        "kill #{idle_stale_pids.join(" ")}".bash(false)
+        "kill -QUIT #{idle_stale_pids.join(" ")}".bash(false)
       end
       return true
     end
@@ -181,9 +181,9 @@ module Mobilize
       if count.to_i > pids.length or count == 0
         return false
       elsif count
-        "kill #{pids[0..count-1].join(" ")}".bash(false)
+        "kill -QUIT #{pids[0..count-1].join(" ")}".bash(false)
       elsif pids.length>0
-        "kill #{pids.join(" ")}".bash(false)
+        "kill -QUIT #{pids.join(" ")}".bash(false)
       else
         return false
       end
