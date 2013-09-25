@@ -6,7 +6,6 @@ module Mobilize
     field :path, type: String
     field :active, type: Boolean
     field :status, type: String
-    field :started_at, type: Time
     field :status_at, type: Time
     field :completed_at, type: Time
 
@@ -24,7 +23,7 @@ module Mobilize
       r = Runner.find_by_path(id)
       #get gdrive slot for read
       gdrive_slot = Gdrive.slot_worker_by_path(r.path) || Gdrive.worker_emails.sort_by{rand}.first
-      r.update_attributes(:started_at=>Time.now.utc)
+      r.started_at = Time.now.utc
       begin
         #make sure any updates to activity are processed first
         #as in when someone runs a "once" job that has completed
@@ -122,7 +121,7 @@ module Mobilize
     #which will force runner to be due
     def force_due
       r = self
-      r.update_attributes(:started_at=>(Time.now.utc - Jobtracker.runner_read_freq - 1.second))
+      r.started_at = (Time.now.utc - Jobtracker.runner_read_freq - 1.second)
     end
 
     def is_due?
@@ -130,6 +129,19 @@ module Mobilize
       return false if r.is_working?
       prev_due_time = Time.now.utc - Jobtracker.runner_read_freq
       return true if r.started_at.nil? or r.started_at < prev_due_time
+    end
+
+    def started_at
+      r = self
+      value = ::Resque.redis.get("runner_started_at:#{r.path}")
+      return Marshal.restore(value) unless value.nil?
+      nil
+    end
+
+    def started_at=(time)
+      r = self
+      p time
+      ::Resque.redis.set("runner_started_at:#{r.path}", Marshal.dump(time))
     end
   end
 end
