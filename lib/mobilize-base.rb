@@ -33,22 +33,10 @@ module Mobilize
       raise "Could not find #{file}" unless ::File.exists?(file)
       file
     end
-    # Currently config_file_updated? is not used because it is too slow.
-    def Base.config_file_updated?(config_name)
-      @config_mtime ||= {}
-      mtime = File.mtime(Base.config_file(config_name))
-      if !@config_mtime[config_name] or @config_mtime[config_name] < mtime
-        @config_mtime[config_name] = mtime
-        return true
-      else
-        return false
-      end
-    end
     def Base.config(config_name)
       @config ||= {}
       if !@config[config_name]
         yaml_path = Base.config_file(config_name)
-        puts "reload config #{yaml_path}"
         if ::File.exists?(yaml_path)
           @config[config_name] = ::YAML.load_file(yaml_path)[Base.env]
         else
