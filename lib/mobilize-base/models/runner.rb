@@ -25,7 +25,7 @@ module Mobilize
       #get gdrive slot for read
       gdrive_slot = Gdrive.slot_worker_by_path(r.path) || Gdrive.worker_emails.sort_by{rand}.first
 
-      if r.is_on_updating_server? and r.is_due_to_update?
+      if r.is_on_updating_server?
         puts "update jobs"
         r.synced_at = Time.now.utc
         begin
@@ -42,23 +42,21 @@ module Mobilize
         end
       end
 
-      if r.is_due?
-        puts "start jobs #{r.jobs.select{|j|j.is_due?}.map{|j|j.path}.join(", ")}"
-        r.started_at = Time.now.utc
-        r.jobs.select{|j|j.is_due?}.each do |j|
-          begin
-            puts "enqueue job #{j.path}"
-            j.update_attributes(:active=>false) if j.trigger=='once'
-            s = j.stages.first
-            s.update_attributes(:retries_done=>0)
-            s.enqueue!
-          rescue ScriptError, StandardError => exc
-            r.update_status("Failed to enqueue #{j.path}")
-          end
+      puts "start jobs #{r.jobs.select{|j|j.is_due?}.map{|j|j.path}.join(", ")}"
+      r.started_at = Time.now.utc
+      r.jobs.select{|j|j.is_due?}.each do |j|
+        begin
+          puts "enqueue job #{j.path}"
+          j.update_attributes(:active=>false) if j.trigger=='once'
+          s = j.stages.first
+          s.update_attributes(:retries_done=>0)
+          s.enqueue!
+        rescue ScriptError, StandardError => exc
+          r.update_status("Failed to enqueue #{j.path}")
         end
-        r.update_gsheet(gdrive_slot) if r.is_on_updating_server?
-        r.update_attributes(:completed_at=>Time.now.utc)
       end
+      r.update_gsheet(gdrive_slot) if r.is_on_updating_server?
+      r.update_attributes(:completed_at=>Time.now.utc)
     end
 
     def Runner.find_or_create_by_path(path)
@@ -139,6 +137,7 @@ module Mobilize
 
     def is_due_to_update?
       r = self.reload
+      return false unless is_on_updating_server?
       return true if r.synced_at.nil?
       prev_due_time = Time.now.utc - Jobtracker.runner_read_freq
       r.synced_at < prev_due_time
