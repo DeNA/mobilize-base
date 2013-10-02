@@ -132,12 +132,9 @@ module Mobilize
       r.synced_at > r.started_at
     end
 
-    #update runner started_at
-    #to be whatever the notification is - 1.second
-    #which will force runner to be due
     def force_update
       r = self
-      r.synced_at = (Time.now.utc - Jobtracker.runner_read_freq - 1.second)
+      r.update_attributes(:synced_at=>(Time.now.utc - Jobtracker.runner_read_freq - 1.minute))
     end
 
     def is_due_to_update?
