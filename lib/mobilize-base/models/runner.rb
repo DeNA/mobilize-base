@@ -7,6 +7,7 @@ module Mobilize
     field :active, type: Boolean
     field :status, type: String
     field :status_at, type: Time
+    field :synced_at, type: Time
     field :completed_at, type: Time
 
     index({ path: 1})
@@ -23,33 +24,41 @@ module Mobilize
       r = Runner.find_by_path(id)
       #get gdrive slot for read
       gdrive_slot = Gdrive.slot_worker_by_path(r.path) || Gdrive.worker_emails.sort_by{rand}.first
-      r.started_at = Time.now.utc
-      begin
-        #make sure any updates to activity are processed first
-        #as in when someone runs a "once" job that has completed
-        r.update_gsheet(gdrive_slot) 
-        #read the jobs in the gsheet and update models with news
-        r.read_gsheet(gdrive_slot)
-        #queue up the jobs that are due and active
-      rescue => exc
-        #log the exception, but continue w job processing
-        #This ensures jobs are still processed if google drive goes down
-        r.update_status("Failed to read or update gsheet with #{exc.to_s} #{exc.backtrace.join(";")}")
-      end
-      r.jobs.each do |j|
+
+      if r.is_on_updating_server? and r.is_due_to_update?
+        puts "update jobs"
+        r.synced_at = Time.now.utc
         begin
-          if j.is_due?
+          #make sure any updates to activity are processed first
+          #as in when someone runs a "once" job that has completed
+          r.update_gsheet(gdrive_slot)
+          #read the jobs in the gsheet and update models with news
+          r.read_gsheet(gdrive_slot)
+          #queue up the jobs that are due and active
+        rescue => exc
+          #log the exception, but continue w job processing
+          #This ensures jobs are still processed if google drive goes down
+          r.update_status("Failed to read or update gsheet with #{exc.to_s} #{exc.backtrace.join(";")}")
+        end
+      end
+
+      if r.is_due?
+        puts "start jobs #{r.jobs.select{|j|j.is_due?}.map{|j|j.path}.join(", ")}"
+        r.started_at = Time.now.utc
+        r.jobs.select{|j|j.is_due?}.each do |j|
+          begin
+            puts "enqueue job #{j.path}"
             j.update_attributes(:active=>false) if j.trigger=='once'
             s = j.stages.first
             s.update_attributes(:retries_done=>0)
             s.enqueue!
+          rescue ScriptError, StandardError => exc
+            r.update_status("Failed to enqueue #{j.path}")
           end
-        rescue ScriptError, StandardError => exc
-          r.update_status("Failed to enqueue #{j.path}")
         end
+        r.update_gsheet(gdrive_slot) if r.is_on_updating_server?
+        r.update_attributes(:completed_at=>Time.now.utc)
       end
-      r.update_gsheet(gdrive_slot)
-      r.update_attributes(:completed_at=>Time.now.utc)
     end
 
     def Runner.find_or_create_by_path(path)
@@ -116,19 +125,26 @@ module Mobilize
       return true
     end
 
+    def is_due?
+      r = self.reload
+      return false if r.synced_at.nil?
+      return true if r.started_at.nil?
+      r.synced_at > r.started_at
+    end
+
     #update runner started_at
     #to be whatever the notification is - 1.second
     #which will force runner to be due
-    def force_due
+    def force_update
       r = self
-      r.started_at = (Time.now.utc - Jobtracker.runner_read_freq - 1.second)
+      r.synced_at = (Time.now.utc - Jobtracker.runner_read_freq - 1.second)
     end
 
-    def is_due?
+    def is_due_to_update?
       r = self.reload
-      return false if r.is_working?
+      return true if r.synced_at.nil?
       prev_due_time = Time.now.utc - Jobtracker.runner_read_freq
-      return true if r.started_at.nil? or r.started_at < prev_due_time
+      r.synced_at < prev_due_time
     end
 
     def started_at
@@ -142,6 +158,21 @@ module Mobilize
       r = self
       p time
       ::Resque.redis.set("runner_started_at:#{r.path}", Marshal.dump(time))
+    end
+
+    def resque_server
+      r = self
+      u = r.user
+      servers = Jobtracker.deploy_servers
+      server_i = u.name.to_md5.sum % servers.length
+      servers[server_i]
+    end
+
+    def is_on_updating_server?
+      r = self
+      resque_server = r.resque_server
+      current_server = Jobtracker.current_server
+      return true if ['127.0.0.1',current_server].include?(resque_server)
     end
   end
 end
