@@ -42,7 +42,7 @@ module Mobilize
     #convenience methods
     def runner
       j = self
-      runner_path = j.path.split("/")[0..-2].join("/")
+      runner_path = j.path.split("/")[0..1].join("/")
       return Runner.where(:path=>runner_path).first
     end
 
