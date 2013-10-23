@@ -33,7 +33,7 @@ describe Mobilize do
     Mobilize::Jobtracker.start
     #wait for stages to complete
     expected_fixture_name = "integration_expected"
-    TestHelper.confirm_expected_jobs(expected_fixture_name)
+    TestHelper.confirm_expected_jobs(expected_fixture_name, 60)
     #stop jobtracker
     Mobilize::Jobtracker.stop!
 
