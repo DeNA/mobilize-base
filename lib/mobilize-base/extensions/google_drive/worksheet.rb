@@ -1,6 +1,6 @@
 module GoogleDrive
   class Worksheet
-    def to_tsv(gsub_line_breaks="\n")
+    def to_tsv(gsub_line_breaks=" ")
       sheet = self
       rows = sheet.rows
       header = rows.first
