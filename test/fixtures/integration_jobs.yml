@@ -10,3 +10,11 @@
   trigger: after base1
   status: ""
   stage1: gsheet.write source:"base1."_"", target:"base2_stage1.out"
+- name: |
+    base3
+    
+    
+  active: true
+  trigger: after base1
+  status: ""
+  stage1: gsheet.write source:"gfile://base1_stage1.out", target:"gsheet://base1_stage2.out"

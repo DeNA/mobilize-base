@@ -1,6 +1,6 @@
 module GoogleDrive
   class Worksheet
-    def to_tsv(gsub_line_breaks="\n")
+    def to_tsv(gsub_line_breaks=" ")
       sheet = self
       rows = sheet.rows
       header = rows.first
@@ -10,7 +10,7 @@ module GoogleDrive
       #ignore user-entered line breaks for purposes of tsv reads
       out_tsv = rows.map do |r|
                              row = r[0..col_last_i].join("\t")
-                             row.gsub!("\n",gsub_line_breaks)
+                             row.gsub!(/[\n\r]/,gsub_line_breaks)
                              row = row + "\n"
                              row
                          end.join + "\n"
