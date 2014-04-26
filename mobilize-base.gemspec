@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "mongoid", "~>3.0.0"
   s.add_runtime_dependency 'mongoid-grid_fs'
   s.add_runtime_dependency 'resque', '1.24.0'
-  s.add_runtime_dependency 'google_drive','0.3.2'
+  s.add_runtime_dependency 'google_drive','>= 0.3.2'
   s.add_runtime_dependency 'popen4','0.1.2'
   s.add_runtime_dependency 'actionmailer','3.1.1'
 
