@@ -5,8 +5,7 @@ module Mobilize
     end
 
     def Gbook.find_by_http_url(http_url,gdrive_slot)
-      key = http_url.split("key=").last.split("#").first
-      Gdrive.root(gdrive_slot).spreadsheet_by_key(key)
+      Gdrive.root(gdrive_slot).spreadsheet_by_url(http_url)
     end
 
     def Gbook.find_by_path(path,gdrive_slot)
