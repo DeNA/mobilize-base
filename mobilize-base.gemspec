@@ -5,8 +5,8 @@ require "mobilize-base/version"
 Gem::Specification.new do |s|
   s.name        = "mobilize-base"
   s.version     = Mobilize::Base::VERSION
-  s.authors     = ["Cassio Paes-Leme", "Ryosuke IWANAGA"]
-  s.email       = ["cpaesleme@dena.com", "riywo.jp@gmail.com"]
+  s.authors     = ["Cassio Paes-Leme", "Ryosuke IWANAGA", "Dennis Suratna"]
+  s.email       = ["cpaesleme@dena.com", "riywo.jp@gmail.com", "dennis.suratna@gmail.com"]
   s.license     = "Apache License, Version 2.0"
   s.homepage    = "http://github.com/DeNA/mobilize-base"
   s.summary     = %q{Moves datasets and schedules data transfers using MongoDB, Resque and Google Docs}
